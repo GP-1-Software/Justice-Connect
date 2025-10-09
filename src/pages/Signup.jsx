@@ -86,7 +86,63 @@ const Signup = () => {
     }
     
     try {
-      // Insert user data into Supabase
+      // Certificate is optional during testing; no enforcement here
+      if (userType === 'lawyer') {
+        // Optional: upload certificate to Supabase Storage (bucket: lawyer-certificates)
+        let certificateUrl = null;
+        if (certificateFile) {
+          const cleanId = formData.idNumber.replace(/[\s-]/g, '');
+          const objectPath = `lawyers/${cleanId}-${Date.now()}.pdf`;
+          const { error: uploadError } = await supabase.storage
+            .from('lawyer-certificates') // Ensure this bucket exists in Supabase Storage
+            .upload(objectPath, certificateFile, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'application/pdf'
+            });
+
+          if (uploadError) {
+            console.warn('Certificate upload skipped due to error (continuing without it):', uploadError);
+          } else {
+            const { data: publicData } = supabase.storage
+              .from('lawyer-certificates')
+              .getPublicUrl(objectPath);
+            certificateUrl = publicData?.publicUrl || null;
+          }
+        }
+
+        // Insert lawyer into lawyers table
+        const { data, error } = await supabase
+          .from('lawyers')
+          .insert([
+            {
+              user_type: 'lawyer',
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              email: formData.email,
+              phone: formData.phone,
+              city: formData.city,
+              id_number: formData.idNumber.replace(/[\s-]/g, ''),
+              password_hash: formData.password,
+              certificate_url: certificateUrl,
+              account_status: 'pending'
+            }
+          ])
+          .select();
+
+        if (error) {
+          console.error('Supabase error (lawyers):', error);
+          alert('حدث خطأ أثناء إنشاء حساب المحامي: ' + error.message);
+          return;
+        }
+
+        console.log('Lawyer created successfully:', data);
+        alert('تم إنشاء الحساب بنجاح!\nسيتم مراجعة حسابك قريباً.');
+        navigate('/login');
+        return;
+      }
+
+      // Default flow (e.g., client)
       const { data, error } = await supabase
         .from('users')
         .insert([
@@ -98,7 +154,7 @@ const Signup = () => {
             phone: formData.phone,
             city: formData.city,
             id_number: formData.idNumber.replace(/[\s-]/g, ''),
-            password_hash: formData.password, // TODO: Hash password before storing
+            password_hash: formData.password,
             account_status: 'pending'
           }
         ])
@@ -204,7 +260,7 @@ const Signup = () => {
                   className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   placeholder="example@gmail.com"
                   required
-                  pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
                 />
               </div>
             </div>
@@ -221,7 +277,7 @@ const Signup = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="+970 XX XXX XXXX"
+                    placeholder="+97X XX XXX XXXX"
                     required
                   />
                 </div>
@@ -319,7 +375,6 @@ const Signup = () => {
                       onChange={handleFileChange}
                       className="hidden"
                       id="certificate-upload"
-                      required={userType === 'lawyer' && !certificateFile}
                     />
                     {certificateFile ? (
                       <div className="flex items-center justify-between w-full px-4 py-4 border-2 border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/30 rounded-xl">

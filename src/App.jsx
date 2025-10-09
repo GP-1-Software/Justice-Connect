@@ -7,6 +7,9 @@ import QuickConsultation from './pages/QuickConsultation';
 import AdminVerification from './pages/AdminVerification';
 import PendingVerification from './pages/PendingVerification';
 import AdminDashboard from './pages/AdminDashboard';
+import DeletionRequests from './pages/admin/DeletionRequests';
+import LawyerRoutes from './routes/lawyerRoutes';
+import ClientRoutes from './routes/clientRoutes';
 
 function App() {
   return (
@@ -18,7 +21,12 @@ function App() {
         <Route path="/quick-consultation" element={<QuickConsultation />} />
         <Route path="/admin/verification" element={<AdminVerification />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
+        {/* Client protected area */}
+        <Route path="/client/*" element={<ClientRoutes />} />
+        {/* Lawyer protected area */}
+        <Route path="/*" element={<LawyerRoutes />} />
       </Routes>
     </div>
   );

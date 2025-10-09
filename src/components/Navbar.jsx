@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Scale, Menu, X, User, LogIn, Search, ChevronDown, Moon, Sun, MessageSquare, LogOut, Settings, UserCircle, LayoutDashboard } from 'lucide-react';
+import { Scale, Menu, X, User, LogIn, Search, ChevronDown, Moon, Sun, MessageSquare, LogOut, Settings, UserCircle, LayoutDashboard, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
@@ -179,6 +179,42 @@ const Navbar = () => {
                         <LayoutDashboard className="h-5 w-5" />
                         <span>لوحة التحكم</span>
                       </button>
+                    )}
+
+                    {/* Lawyer quick links */}
+                    {userData?.user_type === 'lawyer' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate('/lawyer/dashboard');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-blue-600 dark:text-blue-400 font-semibold"
+                        >
+                          <LayoutDashboard className="h-5 w-5" />
+                          <span>لوحة المحامي</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/lawyer/cases');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <Briefcase className="h-5 w-5" />
+                          <span>القضايا</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/lawyer/calendar');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <CalendarIcon className="h-5 w-5" />
+                          <span>التقويم</span>
+                        </button>
+                      </>
                     )}
 
                     <button
