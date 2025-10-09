@@ -77,28 +77,52 @@ const Login = () => {
         .eq('password_hash', formData.password)
         .single();
 
-      if (userError || !userData) {
+      if (userData && !userError) {
+        // Check account status for regular users
+        if (userData.account_status === 'pending') {
+          setLoginError('حسابك قيد المراجعة. يرجى الانتظار حتى يتم الموافقة عليه.');
+          return;
+        }
+
+        if (userData.account_status === 'rejected') {
+          setLoginError('تم رفض حسابك. السبب: ' + (userData.rejection_reason || 'غير محدد'));
+          return;
+        }
+
+        // Save user data to localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        alert('تم تسجيل الدخول بنجاح!');
+        navigate('/');
+        return;
+      }
+
+      // If not user, try lawyer login
+      const { data: lawyerData, error: lawyerError } = await supabase
+        .from('lawyers')
+        .select('*')
+        .eq('id_number', cleanIdNumber)
+        .eq('password_hash', formData.password)
+        .single();
+
+      if (lawyerError || !lawyerData) {
         setLoginError('رقم الهوية أو كلمة السر غير صحيحة');
         return;
       }
 
-      // Check account status for regular users
-      if (userData.account_status === 'pending') {
+      if (lawyerData.account_status === 'pending') {
         setLoginError('حسابك قيد المراجعة. يرجى الانتظار حتى يتم الموافقة عليه.');
         return;
       }
 
-      if (userData.account_status === 'rejected') {
-        setLoginError('تم رفض حسابك. السبب: ' + (userData.rejection_reason || 'غير محدد'));
+      if (lawyerData.account_status === 'rejected') {
+        setLoginError('تم رفض حسابك. السبب: ' + (lawyerData.rejection_reason || 'غير محدد'));
         return;
       }
 
-      // Save user data to localStorage
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      // Successful login
-      alert('تم تسجيل الدخول بنجاح!');
-      navigate('/');
+      // Save lawyer data and redirect to lawyer dashboard
+      localStorage.setItem('user', JSON.stringify({ ...lawyerData, user_type: 'lawyer' }));
+      alert('تم تسجيل الدخول كمحامي بنجاح!');
+      navigate('/lawyer/dashboard');
       
     } catch (error) {
       console.error('Login error:', error);

@@ -1,0 +1,22 @@
+{
+  "lawyer": {
+    "dashboard": "Lawyer Dashboard",
+    "cases": "Cases",
+    "calendar": "Calendar",
+    "profile": "Profile",
+    "logout": "Logout",
+    "today": "Today",
+    "thisWeek": "This week",
+    "quickRevenue": "Quick Revenue",
+    "appointments": "Appointments",
+    "newCases": "New Cases"
+  },
+  "actions": {
+    "view": "View",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}
+
+

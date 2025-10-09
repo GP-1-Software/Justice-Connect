@@ -1,0 +1,22 @@
+{
+  "lawyer": {
+    "dashboard": "لوحة المحامي",
+    "cases": "القضايا",
+    "calendar": "التقويم",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "today": "اليوم",
+    "thisWeek": "هذا الأسبوع",
+    "quickRevenue": "إيرادات سريعة",
+    "appointments": "المواعيد",
+    "newCases": "قضايا جديدة"
+  },
+  "actions": {
+    "view": "عرض",
+    "edit": "تعديل",
+    "save": "حفظ",
+    "cancel": "إلغاء"
+  }
+}
+
+

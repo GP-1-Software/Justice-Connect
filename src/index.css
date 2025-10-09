@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Basic RTL helper: toggle by document.dir = 'rtl' */
+html[dir='rtl'] body {
+  direction: rtl;
+}
+
 * {
   font-family: 'Cairo', sans-serif;
 }

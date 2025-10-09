@@ -6,10 +6,11 @@ import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, Us
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [mainTab, setMainTab] = useState('users'); // 'users', 'admins', 'super_admins'
+  const [mainTab, setMainTab] = useState('users'); // 'users', 'lawyers', 'admins', 'super_admins'
   const [userStatusTab, setUserStatusTab] = useState('pending'); // 'pending', 'approved', 'rejected'
   const [displayData, setDisplayData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusCounts, setStatusCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [selectedUser, setSelectedUser] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState(null);
@@ -36,15 +37,48 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      if (mainTab === 'users') {
-        const { data, error } = await supabase
-          .from('users')
+      if (mainTab === 'users' || mainTab === 'lawyers') {
+        const table = mainTab === 'users' ? 'users' : 'lawyers';
+
+        // Fetch filtered list
+        const listPromise = supabase
+          .from(table)
           .select('*')
           .eq('account_status', userStatusTab)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        setDisplayData(data || []);
+        // Fetch counts for all statuses in parallel
+        const countPending = supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq('account_status', 'pending');
+        const countApproved = supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq('account_status', 'approved');
+        const countRejected = supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq('account_status', 'rejected');
+
+        const [listRes, pendRes, apprRes, rejRes] = await Promise.all([
+          listPromise,
+          countPending,
+          countApproved,
+          countRejected
+        ]);
+
+        if (listRes.error) throw listRes.error;
+        if (pendRes.error) throw pendRes.error;
+        if (apprRes.error) throw apprRes.error;
+        if (rejRes.error) throw rejRes.error;
+
+        setDisplayData(listRes.data || []);
+        setStatusCounts({
+          pending: pendRes.count || 0,
+          approved: apprRes.count || 0,
+          rejected: rejRes.count || 0
+        });
       } else if (mainTab === 'admins') {
         const { data, error } = await supabase
           .from('admins')
@@ -74,10 +108,17 @@ const AdminDashboard = () => {
 
   const handleApprove = async (userId) => {
     try {
+      let table = 'users';
+      let idColumn = 'user_id';
+      if (mainTab === 'lawyers') {
+        table = 'lawyers';
+        idColumn = 'lawyer_id';
+      }
+
       const { error } = await supabase
-        .from('users')
+        .from(table)
         .update({ account_status: 'approved' })
-        .eq('user_id', userId);
+        .eq(idColumn, userId);
 
       if (error) throw error;
       
@@ -96,13 +137,20 @@ const AdminDashboard = () => {
     }
 
     try {
+      let table = 'users';
+      let idColumn = 'user_id';
+      if (mainTab === 'lawyers') {
+        table = 'lawyers';
+        idColumn = 'lawyer_id';
+      }
+
       const { error } = await supabase
-        .from('users')
+        .from(table)
         .update({ 
           account_status: 'rejected',
           rejection_reason: rejectionReason 
         })
-        .eq('user_id', userId);
+        .eq(idColumn, userId);
 
       if (error) throw error;
       
@@ -253,10 +301,10 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {mainTab === 'users' && userStatusTab === 'pending' && (
+      {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'pending' && (
         <div className="flex space-x-3 space-x-reverse">
           <button
-            onClick={() => handleApprove(user.user_id)}
+            onClick={() => handleApprove(user.user_id || user.lawyer_id)}
             className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
           >
             <CheckCircle className="h-5 w-5" />
@@ -272,7 +320,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {mainTab === 'users' && userStatusTab === 'approved' && (
+      {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'approved' && (
         <div className="space-y-2">
           <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-semibold">
             <CheckCircle className="h-5 w-5" />
@@ -290,7 +338,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {mainTab === 'users' && userStatusTab === 'rejected' && (
+      {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'rejected' && (
         <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold">
           <XCircle className="h-5 w-5" />
           <span>مرفوض</span>
@@ -328,9 +376,9 @@ const AdminDashboard = () => {
 
           {/* Main Tabs */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8">
-            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <button
-                onClick={() => setMainTab('users')}
+                onClick={() => { setMainTab('users'); setUserStatusTab('pending'); }}
                 className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
                   mainTab === 'users'
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
@@ -341,7 +389,18 @@ const AdminDashboard = () => {
                 <span>المستخدمين</span>
               </button>
               <button
-                onClick={() => setMainTab('admins')}
+                onClick={() => { setMainTab('lawyers'); setUserStatusTab('pending'); }}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
+                  mainTab === 'lawyers'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Briefcase className="h-5 w-5" />
+                <span>المحاميين</span>
+              </button>
+              <button
+                onClick={() => { setMainTab('admins'); setUserStatusTab('pending'); }}
                 className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
                   mainTab === 'admins'
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
@@ -353,7 +412,7 @@ const AdminDashboard = () => {
               </button>
               {currentAdmin?.role === 'super_admin' && (
                 <button
-                  onClick={() => setMainTab('super_admins')}
+                onClick={() => { setMainTab('super_admins'); setUserStatusTab('pending'); }}
                   className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
                     mainTab === 'super_admins'
                       ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
@@ -367,90 +426,59 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* User Status Tabs - Only show when mainTab is 'users' */}
-          {mainTab === 'users' && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8 max-w-2xl">
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setUserStatusTab('pending')}
-                  className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                    userStatusTab === 'pending'
-                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <Clock className="h-5 w-5" />
-                  <span>في الانتظار</span>
-                </button>
-                <button
-                  onClick={() => setUserStatusTab('approved')}
-                  className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                    userStatusTab === 'approved'
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <CheckCircle className="h-5 w-5" />
-                  <span>مقبول</span>
-                </button>
-                <button
-                  onClick={() => setUserStatusTab('rejected')}
-                  className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                    userStatusTab === 'rejected'
-                      ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <XCircle className="h-5 w-5" />
-                  <span>مرفوض</span>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Statistics */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {mainTab === 'users' && (
+            {(mainTab === 'users' || mainTab === 'lawyers') && (
               <>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <button
+                  onClick={() => setUserStatusTab('pending')}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${
+                    userStatusTab === 'pending' ? 'ring-4 ring-yellow-500 ring-opacity-50' : ''
+                  }`}
+                >
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
                       <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm">في الانتظار</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {userStatusTab === 'pending' ? displayData.length : '-'}
-                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.pending}</p>
                     </div>
                   </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                </button>
+                <button
+                  onClick={() => setUserStatusTab('approved')}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${
+                    userStatusTab === 'approved' ? 'ring-4 ring-green-500 ring-opacity-50' : ''
+                  }`}
+                >
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
                       <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm">مقبول</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {userStatusTab === 'approved' ? displayData.length : '-'}
-                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.approved}</p>
                     </div>
                   </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                </button>
+                <button
+                  onClick={() => setUserStatusTab('rejected')}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${
+                    userStatusTab === 'rejected' ? 'ring-4 ring-red-500 ring-opacity-50' : ''
+                  }`}
+                >
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
                       <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm">مرفوض</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {userStatusTab === 'rejected' ? displayData.length : '-'}
-                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.rejected}</p>
                     </div>
                   </div>
-                </div>
+                </button>
               </>
             )}
             
@@ -503,7 +531,7 @@ const AdminDashboard = () => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayData.map((item) => (
-                <UserCard key={item.user_id || item.admin_id} user={item} />
+                <UserCard key={item.user_id || item.lawyer_id || item.admin_id} user={item} />
               ))}
             </div>
           )}
@@ -533,7 +561,7 @@ const AdminDashboard = () => {
             />
             <div className="flex space-x-3 space-x-reverse mt-6">
               <button
-                onClick={() => handleReject(selectedUser.user_id)}
+                onClick={() => handleReject(selectedUser.user_id || selectedUser.lawyer_id)}
                 className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold"
               >
                 تأكيد الرفض

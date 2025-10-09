@@ -7,6 +7,7 @@ import QuickConsultation from './pages/QuickConsultation';
 import AdminVerification from './pages/AdminVerification';
 import PendingVerification from './pages/PendingVerification';
 import AdminDashboard from './pages/AdminDashboard';
+import LawyerRoutes from './routes/lawyerRoutes';
 
 function App() {
   return (
@@ -19,6 +20,8 @@ function App() {
         <Route path="/admin/verification" element={<AdminVerification />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
+        {/* Lawyer protected area */}
+        <Route path="/*" element={<LawyerRoutes />} />
       </Routes>
     </div>
   );
