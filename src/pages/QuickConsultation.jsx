@@ -16,8 +16,27 @@ const QuickConsultation = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // TODO: Replace with actual auth check
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const messagesEndRef = useRef(null);
+  
+  // Check if user is logged in
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    console.log('Checking user auth:', user); // Debug log
+    if (user && user !== 'null' && user !== 'undefined') {
+      try {
+        const userData = JSON.parse(user);
+        if (userData) {
+          console.log('User is logged in:', userData); // Debug log
+          setIsLoggedIn(true);
+        }
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    } else {
+      console.log('No user found in localStorage'); // Debug log
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

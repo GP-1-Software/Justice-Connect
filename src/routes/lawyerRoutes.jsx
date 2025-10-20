@@ -2,10 +2,10 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LawyerLayout from '../layouts/LawyerLayout';
 import DashboardPage from '../pages/lawyer/Dashboard/Dashboard';
-const CasesListPage = () => <div>...</div>;
-const CaseDetailPage = () => <div>...</div>;
-const CalendarPage = () => <div>...</div>;
-const ProfilePage = () => <div>...</div>;
+import CasesListPage from '../pages/lawyer/Cases/CasesList';
+import CaseDetailPage from '../pages/lawyer/CaseDetail/CaseDetail';
+import CalendarPage from '../pages/lawyer/Calendar/Calendar';
+import ProfilePage from '../pages/lawyer/Profile/Profile';
 
 const LawyerRoutes = () => {
   return (

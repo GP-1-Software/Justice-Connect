@@ -467,7 +467,7 @@ const AdminDashboard = () => {
 
           {/* Main Tabs */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8">
-            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <button
                 onClick={() => { setMainTab('users'); setUserStatusTab('pending'); }}
                 className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${

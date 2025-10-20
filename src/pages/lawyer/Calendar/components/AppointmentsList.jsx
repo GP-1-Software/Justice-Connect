@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { supabase } from '../../../../supabaseClient';
+import { Clock, User, MapPin, Video, Check, X, Calendar } from 'lucide-react';
+
+const AppointmentsList = ({ appointments }) => {
+  const { t } = useTranslation();
+  const [updating, setUpdating] = useState(null);
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      'pending': { label: 'قيد الانتظار', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
+      'confirmed': { label: 'مؤكد', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+      'completed': { label: 'مكتمل', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
+      'cancelled': { label: 'ملغي', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }
+    };
+    return statusMap[status] || statusMap['pending'];
+  };
+
+  const formatDateTime = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ar-EG', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleUpdateStatus = async (appointmentId, newStatus) => {
+    setUpdating(appointmentId);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: newStatus })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Update status error:', error.message);
+      alert(t('calendar.updateError') || 'حدث خطأ أثناء تحديث الموعد');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  if (appointments.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-12 text-center">
+        <Calendar className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          {t('calendar.noAppointments') || 'لا توجد مواعيد'}
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400">
+          {t('calendar.noAppointmentsDesc') || 'لا توجد مواعيد محجوزة حالياً'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {appointments.map((appointment) => {
+        const statusInfo = getStatusBadge(appointment.status);
+        const isUpdating = updating === appointment.id;
+
+        return (
+          <div
+            key={appointment.id}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Appointment Info */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {appointment.title || t('calendar.consultation') || 'استشارة قانونية'}
+                  </h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
+                    {statusInfo.label}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  {appointment.client_name && (
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span>{appointment.client_name}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span>{formatDateTime(appointment.starts_at)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    {appointment.meeting_type === 'online' ? (
+                      <>
+                        <Video className="h-4 w-4 text-gray-400" />
+                        <span>{t('calendar.online') || 'عبر الإنترنت'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span>{t('calendar.inPerson') || 'شخصي'}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {appointment.duration && (
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <span>{appointment.duration} {t('calendar.minutes') || 'دقيقة'}</span>
+                    </div>
+                  )}
+                </div>
+
+                {appointment.notes && (
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    {appointment.notes}
+                  </p>
+                )}
+              </div>
+
+              {/* Actions */}
+              {appointment.status === 'pending' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleUpdateStatus(appointment.id, 'confirmed')}
+                    disabled={isUpdating}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                  >
+                    <Check className="h-4 w-4" />
+                    {t('calendar.accept') || 'قبول'}
+                  </button>
+                  <button
+                    onClick={() => handleUpdateStatus(appointment.id, 'cancelled')}
+                    disabled={isUpdating}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" />
+                    {t('calendar.reject') || 'رفض'}
+                  </button>
+                </div>
+              )}
+
+              {appointment.status === 'confirmed' && (
+                <button
+                  onClick={() => handleUpdateStatus(appointment.id, 'completed')}
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {t('calendar.markComplete') || 'تحديد كمكتمل'}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export default AppointmentsList;

@@ -11,6 +11,7 @@ import DeletionRequests from './pages/admin/DeletionRequests';
 import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
 
+
 function App() {
   return (
     <div>
