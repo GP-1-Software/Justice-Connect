@@ -69,13 +69,15 @@ const Login = () => {
         return;
       }
 
-      // If not admin, try regular user login
+      // Try to find user in users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id_number', cleanIdNumber)
         .eq('password_hash', formData.password)
         .single();
+
+      console.log('Client login attempt:', { userData, userError, cleanIdNumber });
 
       if (userData && !userError) {
         // Check account status for regular users
@@ -89,40 +91,57 @@ const Login = () => {
           return;
         }
 
-        // Save user data to localStorage
-        localStorage.setItem('user', JSON.stringify(userData));
-        alert('تم تسجيل الدخول بنجاح!');
-        navigate('/');
-        return;
-      }
+        
+        // Check if it's a client
+if (userData.user_type === 'client') {
+  console.log('Client login successful!');
+  localStorage.setItem('user', JSON.stringify(userData));
+  alert('تم تسجيل الدخول كعميل بنجاح!');
+  // Force refresh the page to trigger auth check
+  window.location.href = '/client/dashboard';
+  return;
+}
 
-      // If not user, try lawyer login
-      const { data: lawyerData, error: lawyerError } = await supabase
-        .from('lawyers')
-        .select('*')
-        .eq('id_number', cleanIdNumber)
-        .eq('password_hash', formData.password)
-        .single();
+// Other user types
+localStorage.setItem('user', JSON.stringify(userData));
+alert('تم تسجيل الدخول بنجاح!');
+navigate('/');
+return;
+}
 
-      if (lawyerError || !lawyerData) {
-        setLoginError('رقم الهوية أو كلمة السر غير صحيحة');
-        return;
-      }
+// Try lawyer login
+const { data: lawyerData, error: lawyerError } = await supabase
+  .from('lawyers')
+  .select('*')
+  .eq('id_number', cleanIdNumber)
+  .eq('password_hash', formData.password)
+  .single();
 
-      if (lawyerData.account_status === 'pending') {
-        setLoginError('حسابك قيد المراجعة. يرجى الانتظار حتى يتم الموافقة عليه.');
-        return;
-      }
+console.log('Lawyer login attempt:', { lawyerData, lawyerError });
 
-      if (lawyerData.account_status === 'rejected') {
-        setLoginError('تم رفض حسابك. السبب: ' + (lawyerData.rejection_reason || 'غير محدد'));
-        return;
-      }
+if (lawyerData && !lawyerError) {
+  // Check lawyer account status
+  if (lawyerData.account_status === 'pending') {
+    setLoginError('حسابك قيد المراجعة. يرجى الانتظار حتى يتم الموافقة عليه.');
+    return;
+  }
 
-      // Save lawyer data and redirect to lawyer dashboard
-      localStorage.setItem('user', JSON.stringify({ ...lawyerData, user_type: 'lawyer' }));
-      alert('تم تسجيل الدخول كمحامي بنجاح!');
-      navigate('/lawyer/dashboard');
+  if (lawyerData.account_status === 'rejected') {
+    setLoginError('تم رفض حسابك. السبب: ' + (lawyerData.rejection_reason || 'غير محدد'));
+    return;
+  }
+
+  // Save lawyer data and redirect to lawyer dashboard
+  localStorage.setItem('user', JSON.stringify({ ...lawyerData, user_type: 'lawyer' }));
+  alert('تم تسجيل الدخول كمحامي بنجاح!');
+  navigate('/lawyer/dashboard');
+  return;
+}
+
+// If nothing worked
+setLoginError('رقم الهوية أو كلمة السر غير صحيحة');
+
+        
       
     } catch (error) {
       console.error('Login error:', error);

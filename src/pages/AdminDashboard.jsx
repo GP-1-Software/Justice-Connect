@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2 } from 'lucide-react';
+import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [mainTab, setMainTab] = useState('users'); // 'users', 'lawyers', 'admins', 'super_admins'
+  const [mainTab, setMainTab] = useState('users'); // 'users', 'lawyers', 'admins', 'super_admins', 'deletion_requests'
   const [userStatusTab, setUserStatusTab] = useState('pending'); // 'pending', 'approved', 'rejected'
   const [displayData, setDisplayData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +15,12 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState(null);
+  
+  // Deletion requests state
+  const [deletionRequests, setDeletionRequests] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [adminNotes, setAdminNotes] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -32,6 +39,11 @@ const AdminDashboard = () => {
     
     setCurrentAdmin(userData);
     fetchData();
+    
+    // Fetch deletion requests if on that tab
+    if (mainTab === 'deletion_requests') {
+      fetchDeletionRequests();
+    }
   }, [navigate, mainTab, userStatusTab]);
 
   const fetchData = async () => {
@@ -241,6 +253,85 @@ const AdminDashboard = () => {
     }
   };
 
+  // Deletion requests functions
+  const fetchDeletionRequests = async () => {
+    setLoading(true);
+    try {
+      const result = await getPendingDeletionRequests();
+      if (result.success) {
+        setDeletionRequests(result.data || []);
+      } else {
+        alert('فشل تحميل طلبات الحذف');
+      }
+    } catch (error) {
+      console.error('Error fetching deletion requests:', error);
+      alert('حدث خطأ في تحميل البيانات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveDeletion = async (requestId) => {
+    if (!window.confirm('هل أنت متأكد من الموافقة على حذف هذا الحساب؟ لا يمكن التراجع عن هذا الإجراء.')) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const result = await updateDeletionRequestStatus(
+        requestId,
+        'approved',
+        currentAdmin.admin_id,
+        adminNotes || 'تمت الموافقة على حذف الحساب'
+      );
+
+      if (result.success) {
+        alert('تمت الموافقة على حذف الحساب بنجاح');
+        setSelectedRequest(null);
+        setAdminNotes('');
+        fetchDeletionRequests();
+      } else {
+        alert(result.error || 'فشل الموافقة على الطلب');
+      }
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('حدث خطأ في الموافقة على الطلب');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRejectDeletion = async (requestId) => {
+    if (!adminNotes.trim()) {
+      alert('يرجى كتابة سبب الرفض');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const result = await updateDeletionRequestStatus(
+        requestId,
+        'rejected',
+        currentAdmin.admin_id,
+        adminNotes
+      );
+
+      if (result.success) {
+        alert('تم رفض الطلب بنجاح');
+        setSelectedRequest(null);
+        setAdminNotes('');
+        fetchDeletionRequests();
+      } else {
+        alert(result.error || 'فشل رفض الطلب');
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('حدث خطأ في رفض الطلب');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const UserCard = ({ user }) => {
     // Determine user type display
     const getUserTypeDisplay = () => {
@@ -423,6 +514,17 @@ const AdminDashboard = () => {
                   <span>Super Admin</span>
                 </button>
               )}
+              <button
+                onClick={() => setMainTab('deletion_requests')}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
+                  mainTab === 'deletion_requests'
+                    ? 'bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Trash2 className="h-5 w-5" />
+                <span>طلبات الحذف</span>
+              </button>
             </div>
           </div>
 
@@ -513,10 +615,98 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
+            
+            {mainTab === 'deletion_requests' && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-3 space-x-reverse">
+                  <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                    <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">طلبات الحذف المعلقة</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {deletionRequests.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Data Grid */}
-          {loading ? (
+          {mainTab === 'deletion_requests' ? (
+            // Deletion Requests Content
+            loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
+              </div>
+            ) : deletionRequests.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-xl text-gray-600 dark:text-gray-300">
+                  لا توجد طلبات حذف
+                </p>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                  لا توجد طلبات حذف حسابات معلقة حالياً
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {deletionRequests.map((request) => (
+                  <div
+                    key={request.request_id}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 space-x-reverse mb-3">
+                          <div className="text-yellow-600 dark:text-yellow-400">
+                            <Clock className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {request.users?.first_name} {request.users?.last_name}
+                            </h3>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {request.users?.email} • {request.users?.phone}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            سبب طلب الحذف:
+                          </p>
+                          <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                            {request.reason}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-700 dark:text-gray-300">
+                          <span>تاريخ الطلب: {new Date(request.requested_at).toLocaleDateString('ar-SA')}</span>
+                          <span>•</span>
+                          <span>نوع المستخدم: {request.user_type === 'client' ? 'عميل' : 'محامي'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2 space-x-reverse">
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setAdminNotes('');
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          مراجعة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : loading ? (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
@@ -574,6 +764,64 @@ const AdminDashboard = () => {
                 className="flex-1 px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition font-semibold"
               >
                 إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deletion Request Review Modal */}
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex items-start space-x-3 space-x-reverse mb-4">
+              <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  مراجعة طلب الحذف
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {selectedRequest.users?.first_name} {selectedRequest.users?.last_name}
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                ملاحظات الإدارة <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="اكتب ملاحظاتك هنا..."
+              />
+            </div>
+
+            <div className="flex space-x-3 space-x-reverse">
+              <button
+                onClick={() => {
+                  setSelectedRequest(null);
+                  setAdminNotes('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => handleRejectDeletion(selectedRequest.request_id)}
+                disabled={processing || !adminNotes.trim()}
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {processing ? 'جاري...' : 'رفض'}
+              </button>
+              <button
+                onClick={() => handleApproveDeletion(selectedRequest.request_id)}
+                disabled={processing}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {processing ? 'جاري...' : 'موافقة'}
               </button>
             </div>
           </div>

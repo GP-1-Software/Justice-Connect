@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+ 
+import React, { useState } from 'react'; 
+import { Link, Outlet, NavLink, useNavigate } from 'react-router-dom'; 
 import { useTranslation } from 'react-i18next';
-import { useLawyerAuth } from '../hooks/useLawyerAuth';
-import { supabase } from '../supabaseClient';
-import { Briefcase, Calendar as CalendarIcon, LayoutDashboard, Scale, User, LogOut, Bell, ChevronDown } from 'lucide-react';
+import useLawyerAuth from '../hooks/useLawyerAuth';
+import supabase from '../supabaseClient';
+import { Briefcase, Calendar as CalendarIcon, User as UserIcon, LayoutDashboard, Scale, User, LogOut, Bell, ChevronDown } from 'lucide-react';
 
 const LawyerLayout = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { loading, lawyer } = useLawyerAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+ 
 
   const toggleLang = () => {
     const next = i18n.language === 'ar' ? 'en' : 'ar';
@@ -174,3 +176,4 @@ const LawyerLayout = () => {
 };
 
 export default LawyerLayout;
+
