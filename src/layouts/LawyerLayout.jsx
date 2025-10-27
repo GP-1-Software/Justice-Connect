@@ -1,23 +1,14 @@
  
 import React, { useState } from 'react'; 
 import { Link, Outlet, NavLink, useNavigate } from 'react-router-dom'; 
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../hooks/useLawyerAuth';
 import { supabase } from '../supabaseClient';
 import { Briefcase, Calendar as CalendarIcon, User as UserIcon, LayoutDashboard, Scale, User, LogOut, Bell, ChevronDown } from 'lucide-react';
 
 const LawyerLayout = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
   const { loading, lawyer } = useLawyerAuth();
   const [showDropdown, setShowDropdown] = useState(false);
- 
-
-  const toggleLang = () => {
-    const next = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(next);
-    document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
-  };
 
   const handleLogout = async () => {
     try {
@@ -61,14 +52,6 @@ const LawyerLayout = () => {
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
 
-            {/* زر اللغة */}
-            <button
-              onClick={toggleLang}
-              className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-            >
-              {i18n.language === 'ar' ? 'EN' : 'AR'}
-            </button>
-
             {/* User Dropdown */}
             <div className="relative">
               <button
@@ -93,14 +76,14 @@ const LawyerLayout = () => {
                     className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                   >
                     <User className="h-4 w-4" />
-                    <span>{t('lawyer.profile') || 'الملف الشخصي'}</span>
+                    <span>الملف الشخصي</span>
                   </NavLink>
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>{t('lawyer.logout') || 'تسجيل الخروج'}</span>
+                    <span>تسجيل الخروج</span>
                   </button>
                 </div>
               )}
@@ -123,7 +106,7 @@ const LawyerLayout = () => {
               }
             >
               <LayoutDashboard className="h-5 w-5" />
-              <span>{t('lawyer.dashboard')}</span>
+              <span>لوحة التحكم</span>
             </NavLink>
 
             <NavLink
@@ -135,7 +118,7 @@ const LawyerLayout = () => {
               }
             >
               <Briefcase className="h-5 w-5" />
-              <span>{t('lawyer.cases')}</span>
+              <span>القضايا</span>
             </NavLink>
 
             <NavLink
@@ -147,7 +130,7 @@ const LawyerLayout = () => {
               }
             >
               <CalendarIcon className="h-5 w-5" />
-              <span>{t('lawyer.calendar')}</span>
+              <span>التقويم</span>
             </NavLink>
 
             <NavLink
@@ -159,7 +142,7 @@ const LawyerLayout = () => {
               }
             >
               <User className="h-5 w-5" />
-              <span>{t('lawyer.profile')}</span>
+              <span>الملف الشخصي</span>
             </NavLink>
           </nav>
         </aside>

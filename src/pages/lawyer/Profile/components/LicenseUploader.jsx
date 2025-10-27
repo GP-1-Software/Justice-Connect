@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { Upload, File, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 const LicenseUploader = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -20,8 +18,7 @@ const LicenseUploader = () => {
         const { data, error } = await supabase
           .from('lawyer_documents')
           .select('*')
-          .eq('lawyer_id', lawyer.lawyer_id)
-          .order('uploaded_at', { ascending: false });
+          .eq('lawyer_id', lawyer.lawyer_id);
 
         if (error) throw error;
         if (mounted) setDocuments(data || []);

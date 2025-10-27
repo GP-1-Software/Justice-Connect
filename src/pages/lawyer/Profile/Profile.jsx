@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { User, Award, Briefcase, Clock } from 'lucide-react';
 import ProfileForm from './components/ProfileForm';
 import LicenseUploader from './components/LicenseUploader';
@@ -7,14 +6,13 @@ import ServicesManager from './components/ServicesManager';
 import WorkingHours from './components/WorkingHours';
 
 const Profile = () => {
-  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('personal');
 
   const tabs = [
-    { id: 'personal', label: t('profile.personalInfo') || 'المعلومات الشخصية', icon: User },
-    { id: 'licenses', label: t('profile.licenses') || 'التراخيص والشهادات', icon: Award },
-    { id: 'services', label: t('profile.services') || 'الخدمات والأسعار', icon: Briefcase },
-    { id: 'hours', label: t('profile.workingHours') || 'ساعات العمل', icon: Clock }
+    { id: 'personal', label: 'المعلومات الشخصية', icon: User },
+    { id: 'licenses', label: 'التراخيص والشهادات', icon: Award },
+    { id: 'services', label: 'الخدمات والأسعار', icon: Briefcase },
+    { id: 'hours', label: 'ساعات العمل', icon: Clock }
   ];
 
   return (
@@ -22,10 +20,10 @@ const Profile = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t('profile.title') || 'الملف الشخصي'}
+          الملف الشخصي
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {t('profile.subtitle') || 'إدارة معلوماتك المهنية وإعداداتك'}
+          إدارة معلوماتك المهنية وإعداداتك
         </p>
       </div>
 

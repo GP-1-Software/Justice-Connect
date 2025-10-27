@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -13,7 +12,6 @@ import TaskManager from './components/TaskManager';
 
 const CaseDetail = () => {
   const { caseId } = useParams();
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const navigate = useNavigate();
   const [caseData, setCaseData] = useState(null);
@@ -88,7 +86,7 @@ const CaseDetail = () => {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="mr-3 text-gray-600 dark:text-gray-300">{t('common.loading') || 'جاري التحميل...'}</span>
+        <span className="mr-3 text-gray-600 dark:text-gray-300">جاري التحميل...</span>
       </div>
     );
   }
@@ -96,12 +94,12 @@ const CaseDetail = () => {
   if (!caseData) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">{t('cases.notFound') || 'القضية غير موجودة'}</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">القضية غير موجودة</p>
         <button
           onClick={() => navigate('/lawyer/cases')}
           className="text-blue-600 hover:underline"
         >
-          {t('cases.backToCases') || 'العودة للقضايا'}
+          العودة للقضايا
         </button>
       </div>
     );
@@ -115,7 +113,7 @@ const CaseDetail = () => {
         className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 transition"
       >
         <ArrowLeft className="h-5 w-5" />
-        {t('cases.backToCases') || 'العودة للقضايا'}
+        العودة للقضايا
       </button>
 
       {/* Case Header */}

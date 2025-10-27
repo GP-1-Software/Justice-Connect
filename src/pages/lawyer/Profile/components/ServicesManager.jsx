@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 
 const ServicesManager = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,10 +74,10 @@ const ServicesManager = () => {
       if (error) throw error;
       setServices(prev => [data, ...prev]);
       resetForm();
-      alert(t('profile.serviceAdded') || 'تمت إضافة الخدمة بنجاح');
+      alert('تمت إضافة الخدمة بنجاح');
     } catch (error) {
       console.error('Add service error:', error.message);
-      alert(t('profile.serviceError') || 'حدث خطأ أثناء إضافة الخدمة');
+      alert('حدث خطأ أثناء إضافة الخدمة');
     }
   };
 
@@ -93,15 +91,15 @@ const ServicesManager = () => {
       if (error) throw error;
       setServices(prev => prev.map(s => s.service_id === serviceId ? { ...s, ...formData } : s));
       resetForm();
-      alert(t('profile.serviceUpdated') || 'تم تحديث الخدمة بنجاح');
+      alert('تم تحديث الخدمة بنجاح');
     } catch (error) {
       console.error('Edit service error:', error.message);
-      alert(t('profile.serviceError') || 'حدث خطأ أثناء تحديث الخدمة');
+      alert('حدث خطأ أثناء تحديث الخدمة');
     }
   };
 
   const handleDelete = async (serviceId) => {
-    if (!confirm(t('profile.confirmDeleteService') || 'هل أنت متأكد من حذف هذه الخدمة؟')) return;
+    if (!confirm('هل أنت متأكد من حذف هذه الخدمة؟')) return;
     try {
       const { error } = await supabase
         .from('lawyer_services')
@@ -112,7 +110,7 @@ const ServicesManager = () => {
       setServices(prev => prev.filter(s => s.service_id !== serviceId));
     } catch (error) {
       console.error('Delete service error:', error.message);
-      alert(t('profile.deleteError') || 'حدث خطأ أثناء حذف الخدمة');
+      alert('حدث خطأ أثناء حذف الخدمة');
     }
   };
 
@@ -137,7 +135,7 @@ const ServicesManager = () => {
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all"
         >
           <Plus className="h-5 w-5" />
-          {t('profile.addService') || 'إضافة خدمة جديدة'}
+          إضافة خدمة جديدة
         </button>
       )}
 
@@ -145,13 +143,13 @@ const ServicesManager = () => {
       {(showAddForm || editingId) && (
         <form onSubmit={(e) => editingId ? handleEdit(editingId) : handleAdd(e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {editingId ? t('profile.editService') || 'تعديل الخدمة' : t('profile.addNewService') || 'إضافة خدمة جديدة'}
+            {editingId ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'}
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.serviceName') || 'اسم الخدمة'}
+                اسم الخدمة
               </label>
               <input
                 type="text"
@@ -164,7 +162,7 @@ const ServicesManager = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.price') || 'السعر (شيقل)'}
+                السعر (شيقل)
               </label>
               <div className="relative">
                 <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-semibold">₪</span>
@@ -182,7 +180,7 @@ const ServicesManager = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.duration') || 'المدة (دقيقة)'}
+                المدة (دقيقة)
               </label>
               <input
                 type="number"
@@ -202,14 +200,14 @@ const ServicesManager = () => {
                   className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('profile.activeService') || 'خدمة نشطة'}
+                  خدمة نشطة
                 </span>
               </label>
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.description') || 'الوصف'}
+                الوصف
               </label>
               <textarea
                 value={formData.description}
@@ -226,7 +224,7 @@ const ServicesManager = () => {
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
             >
               <Save className="h-4 w-4" />
-              {editingId ? t('actions.save') || 'حفظ' : t('profile.add') || 'إضافة'}
+              {editingId ? 'حفظ' : 'إضافة'}
             </button>
             <button
               type="button"
@@ -234,7 +232,7 @@ const ServicesManager = () => {
               className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
             >
               <X className="h-4 w-4" />
-              {t('actions.cancel') || 'إلغاء'}
+              إلغاء
             </button>
           </div>
         </form>
@@ -244,11 +242,11 @@ const ServicesManager = () => {
       <div className="space-y-4">
         {loading ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            {t('common.loading') || 'جاري التحميل...'}
+            جاري التحميل...
           </div>
         ) : services.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            {t('profile.noServices') || 'لا توجد خدمات مضافة بعد'}
+            لا توجد خدمات مضافة بعد
           </div>
         ) : (
           services.map((service) => (
@@ -264,11 +262,11 @@ const ServicesManager = () => {
                     </h4>
                     {service.is_active ? (
                       <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-semibold">
-                        {t('profile.active') || 'نشط'}
+                        نشط
                       </span>
                     ) : (
                       <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 rounded-full text-xs font-semibold">
-                        {t('profile.inactive') || 'غير نشط'}
+                        غير نشط
                       </span>
                     )}
                   </div>
@@ -279,13 +277,13 @@ const ServicesManager = () => {
                   )}
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-1">
-                      <span className="text-gray-500 dark:text-gray-400">{t('profile.price') || 'السعر'}:</span>
-                      <span className="font-semibold text-green-600">{service.price} {t('profile.sar') || 'شيقل'}</span>
+                      <span className="text-gray-500 dark:text-gray-400">السعر:</span>
+                      <span className="font-semibold text-green-600">{service.price} شيقل</span>
                     </div>
                     {service.duration_minutes && (
                       <div className="flex items-center gap-1">
-                        <span className="text-gray-500 dark:text-gray-400">{t('profile.duration') || 'المدة'}:</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">{service.duration_minutes} {t('profile.minutes') || 'دقيقة'}</span>
+                        <span className="text-gray-500 dark:text-gray-400">المدة:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{service.duration_minutes} دقيقة</span>
                       </div>
                     )}
                   </div>
@@ -298,7 +296,7 @@ const ServicesManager = () => {
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(service.id)}
+                    onClick={() => handleDelete(service.service_id)}
                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                   >
                     <Trash2 className="h-4 w-4" />
