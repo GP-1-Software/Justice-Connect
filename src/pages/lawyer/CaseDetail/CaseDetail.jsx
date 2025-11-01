@@ -144,28 +144,49 @@ const CaseDetail = () => {
       {/* Case Header */}
       <CaseHeader caseData={caseData} onCaseUpdated={handleCaseUpdated} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content - Left Side */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Update Composer */}
-          <UpdateComposer caseId={caseId} onUpdateAdded={handleUpdateAdded} />
-
-          {/* Timeline */}
-          <Timeline updates={updates} caseData={caseData} onEventDeleted={handleEventDeleted} />
+      {caseData.status === 'rejected' ? (
+        /* Rejected Case - Read Only View */
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-8 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ArrowLeft className="h-8 w-8 text-red-600 rotate-45" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              قضية مرفوضة
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              هذه القضية تم رفضها ولا يمكن تعديلها أو إضافة محتوى جديد.
+            </p>
+            {/* Timeline for rejected cases - read only */}
+            <div className="mt-8">
+              <Timeline updates={updates} caseData={caseData} onEventDeleted={null} />
+            </div>
+          </div>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Left Side */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Update Composer */}
+            <UpdateComposer caseId={caseId} onUpdateAdded={handleUpdateAdded} />
 
-        {/* Sidebar - Right Side */}
-        <div className="space-y-6">
-          {/* Private Notes */}
-          <PrivateNotes caseId={caseId} />
+            {/* Timeline */}
+            <Timeline updates={updates} caseData={caseData} onEventDeleted={handleEventDeleted} />
+          </div>
 
-          {/* Evidence Uploader */}
-          <EvidenceUploader caseId={caseId} />
+          {/* Sidebar - Right Side */}
+          <div className="space-y-6">
+            {/* Private Notes */}
+            <PrivateNotes caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
 
-          {/* Task Manager */}
-          <TaskManager caseId={caseId} />
+            {/* Evidence Uploader */}
+            <EvidenceUploader caseId={caseId} />
+
+            {/* Task Manager */}
+            <TaskManager caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

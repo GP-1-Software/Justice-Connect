@@ -1,9 +1,6 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 
 const CalendarView = ({ currentDate, appointments }) => {
-  const { t } = useTranslation();
-
   // Get days in month
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -103,7 +100,7 @@ const CalendarView = ({ currentDate, appointments }) => {
                     ))}
                     {dayAppointments.length > 3 && (
                       <div className="text-xs text-gray-500 dark:text-gray-400 px-2">
-                        +{dayAppointments.length - 3} {t('calendar.more') || 'أخرى'}
+                        +{dayAppointments.length - 3} أخرى
                       </div>
                     )}
                   </div>
@@ -118,19 +115,19 @@ const CalendarView = ({ currentDate, appointments }) => {
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 justify-center">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-          <span className="text-xs text-gray-600 dark:text-gray-400">{t('calendar.pending') || 'قيد الانتظار'}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">قيد الانتظار</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          <span className="text-xs text-gray-600 dark:text-gray-400">{t('calendar.confirmed') || 'مؤكد'}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">مؤكد</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-          <span className="text-xs text-gray-600 dark:text-gray-400">{t('calendar.completed') || 'مكتمل'}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">مكتمل</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span className="text-xs text-gray-600 dark:text-gray-400">{t('calendar.cancelled') || 'ملغي'}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">ملغي</span>
         </div>
       </div>
     </div>

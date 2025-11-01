@@ -8,7 +8,8 @@ const CaseFilters = ({ statusFilter, onStatusChange }) => {
     { value: 'active', label: 'نشط' },
     { value: 'in_progress', label: 'قيد التنفيذ' },
     { value: 'completed', label: 'مكتمل' },
-    { value: 'closed', label: 'مغلق' }
+    { value: 'closed', label: 'مغلق' },
+    { value: 'rejected', label: 'مرفوض' }
   ];
 
   return (

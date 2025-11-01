@@ -163,6 +163,9 @@ const CasesList = () => {
               onCaseDeleted={(caseId) => {
                 setCases(prev => prev.filter(c => c.case_id !== caseId));
               }}
+              onCaseUpdated={(updatedCase) => {
+                setCases(prev => prev.map(c => c.case_id === updatedCase.case_id ? updatedCase : c));
+              }}
             />
           ))}
         </div>

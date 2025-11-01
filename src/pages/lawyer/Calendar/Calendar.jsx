@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
@@ -8,7 +7,6 @@ import AppointmentsList from './components/AppointmentsList';
 import AppointmentFilters from './components/AppointmentFilters';
 
 const Calendar = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,10 +89,10 @@ const Calendar = () => {
           <CalendarIcon className="h-8 w-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t('calendar.title') || 'التقويم والمواعيد'}
+              التقويم والمواعيد
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t('calendar.subtitle') || 'إدارة مواعيدك واستشاراتك'}
+              إدارة مواعيدك واستشاراتك
             </p>
           </div>
         </div>
@@ -104,7 +102,7 @@ const Calendar = () => {
             onClick={handleToday}
             className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition text-sm"
           >
-            {t('calendar.today') || 'اليوم'}
+            اليوم
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -115,7 +113,7 @@ const Calendar = () => {
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600'
               }`}
             >
-              {t('calendar.monthView') || 'شهري'}
+              شهري
             </button>
             <button
               onClick={() => setViewMode('list')}
@@ -125,7 +123,7 @@ const Calendar = () => {
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600'
               }`}
             >
-              {t('calendar.listView') || 'قائمة'}
+              قائمة
             </button>
           </div>
         </div>
@@ -159,7 +157,7 @@ const Calendar = () => {
       {loading ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4">{t('common.loading') || 'جاري التحميل...'}</p>
+          <p className="mt-4">جاري التحميل...</p>
         </div>
       ) : viewMode === 'month' ? (
         <CalendarView 

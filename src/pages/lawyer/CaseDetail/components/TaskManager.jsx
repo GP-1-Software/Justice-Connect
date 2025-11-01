@@ -3,7 +3,7 @@ import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { CheckSquare, Plus, Trash2, Square } from 'lucide-react';
 
-const TaskManager = ({ caseId }) => {
+const TaskManager = ({ caseId, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
@@ -51,7 +51,7 @@ const TaskManager = ({ caseId }) => {
       if (taskError) throw taskError;
 
       // Create a timeline event for the new task
-      const { error: timelineError } = await supabase
+      const { data: timelineEvent, error: timelineError } = await supabase
         .from('timeline_events')
         .insert([{
           case_id: caseId,
@@ -61,9 +61,17 @@ const TaskManager = ({ caseId }) => {
           title: 'مهمة جديدة',
           description: newTask.trim(),
           visibility: 'all'
-        }]);
+        }])
+        .select()
+        .single();
 
       if (timelineError) throw timelineError;
+
+      // Notify parent to add to timeline
+      if (onTimelineEventAdded && timelineEvent) {
+        onTimelineEventAdded(timelineEvent);
+      }
+
       setTasks(prev => [taskData, ...prev]);
       setNewTask('');
     } catch (error) {
@@ -88,17 +96,24 @@ const TaskManager = ({ caseId }) => {
 
       // Create timeline event for task completion/uncomplete
       if (!currentStatus) {
-        await supabase
+        const { data: timelineEvent } = await supabase
           .from('timeline_events')
           .insert([{
             case_id: caseId,
-            event_type: 'task_completed',
+            event_type: 'task_done',
             author_id: lawyer.lawyer_id,
             author_type: 'lawyer',
             title: 'تم إكمال المهمة',
             description: `تم إكمال المهمة: ${task.title}`,
             visibility: 'all'
-          }]);
+          }])
+          .select()
+          .single();
+
+        // Notify parent to add to timeline
+        if (onTimelineEventAdded && timelineEvent) {
+          onTimelineEventAdded(timelineEvent);
+        }
       }
 
       setTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, is_completed: !currentStatus } : t));
@@ -121,19 +136,27 @@ const TaskManager = ({ caseId }) => {
       if (deleteError) throw deleteError;
 
       // Add timeline event for task deletion
-      const { error: timelineError } = await supabase
+      const { data: timelineEvent, error: timelineError } = await supabase
         .from('timeline_events')
         .insert([{
           case_id: caseId,
-          event_type: 'task_deleted',
+          event_type: 'task_del',
           author_id: lawyer.lawyer_id,
           author_type: 'lawyer',
           title: 'حذف المهمة',
           description: `تم حذف المهمة: ${task.title}`,
           visibility: 'all'
-        }]);
+        }])
+        .select()
+        .single();
 
       if (timelineError) throw timelineError;
+
+      // Notify parent to add to timeline
+      if (onTimelineEventAdded && timelineEvent) {
+        onTimelineEventAdded(timelineEvent);
+      }
+
       setTasks(prev => prev.filter(t => t.task_id !== taskId));
     } catch (error) {
       console.error('Delete task error:', error.message);

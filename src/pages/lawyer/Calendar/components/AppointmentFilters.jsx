@@ -1,16 +1,13 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Filter } from 'lucide-react';
 
 const AppointmentFilters = ({ statusFilter, onStatusChange }) => {
-  const { t } = useTranslation();
-
   const statuses = [
-    { value: 'all', label: t('calendar.allAppointments') || 'الكل' },
-    { value: 'pending', label: t('calendar.pending') || 'قيد الانتظار' },
-    { value: 'confirmed', label: t('calendar.confirmed') || 'مؤكد' },
-    { value: 'completed', label: t('calendar.completed') || 'مكتمل' },
-    { value: 'cancelled', label: t('calendar.cancelled') || 'ملغي' }
+    { value: 'all', label: 'الكل' },
+    { value: 'pending', label: 'قيد الانتظار' },
+    { value: 'confirmed', label: 'مؤكد' },
+    { value: 'completed', label: 'مكتمل' },
+    { value: 'cancelled', label: 'ملغي' }
   ];
 
   return (
@@ -19,7 +16,7 @@ const AppointmentFilters = ({ statusFilter, onStatusChange }) => {
         <div className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-gray-400" />
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {t('calendar.filter') || 'تصفية'}:
+            تصفية:
           </span>
         </div>
         <select

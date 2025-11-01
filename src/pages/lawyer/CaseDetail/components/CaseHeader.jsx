@@ -18,7 +18,8 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
       'active': { label: 'نشط', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
       'in_progress': { label: 'قيد التنفيذ', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
       'completed': { label: 'مكتمل', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
-      'closed': { label: 'مغلق', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }
+      'closed': { label: 'مغلق', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+      'rejected': { label: 'مرفوض', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }
     };
     return statusMap[status] || statusMap['pending'];
   };
@@ -199,7 +200,8 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
           const statusMap = {
             'active': 'نشط',
             'pending': 'قيد الانتظار',
-            'closed': 'مغلق'
+            'closed': 'مغلق',
+            'rejected': 'مرفوض'
           };
           arabicValue = statusMap[value] || value;
         } else if (key === 'case_type') {
@@ -224,7 +226,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
         .from('timeline_events')
         .insert([{
           case_id: caseData.case_id,
-          event_type: 'case_updated',
+          event_type: 'case_edit',
           author_id: caseData.assigned_lawyer_id,
           author_type: 'lawyer',
           title: 'تحديث معلومات القضية',
@@ -251,8 +253,27 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
     }
   };
 
+  const isRejected = caseData.status === 'rejected';
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+      {/* Rejection Reason Banner */}
+      {isRejected && caseData.rejection_reason && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-2">
+            <X className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-semibold text-red-900 dark:text-red-400 mb-1">
+                سبب الرفض:
+              </h4>
+              <p className="text-sm text-red-800 dark:text-red-300">
+                {caseData.rejection_reason}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Actions */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -263,7 +284,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
         </div>
 
         <div className="flex items-center gap-2">
-          {isEditing ? (
+          {!isRejected && isEditing ? (
             <>
               <button
                 onClick={handleSave}
@@ -288,7 +309,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
                 إلغاء
               </button>
             </>
-          ) : (
+          ) : !isRejected ? (
             <button
               onClick={() => setIsEditing(true)}
               className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
@@ -296,7 +317,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               <Edit2 className="h-4 w-4" />
               تعديل
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -344,6 +365,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               <option value="active">نشط</option>
               <option value="pending">قيد الانتظار</option>
               <option value="closed">مغلق</option>
+              {caseData.status === 'rejected' && <option value="rejected">مرفوض</option>}
             </select>
           ) : (
             <span className={`inline-flex items-center px-2 py-1 rounded text-xs ${statusInfo.color}`}>

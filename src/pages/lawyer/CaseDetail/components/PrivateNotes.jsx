@@ -3,7 +3,7 @@ import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { StickyNote, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 
-const PrivateNotes = ({ caseId }) => {
+const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
@@ -52,7 +52,7 @@ const PrivateNotes = ({ caseId }) => {
       if (noteError) throw noteError;
 
       // Create a timeline event for the note
-      const { error: timelineError } = await supabase
+      const { data: timelineEvent, error: timelineError } = await supabase
         .from('timeline_events')
         .insert([{
           case_id: caseId,
@@ -61,10 +61,17 @@ const PrivateNotes = ({ caseId }) => {
           author_type: 'lawyer',
           title: 'إضافة ملاحظة خاصة',
           description: newNote.trim(),
-          visibility: 'lawyer_only'
-        }]);
+          visibility: 'private'
+        }])
+        .select()
+        .single();
 
       if (timelineError) throw timelineError;
+
+      // Notify parent to add to timeline
+      if (onTimelineEventAdded && timelineEvent) {
+        onTimelineEventAdded(timelineEvent);
+      }
 
       setNotes(prev => [noteData, ...prev]);
       setNewNote('');
@@ -91,19 +98,26 @@ const PrivateNotes = ({ caseId }) => {
       if (noteError) throw noteError;
 
       // Add timeline event for note edit
-      const { error: timelineError } = await supabase
+      const { data: timelineEvent, error: timelineError } = await supabase
         .from('timeline_events')
         .insert([{
           case_id: caseId,
-          event_type: 'note_edited',
+          event_type: 'note_edit',
           author_id: lawyer.lawyer_id,
           author_type: 'lawyer',
           title: 'تعديل ملاحظة خاصة',
           description: editText.trim(),
-          visibility: 'lawyer_only'
-        }]);
+          visibility: 'private'
+        }])
+        .select()
+        .single();
 
       if (timelineError) throw timelineError;
+
+      // Notify parent to add to timeline
+      if (onTimelineEventAdded && timelineEvent) {
+        onTimelineEventAdded(timelineEvent);
+      }
       
       setNotes(prev => prev.map(n => n.note_id === noteId ? { ...n, content: editText.trim() } : n));
       setEditingId(null);
