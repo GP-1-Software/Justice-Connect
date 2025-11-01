@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { CheckSquare, Plus, Trash2, Square } from 'lucide-react';
 
 const TaskManager = ({ caseId }) => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
@@ -37,7 +35,7 @@ const TaskManager = ({ caseId }) => {
     if (!newTask.trim() || !lawyer) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: taskData, error: taskError } = await supabase
         .from('case_tasks')
         .insert([
           {
@@ -50,12 +48,27 @@ const TaskManager = ({ caseId }) => {
         .select()
         .single();
 
-      if (error) throw error;
-      setTasks(prev => [data, ...prev]);
+      if (taskError) throw taskError;
+
+      // Create a timeline event for the new task
+      const { error: timelineError } = await supabase
+        .from('timeline_events')
+        .insert([{
+          case_id: caseId,
+          event_type: 'task',
+          author_id: lawyer.lawyer_id,
+          author_type: 'lawyer',
+          title: 'مهمة جديدة',
+          description: newTask.trim(),
+          visibility: 'all'
+        }]);
+
+      if (timelineError) throw timelineError;
+      setTasks(prev => [taskData, ...prev]);
       setNewTask('');
     } catch (error) {
       console.error('Add task error:', error.message);
-      alert(t('cases.taskError') || 'حدث خطأ أثناء إضافة المهمة');
+      alert('حدث خطأ أثناء إضافة المهمة');
     } finally {
       setLoading(false);
     }
@@ -63,26 +76,64 @@ const TaskManager = ({ caseId }) => {
 
   const handleToggleTask = async (taskId, currentStatus) => {
     try {
-      const { error } = await supabase
+      const task = tasks.find(t => t.task_id === taskId);
+      if (!task) return;
+
+      const { error: taskError } = await supabase
         .from('case_tasks')
         .update({ is_completed: !currentStatus })
         .eq('task_id', taskId);
 
-      if (error) throw error;
+      if (taskError) throw taskError;
+
+      // Create timeline event for task completion/uncomplete
+      if (!currentStatus) {
+        await supabase
+          .from('timeline_events')
+          .insert([{
+            case_id: caseId,
+            event_type: 'task_completed',
+            author_id: lawyer.lawyer_id,
+            author_type: 'lawyer',
+            title: 'تم إكمال المهمة',
+            description: `تم إكمال المهمة: ${task.title}`,
+            visibility: 'all'
+          }]);
+      }
+
       setTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, is_completed: !currentStatus } : t));
     } catch (error) {
       console.error('Toggle task error:', error.message);
+      alert('حدث خطأ أثناء تحديث حالة المهمة');
     }
   };
 
   const handleDeleteTask = async (taskId) => {
     try {
-      const { error } = await supabase
+      const task = tasks.find(t => t.task_id === taskId);
+      if (!task) return;
+
+      const { error: deleteError } = await supabase
         .from('case_tasks')
         .delete()
         .eq('task_id', taskId);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // Add timeline event for task deletion
+      const { error: timelineError } = await supabase
+        .from('timeline_events')
+        .insert([{
+          case_id: caseId,
+          event_type: 'task_deleted',
+          author_id: lawyer.lawyer_id,
+          author_type: 'lawyer',
+          title: 'حذف المهمة',
+          description: `تم حذف المهمة: ${task.title}`,
+          visibility: 'all'
+        }]);
+
+      if (timelineError) throw timelineError;
       setTasks(prev => prev.filter(t => t.task_id !== taskId));
     } catch (error) {
       console.error('Delete task error:', error.message);
@@ -94,7 +145,7 @@ const TaskManager = ({ caseId }) => {
       <div className="flex items-center gap-2 mb-4">
         <CheckSquare className="h-5 w-5 text-blue-600" />
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          {t('cases.tasks') || 'المهام'}
+          المهام
         </h3>
       </div>
 
@@ -105,7 +156,7 @@ const TaskManager = ({ caseId }) => {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-          placeholder={t('cases.addTaskPlaceholder') || 'أضف مهمة جديدة...'}
+          placeholder="أضف مهمة جديدة..."
           className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
         />
         <button
@@ -121,7 +172,7 @@ const TaskManager = ({ caseId }) => {
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {tasks.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-            {t('cases.noTasks') || 'لا توجد مهام'}
+            لا توجد مهام
           </p>
         ) : (
           tasks.map((task) => (

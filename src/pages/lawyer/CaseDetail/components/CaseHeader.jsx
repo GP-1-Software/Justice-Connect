@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, User, FileText, Tag, Edit2, Save, X } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient';
 
-const CaseHeader = ({ caseData }) => {
+const CaseHeader = ({ caseData, onCaseUpdated }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editedData, setEditedData] = useState(caseData);
@@ -21,6 +21,26 @@ const CaseHeader = ({ caseData }) => {
       'closed': { label: 'مغلق', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }
     };
     return statusMap[status] || statusMap['pending'];
+  };
+
+  const getPriorityLabel = (priority) => {
+    const priorityMap = {
+      'low': 'منخفضة',
+      'medium': 'متوسطة',
+      'high': 'عالية',
+      'urgent': 'عاجلة'
+    };
+    return priorityMap[priority] || 'متوسطة';
+  };
+
+  const getPriorityColor = (priority) => {
+    const colorMap = {
+      'low': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+      'medium': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      'high': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+      'urgent': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+    };
+    return colorMap[priority] || colorMap['medium'];
   };
 
   const getCaseTypeLabel = (caseType) => {
@@ -55,126 +75,240 @@ const CaseHeader = ({ caseData }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
+      // Log for debugging
+      console.log('Original case data:', caseData);
+      console.log('Edited data:', editedData);
+      console.log('Case ID:', caseData.case_id);
+      console.log('Assigned Lawyer ID:', caseData.assigned_lawyer_id);
+
+      // First, verify the case exists and check current user
+      const { data: currentCase, error: checkError } = await supabase
         .from('cases')
-        .update({
-          title: editedData.title,
-          case_type: editedData.case_type,
-          description: editedData.description,
-          court_name: editedData.court_name,
-          filing_date: editedData.filing_date || null,
-          next_hearing_date: editedData.next_hearing_date || null,
-          priority: editedData.priority,
-          status: editedData.status
-        })
+        .select('*')
+        .eq('case_id', caseData.case_id)
+        .single();
+
+      console.log('Current case from DB:', currentCase);
+      console.log('Check error:', checkError);
+
+      if (checkError) {
+        throw new Error(`خطأ في التحقق من القضية: ${checkError.message}`);
+      }
+
+      // Compare changes - only include editable fields
+      const editableFields = ['title', 'case_type', 'description', 'status', 'priority', 'court_name', 'filing_date', 'next_hearing_date'];
+      const changes = {};
+      
+      editableFields.forEach(key => {
+        const newValue = editedData[key];
+        const oldValue = caseData[key];
+        
+        // Handle different types properly
+        if (newValue !== oldValue && newValue !== null && newValue !== undefined && newValue !== '') {
+          changes[key] = newValue;
+        }
+      });
+
+      console.log('Changes to apply:', changes);
+
+      if (Object.keys(changes).length === 0) {
+        alert('لم يتم إجراء أي تغييرات');
+        setIsEditing(false);
+        setSaving(false);
+        return;
+      }
+
+      // Try update with detailed logging
+      console.log('Attempting update with:', {
+        changes,
+        case_id: caseData.case_id
+      });
+
+      // First attempt: Try direct update
+      const { error: updateError } = await supabase
+        .from('cases')
+        .update(changes)
         .eq('case_id', caseData.case_id);
 
-      if (error) throw error;
-      
-      alert('تم حفظ التغييرات بنجاح');
+      console.log('Update error:', updateError);
+
+      if (updateError) {
+        console.error('Update failed:', updateError);
+        throw updateError;
+      }
+
+      // If no error, the update succeeded (even if RLS limits the response)
+      console.log('Update completed without error');
+
+      // Wait a moment for the database to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Fetch the updated case data to confirm
+      const { data: updatedCase, error: fetchError } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('case_id', caseData.case_id)
+        .single();
+
+      console.log('Fetched updated case:', updatedCase);
+      console.log('Expected changes were:', changes);
+      console.log('Verify update - Priority in DB:', updatedCase?.priority);
+
+      if (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw fetchError;
+      }
+
+      // Verify the update actually happened
+      let updateVerified = true;
+      for (const [key, value] of Object.entries(changes)) {
+        if (updatedCase[key] !== value) {
+          console.warn(`Field ${key} was not updated! Expected: ${value}, Got: ${updatedCase[key]}`);
+          updateVerified = false;
+        }
+      }
+
+      if (!updateVerified) {
+        throw new Error('فشل التحديث - القيم لم تتغير في قاعدة البيانات. قد تكون هناك مشكلة في الصلاحيات.');
+      }
+
+      // Create timeline event for case update
+      const changesList = Object.entries(changes).map(([key, value]) => {
+        const fieldNames = {
+          title: 'العنوان',
+          case_type: 'نوع القضية',
+          description: 'الوصف',
+          status: 'الحالة',
+          court_name: 'اسم المحكمة',
+          filing_date: 'تاريخ التسجيل',
+          next_hearing_date: 'تاريخ الجلسة القادمة',
+          priority: 'الأولوية'
+        };
+        
+        // Translate values to Arabic
+        let arabicValue = value;
+        if (key === 'priority') {
+          const priorityMap = {
+            'low': 'منخفضة',
+            'medium': 'متوسطة',
+            'high': 'عالية',
+            'urgent': 'عاجلة'
+          };
+          arabicValue = priorityMap[value] || value;
+        } else if (key === 'status') {
+          const statusMap = {
+            'active': 'نشط',
+            'pending': 'قيد الانتظار',
+            'closed': 'مغلق'
+          };
+          arabicValue = statusMap[value] || value;
+        } else if (key === 'case_type') {
+          const typeMap = {
+            'civil': 'مدني',
+            'criminal': 'جنائي',
+            'commercial': 'تجاري',
+            'family': 'أسري',
+            'labor': 'عمالي',
+            'real_estate': 'عقاري',
+            'administrative': 'إداري'
+          };
+          arabicValue = typeMap[value] || value;
+        } else if (key === 'filing_date' || key === 'next_hearing_date') {
+          arabicValue = new Date(value).toLocaleDateString('ar-EG');
+        }
+        
+        return `${fieldNames[key] || key}: ${arabicValue}`;
+      }).join('\n');
+
+      const { data: timelineEvent, error: timelineError } = await supabase
+        .from('timeline_events')
+        .insert([{
+          case_id: caseData.case_id,
+          event_type: 'case_updated',
+          author_id: caseData.assigned_lawyer_id,
+          author_type: 'lawyer',
+          title: 'تحديث معلومات القضية',
+          description: changesList,
+          visibility: 'all'
+        }])
+        .select()
+        .single();
+
+      if (timelineError) throw timelineError;
+
+      // Update parent state with new data
+      if (onCaseUpdated) {
+        onCaseUpdated(updatedCase, timelineEvent);
+      }
+
       setIsEditing(false);
-      // Reload the page to reflect changes
-      window.location.reload();
+      alert('تم التحديث بنجاح');
     } catch (error) {
       console.error('Update error:', error.message);
-      alert('حدث خطأ أثناء حفظ التغييرات');
+      alert('حدث خطأ أثناء تحديث القضية');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditedData(caseData);
-    setIsEditing(false);
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            {isEditing ? (
-              <input
-                type="text"
-                name="title"
-                value={editedData.title}
-                onChange={handleChange}
-                className="text-2xl font-bold border-b-2 border-blue-500 bg-transparent text-gray-900 dark:text-white focus:outline-none flex-1"
-              />
-            ) : (
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {caseData.title || 'قضية بدون عنوان'}
-              </h1>
-            )}
-            {isEditing ? (
-              <select
-                name="status"
-                value={editedData.status}
-                onChange={handleChange}
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color} border-2 border-blue-500`}
-              >
-                <option value="pending">قيد الانتظار</option>
-                <option value="active">نشط</option>
-                <option value="closed">مغلق</option>
-              </select>
-            ) : (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
-                {statusInfo.label}
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            رقم القضية: #{caseData.case_id}
-          </p>
+      {/* Header Actions */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {isEditing ? editedData.title : caseData.title}
+          </h2>
         </div>
-        <div className="flex gap-2">
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              <Edit2 className="h-4 w-4" />
-              تعديل
-            </button>
-          ) : (
+
+        <div className="flex items-center gap-2">
+          {isEditing ? (
             <>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition disabled:opacity-50"
               >
-                <Save className="h-4 w-4" />
-                {saving ? 'جاري الحفظ...' : 'حفظ'}
+                {saving ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                حفظ
               </button>
               <button
-                onClick={handleCancel}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedData(caseData);
+                }}
+                className="flex items-center gap-1 px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition"
               >
                 <X className="h-4 w-4" />
                 إلغاء
               </button>
             </>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
+            >
+              <Edit2 className="h-4 w-4" />
+              تعديل
+            </button>
           )}
         </div>
       </div>
 
-      {/* Case Details Grid */}
+      {/* Case Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Case Type */}
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">نوع القضية</label>
           {isEditing ? (
             <select
               name="case_type"
-              value={editedData.case_type}
+              value={editedData.case_type || ''}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
@@ -188,16 +322,43 @@ const CaseHeader = ({ caseData }) => {
               <option value="إداري">إداري</option>
             </select>
           ) : (
-            <p className="font-semibold text-gray-900 dark:text-white">{getCaseTypeLabel(caseData.case_type) || '—'}</p>
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {getCaseTypeLabel(caseData.case_type)}
+              </span>
+            </div>
           )}
         </div>
 
+        {/* Status */}
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">الحالة</label>
+          {isEditing ? (
+            <select
+              name="status"
+              value={editedData.status || ''}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="active">نشط</option>
+              <option value="pending">قيد الانتظار</option>
+              <option value="closed">مغلق</option>
+            </select>
+          ) : (
+            <span className={`inline-flex items-center px-2 py-1 rounded text-xs ${statusInfo.color}`}>
+              {statusInfo.label}
+            </span>
+          )}
+        </div>
+
+        {/* Priority */}
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">الأولوية</label>
           {isEditing ? (
             <select
               name="priority"
-              value={editedData.priority}
+              value={editedData.priority || ''}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
@@ -207,15 +368,13 @@ const CaseHeader = ({ caseData }) => {
               <option value="urgent">عاجلة</option>
             </select>
           ) : (
-            <p className="font-semibold text-gray-900 dark:text-white">
-              {caseData.priority === 'low' && 'منخفضة'}
-              {caseData.priority === 'medium' && 'متوسطة'}
-              {caseData.priority === 'high' && 'عالية'}
-              {caseData.priority === 'urgent' && 'عاجلة'}
-            </p>
+            <span className={`inline-flex items-center px-2 py-1 rounded text-xs ${getPriorityColor(caseData.priority)}`}>
+              {getPriorityLabel(caseData.priority)}
+            </span>
           )}
         </div>
 
+        {/* Court Name */}
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">اسم المحكمة</label>
           {isEditing ? (
@@ -227,12 +386,17 @@ const CaseHeader = ({ caseData }) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           ) : (
-            <p className="font-semibold text-gray-900 dark:text-white">{caseData.court_name || '—'}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {caseData.court_name || '—'}
+              </span>
+            </div>
           )}
         </div>
 
+        {/* Filing Date */}
         <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">تاريخ رفع القضية</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">تاريخ التسجيل</label>
           {isEditing ? (
             <input
               type="date"
@@ -242,10 +406,16 @@ const CaseHeader = ({ caseData }) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           ) : (
-            <p className="font-semibold text-gray-900 dark:text-white">{formatDate(caseData.filing_date)}</p>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {caseData.filing_date ? new Date(caseData.filing_date).toLocaleDateString('ar-EG') : '—'}
+              </span>
+            </div>
           )}
         </div>
 
+        {/* Next Hearing Date */}
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">تاريخ الجلسة القادمة</label>
           {isEditing ? (
@@ -257,13 +427,13 @@ const CaseHeader = ({ caseData }) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           ) : (
-            <p className="font-semibold text-gray-900 dark:text-white">{formatDate(caseData.next_hearing_date)}</p>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {caseData.next_hearing_date ? new Date(caseData.next_hearing_date).toLocaleDateString('ar-EG') : '—'}
+              </span>
+            </div>
           )}
-        </div>
-
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">تاريخ الإنشاء</label>
-          <p className="font-semibold text-gray-900 dark:text-white">{formatDate(caseData.created_at)}</p>
         </div>
       </div>
 

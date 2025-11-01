@@ -157,7 +157,13 @@ const CasesList = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCases.map((caseItem) => (
-            <CaseCard key={caseItem.case_id} caseData={caseItem} />
+            <CaseCard 
+              key={caseItem.case_id} 
+              caseData={caseItem}
+              onCaseDeleted={(caseId) => {
+                setCases(prev => prev.filter(c => c.case_id !== caseId));
+              }}
+            />
           ))}
         </div>
       )}

@@ -3,7 +3,26 @@ import React, { useState } from 'react';
 import { Link, Outlet, NavLink, useNavigate } from 'react-router-dom'; 
 import { useLawyerAuth } from '../hooks/useLawyerAuth';
 import { supabase } from '../supabaseClient';
-import { Briefcase, Calendar as CalendarIcon, User as UserIcon, LayoutDashboard, Scale, User, LogOut, Bell, ChevronDown } from 'lucide-react';
+import { Briefcase, Calendar as CalendarIcon, User as UserIcon, LayoutDashboard, Scale, User, LogOut, Bell, ChevronDown, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+
+const ThemeToggle = () => {
+  const { darkMode, toggleDarkMode } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleDarkMode}
+      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+      aria-label="تبديل المظهر"
+    >
+      {darkMode ? (
+        <Sun className="h-5 w-5 text-yellow-500" />
+      ) : (
+        <Moon className="h-5 w-5 text-gray-500" />
+      )}
+    </button>
+  );
+};
 
 const LawyerLayout = () => {
   const navigate = useNavigate();
@@ -46,6 +65,9 @@ const LawyerLayout = () => {
           </NavLink>
 
           <div className="flex items-center space-x-3 space-x-reverse">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+            
             {/* Notifications */}
             <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
               <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />

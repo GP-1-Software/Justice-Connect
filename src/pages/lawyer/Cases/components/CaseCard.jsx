@@ -1,9 +1,51 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, User, FileText, ArrowRight } from 'lucide-react';
+import { Calendar, User, FileText, ArrowRight, Trash2 } from 'lucide-react';
+import { supabase } from '../../../../supabaseClient';
 
-const CaseCard = ({ caseData }) => {
+const CaseCard = ({ caseData, onCaseDeleted }) => {
   const navigate = useNavigate();
+
+  const handleDelete = async (e) => {
+    e.stopPropagation(); // Prevent card click
+    
+    if (!confirm(`هل أنت متأكد من حذف القضية "${caseData.title}"؟`)) {
+      return;
+    }
+
+    try {
+      console.log('Attempting to delete case:', caseData.case_id);
+      
+      const { data, error } = await supabase
+        .from('cases')
+        .delete()
+        .eq('case_id', caseData.case_id)
+        .select();
+
+      console.log('Delete result:', { data, error });
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+
+      // Check if any rows were deleted
+      if (!data || data.length === 0) {
+        throw new Error('لم يتم حذف أي سجل. قد تكون هناك مشكلة في الصلاحيات.');
+      }
+
+      alert('تم حذف القضية بنجاح');
+      
+      // Call callback to update parent state
+      if (onCaseDeleted) {
+        onCaseDeleted(caseData.case_id);
+      }
+    } catch (error) {
+      console.error('Delete error:', error.message);
+      alert(`حدث خطأ أثناء حذف القضية: ${error.message}`);
+      // Don't update UI if delete failed
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -74,7 +116,16 @@ const CaseCard = ({ caseData }) => {
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
             {statusInfo.label}
           </span>
-          <span className="text-xs text-gray-400">#{formatCaseId(caseData)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">#{caseData.case_id}</span>
+            <button
+              onClick={handleDelete}
+              className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors group/delete"
+              title="حذف القضية"
+            >
+              <Trash2 className="h-4 w-4 text-gray-400 group-hover/delete:text-red-600" />
+            </button>
+          </div>
         </div>
 
         {/* Case Title */}

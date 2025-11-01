@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { StickyNote, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 
 const PrivateNotes = ({ caseId }) => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
@@ -40,24 +38,39 @@ const PrivateNotes = ({ caseId }) => {
     if (!newNote.trim() || !lawyer) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Add the note to case_notes
+      const { data: noteData, error: noteError } = await supabase
         .from('case_notes')
-        .insert([
-          {
-            case_id: caseId,
-            lawyer_id: lawyer.lawyer_id,
-            content: newNote.trim()
-          }
-        ])
+        .insert([{
+          case_id: caseId,
+          lawyer_id: lawyer.lawyer_id,
+          content: newNote.trim()
+        }])
         .select()
         .single();
 
-      if (error) throw error;
-      setNotes(prev => [data, ...prev]);
+      if (noteError) throw noteError;
+
+      // Create a timeline event for the note
+      const { error: timelineError } = await supabase
+        .from('timeline_events')
+        .insert([{
+          case_id: caseId,
+          event_type: 'note',
+          author_id: lawyer.lawyer_id,
+          author_type: 'lawyer',
+          title: 'إضافة ملاحظة خاصة',
+          description: newNote.trim(),
+          visibility: 'lawyer_only'
+        }]);
+
+      if (timelineError) throw timelineError;
+
+      setNotes(prev => [noteData, ...prev]);
       setNewNote('');
     } catch (error) {
       console.error('Add note error:', error.message);
-      alert(t('cases.noteError') || 'حدث خطأ أثناء إضافة الملاحظة');
+      alert('حدث خطأ أثناء إضافة الملاحظة');
     } finally {
       setLoading(false);
     }
@@ -67,25 +80,44 @@ const PrivateNotes = ({ caseId }) => {
     if (!editText.trim()) return;
     setLoading(true);
     try {
-      const { error } = await supabase
+      const note = notes.find(n => n.note_id === noteId);
+      if (!note) return;
+
+      const { error: noteError } = await supabase
         .from('case_notes')
         .update({ content: editText.trim() })
         .eq('note_id', noteId);
 
-      if (error) throw error;
+      if (noteError) throw noteError;
+
+      // Add timeline event for note edit
+      const { error: timelineError } = await supabase
+        .from('timeline_events')
+        .insert([{
+          case_id: caseId,
+          event_type: 'note_edited',
+          author_id: lawyer.lawyer_id,
+          author_type: 'lawyer',
+          title: 'تعديل ملاحظة خاصة',
+          description: editText.trim(),
+          visibility: 'lawyer_only'
+        }]);
+
+      if (timelineError) throw timelineError;
+      
       setNotes(prev => prev.map(n => n.note_id === noteId ? { ...n, content: editText.trim() } : n));
       setEditingId(null);
       setEditText('');
     } catch (error) {
       console.error('Edit note error:', error.message);
-      alert(t('cases.noteError') || 'حدث خطأ أثناء تعديل الملاحظة');
+      alert('حدث خطأ أثناء تعديل الملاحظة');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (noteId) => {
-    if (!confirm(t('cases.confirmDelete') || 'هل أنت متأكد من حذف هذه الملاحظة؟')) return;
+    if (!confirm('هل أنت متأكد من حذف هذه الملاحظة؟')) return;
     try {
       const { error } = await supabase
         .from('case_notes')
@@ -96,7 +128,7 @@ const PrivateNotes = ({ caseId }) => {
       setNotes(prev => prev.filter(n => n.note_id !== noteId));
     } catch (error) {
       console.error('Delete note error:', error.message);
-      alert(t('cases.deleteError') || 'حدث خطأ أثناء حذف الملاحظة');
+      alert('حدث خطأ أثناء حذف الملاحظة');
     }
   };
 
@@ -105,7 +137,7 @@ const PrivateNotes = ({ caseId }) => {
       <div className="flex items-center gap-2 mb-4">
         <StickyNote className="h-5 w-5 text-blue-600" />
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          {t('cases.privateNotes') || 'ملاحظات خاصة'}
+          ملاحظات خاصة
         </h3>
       </div>
 
@@ -114,7 +146,7 @@ const PrivateNotes = ({ caseId }) => {
         <textarea
           value={newNote}
           onChange={(e) => setNewNote(e.target.value)}
-          placeholder={t('cases.addNotePlaceholder') || 'أضف ملاحظة خاصة...'}
+          placeholder="أضف ملاحظة خاصة..."
           className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm resize-none"
           rows={3}
         />
@@ -124,7 +156,7 @@ const PrivateNotes = ({ caseId }) => {
           className="mt-2 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-sm"
         >
           <Plus className="h-4 w-4" />
-          {t('cases.addNote') || 'إضافة'}
+          إضافة
         </button>
       </div>
 
@@ -132,7 +164,7 @@ const PrivateNotes = ({ caseId }) => {
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {notes.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-            {t('cases.noNotes') || 'لا توجد ملاحظات'}
+            لا توجد ملاحظات
           </p>
         ) : (
           notes.map((note) => (
@@ -151,14 +183,14 @@ const PrivateNotes = ({ caseId }) => {
                       className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
                     >
                       <Save className="h-3 w-3" />
-                      {t('actions.save') || 'حفظ'}
+                      حفظ
                     </button>
                     <button
                       onClick={() => { setEditingId(null); setEditText(''); }}
                       className="flex items-center gap-1 px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
                     >
                       <X className="h-3 w-3" />
-                      {t('actions.cancel') || 'إلغاء'}
+                      إلغاء
                     </button>
                   </div>
                 </div>

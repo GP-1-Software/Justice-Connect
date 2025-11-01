@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { Upload, File, Download, Trash2, Loader2 } from 'lucide-react';
 
 const EvidenceUploader = ({ caseId }) => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -18,10 +16,10 @@ const EvidenceUploader = ({ caseId }) => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('case_documents')
+          .from('case_files')
           .select('*')
           .eq('case_id', caseId)
-          .order('uploaded_at', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         if (mounted) setDocuments(data || []);
@@ -46,7 +44,7 @@ const EvidenceUploader = ({ caseId }) => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${caseId}/${Date.now()}.${fileExt}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('case-documents')
+        .from('case-files')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
@@ -58,17 +56,17 @@ const EvidenceUploader = ({ caseId }) => {
 
       // Save document record
       const { data, error } = await supabase
-        .from('case_documents')
+        .from('case_files')
         .insert([
           {
             case_id: caseId,
-            lawyer_id: lawyer.lawyer_id,
+            uploaded_by: lawyer.lawyer_id,
+            uploader_type: 'lawyer',
             file_name: file.name,
             file_url: urlData.publicUrl,
-            file_path: fileName,
-            file_size: file.size,
             file_type: file.type,
-            uploaded_at: new Date().toISOString()
+            file_size: file.size,
+            description: `Uploaded by ${lawyer.full_name || 'Lawyer'}`
           }
         ])
         .select()
@@ -78,7 +76,7 @@ const EvidenceUploader = ({ caseId }) => {
       setDocuments(prev => [data, ...prev]);
     } catch (error) {
       console.error('Upload error:', error.message);
-      alert(t('cases.uploadError') || 'حدث خطأ أثناء رفع الملف');
+      alert('حدث خطأ أثناء رفع الملف');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -86,7 +84,7 @@ const EvidenceUploader = ({ caseId }) => {
   };
 
   const handleDelete = async (doc) => {
-    if (!confirm(t('cases.confirmDeleteFile') || 'هل أنت متأكد من حذف هذا الملف؟')) return;
+    if (!confirm('هل أنت متأكد من حذف هذا الملف؟')) return;
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
@@ -97,15 +95,15 @@ const EvidenceUploader = ({ caseId }) => {
 
       // Delete record
       const { error } = await supabase
-        .from('case_documents')
+        .from('case_files')
         .delete()
-        .eq('id', doc.id);
+        .eq('file_id', doc.file_id);
 
       if (error) throw error;
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      setDocuments(prev => prev.filter(d => d.file_id !== doc.file_id));
     } catch (error) {
       console.error('Delete error:', error.message);
-      alert(t('cases.deleteError') || 'حدث خطأ أثناء حذف الملف');
+      alert('حدث خطأ أثناء حذف الملف');
     }
   };
 
@@ -120,7 +118,7 @@ const EvidenceUploader = ({ caseId }) => {
       <div className="flex items-center gap-2 mb-4">
         <Upload className="h-5 w-5 text-blue-600" />
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          {t('cases.evidence') || 'الأدلة والمستندات'}
+          الأدلة والمستندات
         </h3>
       </div>
 
@@ -130,12 +128,12 @@ const EvidenceUploader = ({ caseId }) => {
           {uploading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">{t('common.uploading') || 'جاري الرفع...'}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">جاري الرفع...</span>
             </>
           ) : (
             <>
               <Upload className="h-5 w-5 text-blue-600" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">{t('cases.uploadFile') || 'رفع ملف'}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">رفع ملف</span>
             </>
           )}
         </div>
@@ -152,15 +150,15 @@ const EvidenceUploader = ({ caseId }) => {
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {loading ? (
           <div className="text-center py-4 text-gray-500 text-sm">
-            {t('common.loading') || 'جاري التحميل...'}
+            جاري التحميل...
           </div>
         ) : documents.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-            {t('cases.noDocuments') || 'لا توجد مستندات'}
+            لا توجد مستندات
           </p>
         ) : (
           documents.map((doc) => (
-            <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div key={doc.file_id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <File className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 <div className="min-w-0 flex-1">

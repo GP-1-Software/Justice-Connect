@@ -12,10 +12,14 @@ import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
 
 
+// Import ThemeProvider
+import { ThemeProvider } from './context/ThemeContext';
+
 function App() {
   return (
-    <div>
-      <Routes>
+    <ThemeProvider>
+      <div>
+        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
@@ -30,6 +34,7 @@ function App() {
         <Route path="/*" element={<LawyerRoutes />} />
       </Routes>
     </div>
+    </ThemeProvider>
   );
 }
 

@@ -72,14 +72,39 @@ const CaseDetail = () => {
       )
       .subscribe();
 
+    // Realtime subscription for case updates
+    const casesChannel = supabase
+      .channel('case-changes')
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'cases', filter: `case_id=eq.${caseId}` },
+        (payload) => {
+          if (mounted) {
+            setCaseData(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       mounted = false;
       updatesChannel.unsubscribe();
+      casesChannel.unsubscribe();
     };
   }, [lawyer, caseId]);
 
   const handleUpdateAdded = (newUpdate) => {
     setUpdates(prev => [newUpdate, ...prev]);
+  };
+
+  const handleCaseUpdated = (updatedCase, newTimelineEvent) => {
+    setCaseData(updatedCase);
+    if (newTimelineEvent) {
+      setUpdates(prev => [newTimelineEvent, ...prev]);
+    }
+  };
+
+  const handleEventDeleted = (eventId) => {
+    setUpdates(prev => prev.filter(u => u.event_id !== eventId));
   };
 
   if (loading) {
@@ -117,7 +142,7 @@ const CaseDetail = () => {
       </button>
 
       {/* Case Header */}
-      <CaseHeader caseData={caseData} />
+      <CaseHeader caseData={caseData} onCaseUpdated={handleCaseUpdated} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content - Left Side */}
@@ -126,7 +151,7 @@ const CaseDetail = () => {
           <UpdateComposer caseId={caseId} onUpdateAdded={handleUpdateAdded} />
 
           {/* Timeline */}
-          <Timeline updates={updates} caseData={caseData} />
+          <Timeline updates={updates} caseData={caseData} onEventDeleted={handleEventDeleted} />
         </div>
 
         {/* Sidebar - Right Side */}
