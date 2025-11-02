@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { Clock, Save, Loader2 } from 'lucide-react';
 
 const WorkingHours = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -39,12 +37,16 @@ const WorkingHours = () => {
           .from('lawyer_availability')
           .select('*')
           .eq('lawyer_id', lawyer.lawyer_id)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) throw error;
         
         if (data && data.schedule && mounted) {
-          setSchedule(data.schedule);
+          // Merge database schedule with default schedule to ensure all days exist
+          setSchedule(prev => ({
+            ...prev,
+            ...data.schedule
+          }));
         }
       } catch (error) {
         console.warn('Schedule load error:', error.message);
@@ -81,11 +83,11 @@ const WorkingHours = () => {
     setSaving(true);
     try {
       // Check if record exists
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('lawyer_availability')
-        .select('id')
+        .select('lawyer_id')
         .eq('lawyer_id', lawyer.lawyer_id)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         // Update
@@ -105,10 +107,10 @@ const WorkingHours = () => {
         if (error) throw error;
       }
 
-      alert(t('profile.scheduleSuccess') || 'تم حفظ ساعات العمل بنجاح');
+      alert('تم حفظ ساعات العمل بنجاح');
     } catch (error) {
       console.error('Save schedule error:', error.message);
-      alert(t('profile.scheduleError') || 'حدث خطأ أثناء حفظ ساعات العمل');
+      alert('حدث خطأ أثناء حفظ ساعات العمل');
     } finally {
       setSaving(false);
     }
@@ -117,7 +119,7 @@ const WorkingHours = () => {
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        {t('common.loading') || 'جاري التحميل...'}
+        جاري التحميل...
       </div>
     );
   }
@@ -128,7 +130,7 @@ const WorkingHours = () => {
         <div className="flex items-start gap-2">
           <Clock className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-blue-800 dark:text-blue-300">
-            {t('profile.workingHoursNote') || 'حدد ساعات عملك الأسبوعية. سيتمكن العملاء من حجز المواعيد خلال هذه الأوقات فقط.'}
+            حدد ساعات عملك الأسبوعية. سيتمكن العملاء من حجز المواعيد خلال هذه الأوقات فقط.
           </p>
         </div>
       </div>
@@ -162,7 +164,7 @@ const WorkingHours = () => {
                 <div className="flex items-center gap-4 flex-1">
                   <div className="flex items-center gap-2">
                     <label className="text-sm text-gray-600 dark:text-gray-400">
-                      {t('profile.from') || 'من'}:
+                      من:
                     </label>
                     <input
                       type="time"
@@ -173,7 +175,7 @@ const WorkingHours = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-sm text-gray-600 dark:text-gray-400">
-                      {t('profile.to') || 'إلى'}:
+                      إلى:
                     </label>
                     <input
                       type="time"
@@ -187,7 +189,7 @@ const WorkingHours = () => {
 
               {!schedule[key].enabled && (
                 <span className="text-sm text-gray-400 dark:text-gray-500">
-                  {t('profile.dayOff') || 'يوم إجازة'}
+                  يوم إجازة
                 </span>
               )}
             </div>
@@ -205,12 +207,12 @@ const WorkingHours = () => {
           {saving ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              {t('common.saving') || 'جاري الحفظ...'}
+              جاري الحفظ...
             </>
           ) : (
             <>
               <Save className="h-5 w-5" />
-              {t('actions.save') || 'حفظ ساعات العمل'}
+              حفظ ساعات العمل
             </>
           )}
         </button>

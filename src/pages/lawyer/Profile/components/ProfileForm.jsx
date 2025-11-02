@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { Save, Loader2 } from 'lucide-react';
 
 const ProfileForm = () => {
-  const { t } = useTranslation();
-  const { lawyer } = useLawyerAuth();
+  const { lawyer, refreshLawyer } = useLawyerAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
@@ -14,7 +12,7 @@ const ProfileForm = () => {
     phone: '',
     email: '',
     city: '',
-    specialization: '',
+    specialization: [],
     bio: '',
     years_of_experience: '',
     license_number: ''
@@ -28,7 +26,7 @@ const ProfileForm = () => {
         phone: lawyer.phone || '',
         email: lawyer.email || '',
         city: lawyer.city || '',
-        specialization: lawyer.specialization || '',
+        specialization: Array.isArray(lawyer.specialization) ? lawyer.specialization : (lawyer.specialization ? [lawyer.specialization] : []),
         bio: lawyer.bio || '',
         years_of_experience: lawyer.years_of_experience || '',
         license_number: lawyer.license_number || ''
@@ -55,10 +53,16 @@ const ProfileForm = () => {
         .eq('lawyer_id', lawyer.lawyer_id);
 
       if (error) throw error;
-      alert(t('profile.saveSuccess') || 'تم حفظ التغييرات بنجاح');
+      
+      // Reload lawyer data to show updated values
+      if (refreshLawyer) {
+        await refreshLawyer();
+      }
+      
+      alert('تم حفظ التغييرات بنجاح');
     } catch (error) {
       console.error('Profile update error:', error.message);
-      alert(t('profile.saveError') || 'حدث خطأ أثناء حفظ التغييرات');
+      alert('حدث خطأ أثناء حفظ التغييرات');
     } finally {
       setLoading(false);
     }
@@ -70,7 +74,7 @@ const ProfileForm = () => {
         {/* First Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.firstName') || 'الاسم الأول'}
+            الاسم الأول
           </label>
           <input
             type="text"
@@ -85,7 +89,7 @@ const ProfileForm = () => {
         {/* Last Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.lastName') || 'الاسم الأخير'}
+            الاسم الأخير
           </label>
           <input
             type="text"
@@ -100,7 +104,7 @@ const ProfileForm = () => {
         {/* Email */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.email') || 'البريد الإلكتروني'}
+            البريد الإلكتروني
           </label>
           <input
             type="email"
@@ -116,7 +120,7 @@ const ProfileForm = () => {
         {/* Phone */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.phone') || 'رقم الهاتف'}
+            رقم الهاتف
           </label>
           <input
             type="tel"
@@ -130,7 +134,7 @@ const ProfileForm = () => {
         {/* City */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('المدينة')}
+            المدينة
           </label>
           <input
             type="text"
@@ -142,30 +146,55 @@ const ProfileForm = () => {
         </div>
 
         {/* Specialization */}
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.specialization') || 'التخصص'}
+            التخصص (يمكن اختيار أكثر من تخصص)
           </label>
-          <select
-            name="specialization"
-            value={formData.specialization}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          >
-            <option value="">اختر التخصص</option>
-            <option value="commercial">قانون تجاري</option>
-            <option value="criminal">قانون جنائي</option>
-            <option value="civil">قانون مدني</option>
-            <option value="family">قانون الأسرة</option>
-            <option value="labor">قانون العمل</option>
-            <option value="real_estate">قانون العقارات</option>
-          </select>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              'قانون تجاري',
+              'قانون جنائي',
+              'قانون مدني',
+              'قانون الأسرة',
+              'قانون العمل',
+              'قانون العقارات'
+            ].map((spec) => (
+              <label
+                key={spec}
+                className={`flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.specialization.includes(spec)
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.specialization.includes(spec)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData({
+                        ...formData,
+                        specialization: [...formData.specialization, spec]
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        specialization: formData.specialization.filter(s => s !== spec)
+                      });
+                    }
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium">{spec}</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Years of Experience */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.experience') || 'سنوات الخبرة'}
+            سنوات الخبرة
           </label>
           <input
             type="number"
@@ -180,7 +209,7 @@ const ProfileForm = () => {
         {/* License Number */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('رقم ترخيص المحامي') }
+            رقم ترخيص المحامي
           </label>
           <input
             type="text"
@@ -194,7 +223,7 @@ const ProfileForm = () => {
         {/* Bio */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.bio') || 'السيرة الذاتية'}
+            السيرة الذاتية
           </label>
           <textarea
             name="bio"
@@ -217,12 +246,12 @@ const ProfileForm = () => {
           {loading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              {t('common.saving') || 'جاري الحفظ...'}
+              جاري الحفظ...
             </>
           ) : (
             <>
               <Save className="h-5 w-5" />
-              {t('actions.save') || 'حفظ التغييرات'}
+              حفظ التغييرات
             </>
           )}
         </button>
