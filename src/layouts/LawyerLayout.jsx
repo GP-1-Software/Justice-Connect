@@ -1,6 +1,7 @@
  
 import React, { useState } from 'react'; 
 import { Link, Outlet, NavLink, useNavigate } from 'react-router-dom'; 
+import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../hooks/useLawyerAuth';
 import { supabase } from '../supabaseClient';
 import { Briefcase, Calendar as CalendarIcon, User as UserIcon, LayoutDashboard, Scale, User, LogOut, Bell, ChevronDown, Moon, Sun, Search, FileText, MessageSquare, Phone, Video, FileSearch, Bot, Settings, Plus } from 'lucide-react';

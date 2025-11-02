@@ -16,7 +16,6 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Plus,
   Scale
 } from 'lucide-react';
 
@@ -39,7 +38,7 @@ const ClientSidebar = () => {
       exact: true
     },
     {
-      title: 'البحث عن محامين',
+      title: 'البحث عن محامين / حجز مواعيد',
       icon: Search,
       path: 'search-lawyers'
     },
@@ -57,12 +56,6 @@ const ClientSidebar = () => {
       title: 'قضاياي',
       icon: Briefcase,
       path: 'cases'
-    },
-    {
-      title: 'إنشاء قضية جديدة',
-      icon: Plus,
-      path: 'create-case',
-      highlight: true
     },
     {
       title: 'تفاصيل القضية',

@@ -218,7 +218,7 @@ const Navbar = () => {
                     )}
 
                     <button
-      onClick={() => {
+                      onClick={() => {
                         // Navigate based on user type
                         if (userData?.user_type === 'client') {
                           navigate('/client/dashboard');

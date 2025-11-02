@@ -8,10 +8,10 @@ import ClientDashboard from '../pages/client/Dashboard/Dashboard';
 import BookAppointment from '../pages/client/BookAppointment';
 import Appointments from '../pages/client/Appointments';
 import Profile from '../pages/client/Profile';
-// import SearchLawyers from '../pages/client/SearchLawyers/SearchLawyers';
-// import LawyerProfile from '../pages/client/LawyerProfile/LawyerProfile';
+import SearchLawyers from '../pages/client/SearchLawyers';
+import LawyerProfile from '../pages/client/LawyerProfile';
+import CreateCase from '../pages/client/CreateCase';
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';
-// import CreateCase from '../pages/client/CreateCase/CreateCase';
 // import MyCases from '../pages/client/MyCases/MyCases';
 // import CaseDetails from '../pages/client/CaseDetails/CaseDetails';
 // import DocumentAnalyzer from '../pages/client/DocumentAnalyzer/DocumentAnalyzer';
@@ -64,15 +64,15 @@ const ClientRoutes = () => {
         <Route path="dashboard" element={<ClientDashboard />} />
         
         {/* Search and Discovery */}
-        <Route path="search-lawyers" element={<PlaceholderPage title="البحث عن محامين" />} />
-        <Route path="lawyer/:id" element={<PlaceholderPage title="ملف المحامي" />} />
+        <Route path="search-lawyers" element={<SearchLawyers />} />
+        <Route path="lawyer/:lawyerId" element={<LawyerProfile />} />
         
         {/* Appointments */}
         <Route path="book-appointment/:lawyerId" element={<BookAppointment />} />
         <Route path="appointments" element={<Appointments />} />
         
         {/* Cases */}
-        <Route path="create-case" element={<PlaceholderPage title="إنشاء قضية جديدة" />} />
+        <Route path="create-case" element={<CreateCase />} />
         <Route path="cases" element={<PlaceholderPage title="قضاياي" />} />
         <Route path="case/:id" element={<PlaceholderPage title="تفاصيل القضية" />} />
         
