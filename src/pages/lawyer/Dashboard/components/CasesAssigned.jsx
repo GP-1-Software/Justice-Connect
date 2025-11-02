@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
-import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 const CasesAssigned = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +48,7 @@ const CasesAssigned = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-      <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('lawyer.cases')}</h3>
+      <h3 className="font-bold text-gray-900 dark:text-white mb-3">القضايا</h3>
       {loading ? (
         <div className="text-gray-500">...</div>
       ) : items.length === 0 ? (

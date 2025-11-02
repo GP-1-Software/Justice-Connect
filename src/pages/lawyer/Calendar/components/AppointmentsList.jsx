@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../../supabaseClient';
 import { Clock, User, MapPin, Video, Check, X, Calendar } from 'lucide-react';
 
 const AppointmentsList = ({ appointments }) => {
-  const { t } = useTranslation();
   const [updating, setUpdating] = useState(null);
 
   const getStatusBadge = (status) => {
@@ -40,7 +38,7 @@ const AppointmentsList = ({ appointments }) => {
       if (error) throw error;
     } catch (error) {
       console.error('Update status error:', error.message);
-      alert(t('calendar.updateError') || 'حدث خطأ أثناء تحديث الموعد');
+      alert('حدث خطأ أثناء تحديث الموعد');
     } finally {
       setUpdating(null);
     }
@@ -51,10 +49,10 @@ const AppointmentsList = ({ appointments }) => {
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-12 text-center">
         <Calendar className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          {t('calendar.noAppointments') || 'لا توجد مواعيد'}
+          لا توجد مواعيد
         </h3>
         <p className="text-gray-500 dark:text-gray-400">
-          {t('calendar.noAppointmentsDesc') || 'لا توجد مواعيد محجوزة حالياً'}
+          لا توجد مواعيد محجوزة حالياً
         </p>
       </div>
     );
@@ -76,7 +74,7 @@ const AppointmentsList = ({ appointments }) => {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                    {appointment.title || t('calendar.consultation') || 'استشارة قانونية'}
+                    {appointment.title || 'استشارة قانونية'}
                   </h3>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
                     {statusInfo.label}
@@ -100,12 +98,12 @@ const AppointmentsList = ({ appointments }) => {
                     {appointment.meeting_type === 'online' ? (
                       <>
                         <Video className="h-4 w-4 text-gray-400" />
-                        <span>{t('calendar.online') || 'عبر الإنترنت'}</span>
+                        <span>عبر الإنترنت</span>
                       </>
                     ) : (
                       <>
                         <MapPin className="h-4 w-4 text-gray-400" />
-                        <span>{t('calendar.inPerson') || 'شخصي'}</span>
+                        <span>شخصي</span>
                       </>
                     )}
                   </div>
@@ -113,7 +111,7 @@ const AppointmentsList = ({ appointments }) => {
                   {appointment.duration && (
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                       <Clock className="h-4 w-4 text-gray-400" />
-                      <span>{appointment.duration} {t('calendar.minutes') || 'دقيقة'}</span>
+                      <span>{appointment.duration} دقيقة</span>
                     </div>
                   )}
                 </div>
@@ -134,7 +132,7 @@ const AppointmentsList = ({ appointments }) => {
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
                   >
                     <Check className="h-4 w-4" />
-                    {t('calendar.accept') || 'قبول'}
+                    قبول
                   </button>
                   <button
                     onClick={() => handleUpdateStatus(appointment.id, 'cancelled')}
@@ -142,7 +140,7 @@ const AppointmentsList = ({ appointments }) => {
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                   >
                     <X className="h-4 w-4" />
-                    {t('calendar.reject') || 'رفض'}
+                    رفض
                   </button>
                 </div>
               )}
@@ -153,7 +151,7 @@ const AppointmentsList = ({ appointments }) => {
                   disabled={isUpdating}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                 >
-                  {t('calendar.markComplete') || 'تحديد كمكتمل'}
+                  تحديد كمكتمل
                 </button>
               )}
             </div>

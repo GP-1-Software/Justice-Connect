@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
@@ -10,7 +9,6 @@ import EmptyState from './components/EmptyState';
 import AddCaseModal from './components/AddCaseModal';
 
 const CasesList = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const location = useLocation();
   const [cases, setCases] = useState([]);
@@ -108,10 +106,10 @@ const CasesList = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t('cases.myCases') || 'قضاياي'}
+            قضاياي
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {t('cases.manageAllCases') || 'إدارة جميع قضاياك المعينة'}
+            إدارة جميع قضاياك المعينة
           </p>
         </div>
         <button 
@@ -119,7 +117,7 @@ const CasesList = () => {
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all"
         >
           <Plus className="h-5 w-5" />
-          {t('cases.addCase') || 'إضافة قضية'}
+          إضافة قضية
         </button>
       </div>
 
@@ -131,7 +129,7 @@ const CasesList = () => {
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder={t('cases.searchPlaceholder') || 'ابحث عن قضية...'}
+              placeholder="ابحث عن قضية..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -150,7 +148,7 @@ const CasesList = () => {
       {loading ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4">{t('common.loading') || 'جاري التحميل...'}</p>
+          <p className="mt-4">جاري التحميل...</p>
         </div>
       ) : filteredCases.length === 0 ? (
         <EmptyState 
@@ -159,7 +157,16 @@ const CasesList = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCases.map((caseItem) => (
-            <CaseCard key={caseItem.id} caseData={caseItem} />
+            <CaseCard 
+              key={caseItem.case_id} 
+              caseData={caseItem}
+              onCaseDeleted={(caseId) => {
+                setCases(prev => prev.filter(c => c.case_id !== caseId));
+              }}
+              onCaseUpdated={(updatedCase) => {
+                setCases(prev => prev.map(c => c.case_id === updatedCase.case_id ? updatedCase : c));
+              }}
+            />
           ))}
         </div>
       )}
@@ -167,7 +174,7 @@ const CasesList = () => {
       {/* Cases Count */}
       {!loading && filteredCases.length > 0 && (
         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          {t('cases.showing') || 'عرض'} {filteredCases.length} {t('cases.of') || 'من'} {cases.length} {t('cases.cases') || 'قضية'}
+          عرض {filteredCases.length} من {cases.length} قضية
         </div>
       )}
 

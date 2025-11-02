@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
-import { useTranslation } from 'react-i18next';
 
 const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(0,0,0,0); return d; };
 
 const QuickRevenue = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [week, setWeek] = useState(0);
   const [month, setMonth] = useState(0);
@@ -46,7 +44,7 @@ const QuickRevenue = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-      <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('lawyer.quickRevenue')}</h3>
+      <h3 className="font-bold text-gray-900 dark:text-white mb-3">الإيرادات السريعة</h3>
       <div className="grid grid-cols-2 gap-4">
         <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl">
           <p className="text-sm text-gray-500">7 أيام</p>

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
@@ -8,9 +7,10 @@ import AppointmentsList from './components/AppointmentsList';
 import AppointmentFilters from './components/AppointmentFilters';
 
 const Calendar = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [appointments, setAppointments] = useState([]);
+  const [cases, setCases] = useState([]);
+  const [workingHours, setWorkingHours] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('month'); // 'month' or 'list'
@@ -18,27 +18,53 @@ const Calendar = () => {
 
   useEffect(() => {
     let mounted = true;
-    async function loadAppointments() {
+    async function loadCalendarData() {
       if (!lawyer) return;
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        // Load appointments
+        const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
           .select('*')
           .eq('lawyer_id', lawyer.lawyer_id)
           .order('appointment_date', { ascending: true })
           .order('appointment_time', { ascending: true });
 
-        if (error) throw error;
-        if (mounted) setAppointments(data || []);
+        if (appointmentsError) throw appointmentsError;
+        if (mounted) setAppointments(appointmentsData || []);
+
+        // Load cases with next hearing dates
+        const { data: casesData, error: casesError } = await supabase
+          .from('cases')
+          .select('case_id, title, next_hearing_date, court_name, status')
+          .eq('assigned_lawyer_id', lawyer.lawyer_id)
+          .not('next_hearing_date', 'is', null)
+          .in('status', ['active', 'in_progress']);
+
+        if (casesError) throw casesError;
+        if (mounted) setCases(casesData || []);
+
+        // Load working hours
+        const { data: availabilityData, error: availabilityError } = await supabase
+          .from('lawyer_availability')
+          .select('schedule')
+          .eq('lawyer_id', lawyer.lawyer_id)
+          .single();
+
+        if (!availabilityError && availabilityData) {
+          if (mounted) setWorkingHours(availabilityData.schedule);
+        }
       } catch (error) {
-        console.warn('Appointments load error:', error.message);
-        if (mounted) setAppointments([]);
+        console.warn('Calendar data load error:', error.message);
+        if (mounted) {
+          setAppointments([]);
+          setCases([]);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     }
-    loadAppointments();
+    loadCalendarData();
 
     // Realtime subscription
     const channel = supabase
@@ -91,10 +117,10 @@ const Calendar = () => {
           <CalendarIcon className="h-8 w-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t('calendar.title') || 'التقويم والمواعيد'}
+              التقويم والمواعيد
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t('calendar.subtitle') || 'إدارة مواعيدك واستشاراتك'}
+              إدارة مواعيدك واستشاراتك
             </p>
           </div>
         </div>
@@ -104,7 +130,7 @@ const Calendar = () => {
             onClick={handleToday}
             className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition text-sm"
           >
-            {t('calendar.today') || 'اليوم'}
+            اليوم
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -115,7 +141,7 @@ const Calendar = () => {
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600'
               }`}
             >
-              {t('calendar.monthView') || 'شهري'}
+              شهري
             </button>
             <button
               onClick={() => setViewMode('list')}
@@ -125,7 +151,7 @@ const Calendar = () => {
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600'
               }`}
             >
-              {t('calendar.listView') || 'قائمة'}
+              قائمة
             </button>
           </div>
         </div>
@@ -159,12 +185,14 @@ const Calendar = () => {
       {loading ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4">{t('common.loading') || 'جاري التحميل...'}</p>
+          <p className="mt-4">جاري التحميل...</p>
         </div>
       ) : viewMode === 'month' ? (
         <CalendarView 
           currentDate={currentDate} 
-          appointments={filteredAppointments} 
+          appointments={filteredAppointments}
+          cases={cases}
+          workingHours={workingHours}
         />
       ) : (
         <AppointmentsList appointments={filteredAppointments} />

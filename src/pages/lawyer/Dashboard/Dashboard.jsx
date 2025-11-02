@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
 import { Briefcase, Calendar as CalendarIcon, FileText, DollarSign } from 'lucide-react';
@@ -12,7 +11,6 @@ import CasesAssigned from './components/CasesAssigned';
 import QuickRevenue from './components/QuickRevenue';
 
 const Dashboard = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [stats, setStats] = useState({
     totalCases: 0,
@@ -39,7 +37,7 @@ const Dashboard = () => {
           .from('cases')
           .select('*', { count: 'exact', head: true })
           .eq('assigned_lawyer_id', lawyer.lawyer_id)
-          .in('status', ['active', 'in_progress', 'pending']);
+          .eq('status', 'active');
 
         // Fetch upcoming appointments
         const { count: upcomingAppointments } = await supabase
@@ -86,7 +84,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           icon={Briefcase}
-          label={t('dashboard.totalCases') || 'إجمالي القضايا'}
+          label="إجمالي القضايا"
           value={stats.totalCases}
           iconBgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600"
@@ -94,7 +92,7 @@ const Dashboard = () => {
         />
         <StatsCard
           icon={FileText}
-          label={t('dashboard.activeCases') || 'القضايا النشطة'}
+          label="القضايا النشطة"
           value={stats.activeCases}
           iconBgColor="bg-green-100 dark:bg-green-900/30"
           iconColor="text-green-600"
@@ -102,7 +100,7 @@ const Dashboard = () => {
         />
         <StatsCard
           icon={CalendarIcon}
-          label={t('dashboard.upcomingAppointments') || 'المواعيد القادمة'}
+          label="المواعيد القادمة"
           value={stats.upcomingAppointments}
           iconBgColor="bg-purple-100 dark:bg-purple-900/30"
           iconColor="text-purple-600"
@@ -110,7 +108,7 @@ const Dashboard = () => {
         />
         <StatsCard
           icon={DollarSign}
-          label={t('dashboard.completedCases') || 'القضايا المنجزة'}
+          label="القضايا المنجزة"
           value={stats.completedCases}
           iconBgColor="bg-orange-100 dark:bg-orange-900/30"
           iconColor="text-orange-600"

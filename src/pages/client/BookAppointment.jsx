@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
   Clock, 
@@ -26,7 +25,6 @@ import { formatSpecialization } from '../../utils/formatters';
 const BookAppointment = () => {
   const { lawyerId } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { userProfile } = useClientAuth();
   
   const [lawyer, setLawyer] = useState(null);
@@ -151,10 +149,16 @@ const BookAppointment = () => {
     }
   };
 
+  const appointmentTypes = [
+    { value: 'consultation', label: 'استشارة', duration: 30, price: 75 },
+    { value: 'case_review', label: 'مراجعة قضية', duration: 60, price: 150 },
+    { value: 'document_review', label: 'مراجعة وثائق', duration: 45, price: 112 }
+  ];
+
   const meetingMethods = [
-    { value: 'video_call', label: t('appointments.video_call'), icon: Video },
-    { value: 'in_person', label: t('appointments.in_person'), icon: User },
-    { value: 'phone_call', label: t('appointments.phone_call'), icon: Phone }
+    { value: 'video_call', label: 'مكالمة فيديو', icon: Video },
+    { value: 'in_person', label: 'شخصي', icon: User },
+    { value: 'phone_call', label: 'مكالمة هاتفية', icon: Phone }
   ];
 
   if (loading) {
@@ -187,7 +191,7 @@ const BookAppointment = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {t('appointments.book_appointment')}
+            حجز موعد
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             احجز موعد مع {lawyer.first_name} {lawyer.last_name}
@@ -323,7 +327,7 @@ const BookAppointment = () => {
                     {/* Date Selection */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {t('appointments.select_date')}
+                        اختر التاريخ
                       </label>
                       <input
                         type="date"
@@ -337,7 +341,7 @@ const BookAppointment = () => {
                     {/* Time Selection */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {t('appointments.select_time')}
+                        اختر الوقت
                       </label>
                       {selectedDate ? (
                         availableSlots.length > 0 ? (
@@ -404,7 +408,7 @@ const BookAppointment = () => {
                   {/* Meeting Method */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      {t('appointments.meeting_method')}
+                      طريقة الاجتماع
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {meetingMethods.map((method) => {
@@ -432,7 +436,7 @@ const BookAppointment = () => {
                   {/* Additional Notes */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('appointments.notes')}
+                      ملاحظات إضافية
                     </label>
                     <textarea
                       value={notes}
@@ -459,7 +463,7 @@ const BookAppointment = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">المدة:</span>
-                        <span className="text-gray-900 dark:text-white">{duration} {t('appointments.minutes')}</span>
+                        <span className="text-gray-900 dark:text-white">{duration} دقيقة</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">طريقة الاجتماع:</span>
@@ -493,7 +497,7 @@ const BookAppointment = () => {
                       ) : (
                         <>
                           <Check className="h-4 w-4" />
-                          <span>{t('appointments.confirm_booking')}</span>
+                          <span>تأكيد الحجز</span>
                         </>
                       )}
                     </button>

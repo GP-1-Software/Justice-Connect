@@ -1,17 +1,15 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Filter } from 'lucide-react';
 
 const CaseFilters = ({ statusFilter, onStatusChange }) => {
-  const { t } = useTranslation();
-
   const statuses = [
-    { value: 'all', label: t('cases.allCases') || 'الكل' },
-    { value: 'pending', label: t('cases.pending') || 'قيد الانتظار' },
-    { value: 'active', label: t('cases.active') || 'نشط' },
-    { value: 'in_progress', label: t('cases.inProgress') || 'قيد التنفيذ' },
-    { value: 'completed', label: t('cases.completed') || 'مكتمل' },
-    { value: 'closed', label: t('cases.closed') || 'مغلق' }
+    { value: 'all', label: 'الكل' },
+    { value: 'pending', label: 'قيد الانتظار' },
+    { value: 'active', label: 'نشط' },
+    { value: 'in_progress', label: 'قيد التنفيذ' },
+    { value: 'completed', label: 'مكتمل' },
+    { value: 'closed', label: 'مغلق' },
+    { value: 'rejected', label: 'مرفوض' }
   ];
 
   return (
