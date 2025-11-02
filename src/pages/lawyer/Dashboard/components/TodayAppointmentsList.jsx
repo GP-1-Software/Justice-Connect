@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
-import { useTranslation } from 'react-i18next';
 
 const startOfDay = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
 const endOfDay = (d) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
 
 const TodayAppointmentsList = () => {
-  const { t } = useTranslation();
   const { lawyer } = useLawyerAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +40,7 @@ const TodayAppointmentsList = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-      <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('lawyer.today')} — {t('lawyer.appointments')}</h3>
+      <h3 className="font-bold text-gray-900 dark:text-white mb-3">اليوم — المواعيد</h3>
       {loading ? (
         <div className="text-gray-500">...</div>
       ) : items.length === 0 ? (

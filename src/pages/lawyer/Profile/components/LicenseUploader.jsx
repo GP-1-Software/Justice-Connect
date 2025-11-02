@@ -4,34 +4,9 @@ import { supabase } from '../../../../supabaseClient';
 import { Upload, File, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 const LicenseUploader = () => {
-  const { lawyer } = useLawyerAuth();
-  const [documents, setDocuments] = useState([]);
+  const { lawyer, setLawyer } = useLawyerAuth();
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    async function loadDocuments() {
-      if (!lawyer) return;
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('lawyer_documents')
-          .select('*')
-          .eq('lawyer_id', lawyer.lawyer_id);
-
-        if (error) throw error;
-        if (mounted) setDocuments(data || []);
-      } catch (error) {
-        console.warn('Documents load error:', error.message);
-        if (mounted) setDocuments([]);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    loadDocuments();
-    return () => { mounted = false; };
-  }, [lawyer]);
 
   const handleFileUpload = async (e, docType) => {
     const file = e.target.files?.[0];
@@ -53,61 +28,101 @@ const LicenseUploader = () => {
         .from('lawyer-documents')
         .getPublicUrl(fileName);
 
-      // Save document record
+      // Update lawyer record with document URL
+      const updateField = `${docType}_url`;
+      const statusField = `${docType}_verification_status`;
+      
       const { data, error } = await supabase
-        .from('lawyer_documents')
-        .insert([
-          {
-            lawyer_id: lawyer.lawyer_id,
-            document_type: docType,
-            file_name: file.name,
-            file_url: urlData.publicUrl,
-            file_path: fileName,
-            verification_status: 'pending',
-            uploaded_at: new Date().toISOString()
-          }
-        ])
+        .from('lawyers')
+        .update({
+          [updateField]: urlData.publicUrl,
+          [statusField]: 'pending'
+        })
+        .eq('lawyer_id', lawyer.lawyer_id)
         .select()
         .single();
 
       if (error) throw error;
-      setDocuments(prev => [data, ...prev]);
-      alert(t('profile.uploadSuccess') || 'تم رفع المستند بنجاح');
+      
+      // Update local lawyer state and localStorage
+      if (setLawyer && data) {
+        setLawyer(data);
+        // Also update localStorage to keep it in sync
+        localStorage.setItem('user', JSON.stringify({ ...data, user_type: 'lawyer' }));
+      }
+      
+      alert('تم رفع المستند بنجاح');
     } catch (error) {
       console.error('Upload error:', error.message);
-      alert(t('profile.uploadError') || 'حدث خطأ أثناء رفع المستند');
+      alert('حدث خطأ أثناء رفع المستند');
     } finally {
       setUploading(false);
       e.target.value = '';
     }
   };
 
-  const handleDelete = async (doc) => {
-    if (!confirm(t('profile.confirmDelete') || 'هل أنت متأكد من حذف هذا المستند؟')) return;
+  const handleDelete = async (docType) => {
+    if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return;
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('lawyer-documents')
-        .remove([doc.file_path]);
+      // Extract file path from URL
+      const urlField = `${docType}_url`;
+      const fileUrl = lawyer[urlField];
+      if (!fileUrl) return;
 
-      if (storageError) console.warn('Storage delete warning:', storageError.message);
+      const pathParts = fileUrl.split('/lawyer-documents/');
+      if (pathParts.length > 1) {
+        const filePath = pathParts[1];
+        
+        // Delete from storage
+        const { error: storageError } = await supabase.storage
+          .from('lawyer-documents')
+          .remove([filePath]);
 
-      // Delete record
-      const { error } = await supabase
-        .from('lawyer_documents')
-        .delete()
-        .eq('id', doc.id);
+        if (storageError) console.warn('Storage delete warning:', storageError.message);
+      }
+
+      // Clear from database
+      const updateField = `${docType}_url`;
+      const statusField = `${docType}_verification_status`;
+      
+      const { data, error } = await supabase
+        .from('lawyers')
+        .update({
+          [updateField]: null,
+          [statusField]: null
+        })
+        .eq('lawyer_id', lawyer.lawyer_id)
+        .select()
+        .single();
 
       if (error) throw error;
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      
+      // Update local lawyer state and localStorage
+      if (setLawyer && data) {
+        setLawyer(data);
+        // Also update localStorage to keep it in sync
+        localStorage.setItem('user', JSON.stringify({ ...data, user_type: 'lawyer' }));
+      }
+      
+      alert('تم حذف المستند بنجاح');
     } catch (error) {
       console.error('Delete error:', error.message);
-      alert(t('profile.deleteError') || 'حدث خطأ أثناء حذف المستند');
+      alert('حدث خطأ أثناء حذف المستند');
     }
   };
 
-  const getDocumentsByType = (type) => {
-    return documents.filter(d => d.document_type === type);
+  const getDocument = (type) => {
+    if (!lawyer) return null;
+    const urlField = `${type}_url`;
+    const statusField = `${type}_verification_status`;
+    
+    if (!lawyer[urlField]) return null;
+    
+    return {
+      url: lawyer[urlField],
+      status: lawyer[statusField] || 'pending',
+      uploaded_at: lawyer.updated_at
+    };
   };
 
   const getStatusBadge = (status) => {
@@ -128,11 +143,19 @@ const LicenseUploader = () => {
         icon: XCircle
       }
     };
-    return statusMap[status] || statusMap['pending'];
+    const statusInfo = statusMap[status] || statusMap['pending'];
+    const StatusIcon = statusInfo.icon;
+    
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${statusInfo.color}`}>
+        <StatusIcon className="h-3 w-3" />
+        {statusInfo.label}
+      </span>
+    );
   };
 
   const DocumentSection = ({ type, title, description }) => {
-    const docs = getDocumentsByType(type);
+    const doc = getDocument(type);
 
     return (
       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
@@ -145,12 +168,12 @@ const LicenseUploader = () => {
             {uploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">{t('common.uploading') || 'جاري الرفع...'}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">جاري الرفع...</span>
               </>
             ) : (
               <>
                 <Upload className="h-5 w-5 text-blue-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">{t('profile.uploadDocument') || 'رفع مستند'}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">{doc ? 'استبدال المستند' : 'رفع مستند'}</span>
               </>
             )}
           </div>
@@ -163,42 +186,37 @@ const LicenseUploader = () => {
           />
         </label>
 
-        {/* Documents List */}
+        {/* Document Display */}
         <div className="space-y-2">
-          {docs.length === 0 ? (
+          {!doc ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-              {t('profile.noDocuments') || 'لا توجد مستندات مرفوعة'}
+              لا توجد مستندات مرفوعة
             </p>
           ) : (
-            docs.map((doc) => {
-              const statusInfo = getStatusBadge(doc.verification_status);
-              const StatusIcon = statusInfo.icon;
-              return (
-                <div key={doc.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <File className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-900 dark:text-white truncate">{doc.file_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${statusInfo.color}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {statusInfo.label}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(doc.uploaded_at).toLocaleDateString('ar-EG')}
-                        </span>
-                      </div>
-                    </div>
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <File className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mt-1">
+                    {getStatusBadge(doc.status)}
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      عرض المستند
+                    </a>
                   </div>
-                  <button
-                    onClick={() => handleDelete(doc)}
-                    className="text-red-600 hover:text-red-700 flex-shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
-              );
-            })
+              </div>
+              <button
+                onClick={() => handleDelete(type)}
+                className="text-red-600 hover:text-red-700 flex-shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -209,26 +227,26 @@ const LicenseUploader = () => {
     <div className="space-y-6">
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
         <p className="text-sm text-blue-800 dark:text-blue-300">
-          {t('profile.verificationNote') || 'يرجى رفع المستندات المطلوبة للتحقق من هويتك المهنية. ستتم مراجعة المستندات من قبل الإدارة.'}
+          يرجى رفع المستندات المطلوبة للتحقق من هويتك المهنية. ستتم مراجعة المستندات من قبل الإدارة.
         </p>
       </div>
 
       <DocumentSection
         type="license"
-        title={t('profile.lawyerLicense') || 'رخصة مزاولة المهنة'}
-        description={t('profile.licenseDesc') || 'رخصة مزاولة مهنة المحاماة الصادرة من نقابة المحامين'}
+        title="رخصة مزاولة المهنة"
+        description="رخصة مزاولة مهنة المحاماة الصادرة من نقابة المحامين"
       />
 
       <DocumentSection
         type="certificate"
-        title={t('profile.certificates') || 'الشهادات الأكاديمية'}
-        description={t('profile.certificateDesc') || 'شهادة البكالوريوس في القانون أو الشهادات العليا'}
+        title="الشهادات الأكاديمية"
+        description="شهادة البكالوريوس في القانون أو الشهادات العليا"
       />
 
       <DocumentSection
-        type="id"
-        title={t('profile.nationalId') || 'بطاقة الهوية الوطنية'}
-        description={t('profile.idDesc') || 'بطاقة الهوية الوطنية سارية المفعول'}
+        type="id_card"
+        title="بطاقة الهوية الوطنية"
+        description="بطاقة الهوية الوطنية سارية المفعول"
       />
     </div>
   );

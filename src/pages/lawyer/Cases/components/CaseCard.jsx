@@ -185,7 +185,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 rounded-2xl shadow hover:shadow-xl transition-all duration-300 cursor-pointer group"
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow hover:shadow-xl transition-all duration-300 cursor-pointer group border-r-4 border-blue-500"
       onClick={() => navigate(`/lawyer/cases/${caseData.case_id}`)}
     >
       <div className="p-6">

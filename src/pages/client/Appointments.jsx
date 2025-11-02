@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
   Clock, 
@@ -22,7 +21,6 @@ import { useClientAuth } from '../../hooks/useClientAuth';
 import { getClientAppointments, cancelAppointment, rescheduleAppointment } from '../../services/appointmentApi';
 
 const Appointments = () => {
-  const { t } = useTranslation();
   const { userProfile } = useClientAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,11 +100,11 @@ const Appointments = () => {
   const getTypeLabel = (type) => {
     switch (type) {
       case 'consultation':
-        return t('appointments.consultation');
+        return 'استشارة';
       case 'case_review':
-        return t('appointments.case_review');
+        return 'مراجعة قضية';
       case 'document_review':
-        return t('appointments.document_review');
+        return 'مراجعة وثائق';
       default:
         return type;
     }
@@ -154,7 +152,7 @@ const Appointments = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {t('appointments.title')}
+            مواعيدي
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             إدارة مواعيدك مع المحامين
@@ -173,7 +171,7 @@ const Appointments = () => {
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                {t('appointments.upcoming')}
+                القادمة
               </button>
               <button
                 onClick={() => setActiveTab('past')}
@@ -183,7 +181,7 @@ const Appointments = () => {
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                {t('appointments.past')}
+                السابقة
               </button>
             </div>
 
@@ -280,7 +278,10 @@ const Appointments = () => {
                               {appointment.lawyer.name}
                             </h3>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                              {t(`appointments.status.${appointment.status}`)}
+                              {appointment.status === 'pending' ? 'قيد الانتظار' : 
+                               appointment.status === 'confirmed' ? 'مؤكد' : 
+                               appointment.status === 'completed' ? 'مكتمل' : 
+                               appointment.status === 'cancelled' ? 'ملغي' : appointment.status}
                             </span>
                           </div>
                           <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
@@ -297,7 +298,9 @@ const Appointments = () => {
                             </div>
                             <div className="flex items-center space-x-1 space-x-reverse">
                               <MethodIcon className="h-4 w-4" />
-                              <span>{t(`appointments.${appointment.method}`)}</span>
+                              <span>{appointment.method === 'video_call' ? 'مكالمة فيديو' : 
+                                     appointment.method === 'in_person' ? 'شخصي' : 
+                                     appointment.method === 'phone_call' ? 'مكالمة هاتفية' : appointment.method}</span>
                             </div>
                           </div>
                           {appointment.notes && (

@@ -63,7 +63,7 @@ export function useLawyerAuth() {
     await loadLawyer();
   };
 
-  return { loading, lawyer, error, refreshLawyer };
+  return { loading, lawyer, error, refreshLawyer, setLawyer };
 }
 
 

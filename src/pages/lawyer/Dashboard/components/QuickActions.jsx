@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -13,7 +12,6 @@ import {
 } from 'lucide-react';
 
 const QuickActions = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const actions = [
@@ -65,10 +63,10 @@ const QuickActions = () => {
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          {t('dashboard.quickActions') || 'الإجراءات السريعة'}
+          الإجراءات السريعة
         </h3>
         <span className="text-xs text-gray-400">
-          {t('dashboard.fastAccessTools') || 'اختصارات للوصول السريع'}
+          اختصارات للوصول السريع
         </span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
@@ -80,7 +78,7 @@ const QuickActions = () => {
           >
             <action.icon className="h-6 w-6 mx-auto mb-2" />
             <p className="text-sm font-semibold text-center">
-              {document.documentElement.dir === 'rtl' ? action.labelAr : action.labelEn}
+              {action.labelAr}
             </p>
           </button>
         ))}

@@ -81,15 +81,19 @@ const ServicesManager = () => {
     }
   };
 
-  const handleEdit = async (serviceId) => {
+  const handleEdit = async (e, serviceId) => {
+    e.preventDefault();
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('lawyer_services')
         .update(formData)
-        .eq('service_id', serviceId);
+        .eq('service_id', serviceId)
+        .select()
+        .single();
 
       if (error) throw error;
-      setServices(prev => prev.map(s => s.service_id === serviceId ? { ...s, ...formData } : s));
+      
+      setServices(prev => prev.map(s => s.service_id === serviceId ? data : s));
       resetForm();
       alert('تم تحديث الخدمة بنجاح');
     } catch (error) {
@@ -141,7 +145,7 @@ const ServicesManager = () => {
 
       {/* Add/Edit Form */}
       {(showAddForm || editingId) && (
-        <form onSubmit={(e) => editingId ? handleEdit(editingId) : handleAdd(e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
+        <form onSubmit={(e) => editingId ? handleEdit(e, editingId) : handleAdd(e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {editingId ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'}
           </h3>
