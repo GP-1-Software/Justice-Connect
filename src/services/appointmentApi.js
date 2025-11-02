@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient';
 
-// Get appointments for a specific client
+// Get all appointments for a client with related case info
 export const getClientAppointments = async (clientId) => {
   try {
     const { data, error } = await supabase
@@ -12,12 +12,19 @@ export const getClientAppointments = async (clientId) => {
           first_name,
           last_name,
           specialization,
-          profile_image,
-          hourly_rate
+          profile_image_url,
+          years_of_experience
+        ),
+        cases (
+          case_id,
+          case_number,
+          title,
+          case_type,
+          status
         )
       `)
       .eq('client_id', parseInt(clientId))
-      .order('appointment_date', { ascending: true });
+      .order('appointment_date', { ascending: false });
 
     if (error) {
       console.error('Error fetching appointments:', error);
@@ -43,8 +50,7 @@ export const getAppointmentsByStatus = async (clientId, status) => {
           first_name,
           last_name,
           specialization,
-          profile_image,
-          hourly_rate
+          profile_image_url
         )
       `)
       .eq('client_id', parseInt(clientId))
@@ -83,8 +89,7 @@ export const createAppointment = async (appointmentData) => {
           first_name,
           last_name,
           specialization,
-          profile_image,
-          hourly_rate
+          profile_image_url
         )
       `)
       .single();
@@ -115,8 +120,7 @@ export const updateAppointmentStatus = async (appointmentId, status) => {
           first_name,
           last_name,
           specialization,
-          profile_image,
-          hourly_rate
+          profile_image_url
         )
       `)
       .single();
@@ -157,8 +161,7 @@ export const rescheduleAppointment = async (appointmentId, newDate, newTime) => 
           first_name,
           last_name,
           specialization,
-          profile_image,
-          hourly_rate
+          profile_image_url
         )
       `)
       .single();

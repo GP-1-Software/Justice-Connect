@@ -219,7 +219,14 @@ const Navbar = () => {
 
                     <button
                       onClick={() => {
-                        navigate('/profile');
+                        // Navigate based on user type
+                        if (userData?.user_type === 'client') {
+                          navigate('/client/dashboard');
+                        } else if (userData?.user_type === 'lawyer') {
+                          navigate('/lawyer/dashboard');
+                        } else {
+                          navigate('/profile');
+                        }
                         setUserMenuOpen(false);
                       }}
                       className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"

@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { useClientAuth } from '../../hooks/useClientAuth';
-import { createAppointment, getLawyerAvailableSlots } from '../../services/appointmentApi';
+import { createAppointment } from '../../services/appointmentApi';
+import { getLawyerAvailableSlots } from '../../services/lawyerApi';
+import { formatSpecialization } from '../../utils/formatters';
 
 const BookAppointment = () => {
   const { lawyerId } = useParams();
@@ -43,19 +45,35 @@ const BookAppointment = () => {
   useEffect(() => {
     const fetchLawyer = async () => {
       try {
-        const { data, error } = await supabase
+        // Fetch lawyer basic info
+        const { data: lawyerData, error: lawyerError } = await supabase
           .from('lawyers')
-          .select('*')
+          .select('lawyer_id, first_name, last_name, specialization, city, phone, bio, profile_image_url, years_of_experience')
           .eq('lawyer_id', parseInt(lawyerId))
           .single();
 
-        if (error) {
-          console.error('Error fetching lawyer:', error);
+        if (lawyerError) {
+          console.error('Error fetching lawyer:', lawyerError);
           setLoading(false);
           return;
         }
 
-        setLawyer(data);
+        // Fetch lawyer services (for pricing)
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('lawyer_services')
+          .select('*')
+          .eq('lawyer_id', parseInt(lawyerId))
+          .eq('is_active', true);
+
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError);
+        }
+
+        // Attach services to lawyer data
+        setLawyer({
+          ...lawyerData,
+          services: servicesData || []
+        });
         setLoading(false);
       } catch (error) {
         console.error('Error fetching lawyer:', error);
@@ -87,8 +105,16 @@ const BookAppointment = () => {
   };
 
   const calculateTotal = () => {
-    if (!lawyer) return 0;
-    return lawyer.hourly_rate * (duration / 60);
+    if (!lawyer || !lawyer.services) return 0;
+    
+    // Find the selected service
+    const selectedService = lawyer.services.find(s => s.service_name === appointmentType);
+    if (selectedService) {
+      return parseFloat(selectedService.price);
+    }
+    
+    // Fallback: calculate based on duration if no service found
+    return 0;
   };
 
   const handleBooking = async () => {
@@ -124,12 +150,6 @@ const BookAppointment = () => {
       setBooking(false);
     }
   };
-
-  const appointmentTypes = [
-    { value: 'consultation', label: t('appointments.consultation'), duration: 30, price: 75 },
-    { value: 'case_review', label: t('appointments.case_review'), duration: 60, price: 150 },
-    { value: 'document_review', label: t('appointments.document_review'), duration: 45, price: 112 }
-  ];
 
   const meetingMethods = [
     { value: 'video_call', label: t('appointments.video_call'), icon: Video },
@@ -186,37 +206,47 @@ const BookAppointment = () => {
                   {lawyer.first_name} {lawyer.last_name}
                 </h3>
                 <p className="text-blue-600 dark:text-blue-400 font-medium">
-                  {lawyer.specialization}
+                  {formatSpecialization(lawyer.specialization)}
                 </p>
-                <div className="flex items-center justify-center mt-2">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400 mr-1">
-                    {lawyer.rating} ({lawyer.experience_years} سنوات خبرة)
-                  </span>
-                </div>
+                {lawyer.years_of_experience && (
+                  <div className="flex items-center justify-center mt-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {lawyer.years_of_experience} سنوات خبرة
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {lawyer.office_address}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {lawyer.phone}
-                  </span>
-                </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">السعر بالساعة:</span>
-                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {lawyer.hourly_rate} ريال
+                {lawyer.city && (
+                  <div className="flex items-center space-x-3 space-x-reverse">
+                    <MapPin className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {lawyer.city}
                     </span>
                   </div>
-                </div>
+                )}
+                {lawyer.phone && (
+                  <div className="flex items-center space-x-3 space-x-reverse">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {lawyer.phone}
+                    </span>
+                  </div>
+                )}
+                {lawyer.services && lawyer.services.length > 0 && (
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">الخدمات المتاحة:</div>
+                    <div className="space-y-1">
+                      {lawyer.services.slice(0, 3).map((service) => (
+                        <div key={service.service_id} className="flex justify-between text-xs">
+                          <span className="text-gray-700 dark:text-gray-300">{service.service_name}</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{service.price} ريال</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -237,27 +267,38 @@ const BookAppointment = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {appointmentTypes.map((type) => (
-                      <button
-                        key={type.value}
-                        onClick={() => {
-                          setAppointmentType(type.value);
-                          setDuration(type.duration);
-                          setCurrentStep(2);
-                        }}
-                        className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 transition text-right"
-                      >
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                          {type.label}
-                        </h3>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                          <div>المدة: {type.duration} {t('appointments.minutes')}</div>
-                          <div className="text-blue-600 dark:text-blue-400 font-semibold">
-                            {type.price} ريال
+                    {lawyer.services && lawyer.services.length > 0 ? (
+                      lawyer.services.map((service) => (
+                        <button
+                          key={service.service_id}
+                          onClick={() => {
+                            setAppointmentType(service.service_name);
+                            setDuration(service.duration_minutes);
+                            setCurrentStep(2);
+                          }}
+                          className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 transition text-right"
+                        >
+                          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                            {service.service_name}
+                          </h3>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                            {service.description && (
+                              <div className="text-xs mb-2">{service.description}</div>
+                            )}
+                            <div>المدة: {service.duration_minutes} دقيقة</div>
+                            <div className="text-blue-600 dark:text-blue-400 font-semibold">
+                              {service.price} ريال
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="col-span-3 text-center py-8">
+                        <p className="text-gray-500 dark:text-gray-400">
+                          لا توجد خدمات متاحة حالياً
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -299,21 +340,29 @@ const BookAppointment = () => {
                         {t('appointments.select_time')}
                       </label>
                       {selectedDate ? (
-                        <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                          {availableSlots.map((slot) => (
-                            <button
-                              key={slot.time}
-                              onClick={() => setSelectedTime(slot.time)}
-                              className={`p-3 text-sm rounded-lg border transition ${
-                                selectedTime === slot.time
-                                  ? 'bg-blue-600 text-white border-blue-600'
-                                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500'
-                              }`}
-                            >
-                              {slot.time}
-                            </button>
-                          ))}
-                        </div>
+                        availableSlots.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                            {availableSlots.map((slot, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setSelectedTime(slot.time)}
+                                className={`p-3 text-sm rounded-lg border transition ${
+                                  selectedTime === slot.time
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500'
+                                }`}
+                              >
+                                {slot.display || slot.time}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">
+                              لا توجد أوقات متاحة في هذا اليوم
+                            </p>
+                          </div>
+                        )
                       ) : (
                         <p className="text-gray-500 dark:text-gray-400 text-sm">
                           اختر التاريخ أولاً
