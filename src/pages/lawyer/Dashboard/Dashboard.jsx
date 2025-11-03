@@ -76,12 +76,12 @@ const Dashboard = () => {
   }, [lawyer]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome Banner */}
       <WelcomeBanner />
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatsCard
           icon={Briefcase}
           label="إجمالي القضايا"
@@ -120,17 +120,17 @@ const Dashboard = () => {
       <QuickActions />
 
       {/* Revenue and Calendar Preview */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2">
           <CalendarPreview />
         </div>
-        <div>
+        <div className="lg:col-span-1">
           <QuickRevenue />
         </div>
       </div>
 
       {/* Today's Appointments and Cases */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <TodayAppointmentsList />
         <CasesAssigned />
       </div>

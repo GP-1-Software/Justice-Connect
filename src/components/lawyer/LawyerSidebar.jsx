@@ -2,24 +2,23 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Search,
-  User,
   Calendar,
   Briefcase,
-  FileText,
   MessageSquare,
-  CreditCard,
-  Bell,
-  Settings,
+  User,
+  Phone,
   Video,
-  FileCheck,
+  Bell,
+  FileSearch,
   Bot,
+  Settings,
+  Plus,
   ChevronLeft,
   ChevronRight,
   Scale
 } from 'lucide-react';
 
-const ClientSidebar = ({ isOpen, onClose }) => {
+const LawyerSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -38,30 +37,14 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       exact: true
     },
     {
-      title: 'البحث عن محامين / حجز مواعيد',
-      icon: Search,
-      path: 'search-lawyers'
-    },
-    {
-      title: 'الملف الشخصي',
-      icon: User,
-      path: 'profile-settings'
-    },
-    {
       title: 'مواعيدي',
       icon: Calendar,
-      path: 'appointments'
+      path: 'calendar'
     },
     {
       title: 'قضاياي',
       icon: Briefcase,
       path: 'cases'
-    },
-    {
-      title: 'تفاصيل القضية',
-      icon: FileText,
-      path: 'case-details',
-      hidden: true // This will be dynamic based on case selection
     },
     {
       title: 'الرسائل',
@@ -70,23 +53,33 @@ const ClientSidebar = ({ isOpen, onClose }) => {
     },
     {
       title: 'المكالمات',
-      icon: Video,
-      path: 'video-call'
+      icon: Phone,
+      path: 'calls'
     },
     {
-      title: 'المدفوعات',
-      icon: CreditCard,
-      path: 'payments'
+      title: 'الاستشارات',
+      icon: Video,
+      path: 'consultations'
+    },
+    {
+      title: 'الإشعارات',
+      icon: Bell,
+      path: 'notifications'
     },
     {
       title: 'تحليل المستندات',
-      icon: FileCheck,
-      path: 'document-analyzer'
+      icon: FileSearch,
+      path: 'document-analysis'
     },
     {
       title: 'المساعد الذكي',
       icon: Bot,
-      path: 'ai-chatbot'
+      path: 'ai-assistant'
+    },
+    {
+      title: 'الملف الشخصي',
+      icon: User,
+      path: 'profile'
     },
     {
       title: 'الإعدادات',
@@ -138,7 +131,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           {!collapsed && (
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              قائمة العميل
+              قائمة المحامي
             </h2>
           )}
         </div>
@@ -167,7 +160,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
                     title={collapsed ? item.title : ''}
                   >
                     <Icon className={`h-5 w-5 flex-shrink-0 ${
-                      item.highlight ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                      item.highlight ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400'
                     }`} />
                     
                     {!collapsed && (
@@ -190,19 +183,19 @@ const ClientSidebar = ({ isOpen, onClose }) => {
               return (
                 <Link
                   key={index}
-                  to={`/client/${item.path}`}
+                  to={`/lawyer/${item.path}`}
                   onClick={() => {
                     if (onClose) onClose();
                   }}
                   className={`flex items-center space-x-3 space-x-reverse px-3 py-3 rounded-lg transition-all duration-200 group ${
                     active
-                      ? 'bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg'
+                      ? 'bg-gradient-to-l from-green-600 to-green-500 text-white shadow-lg'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  } ${item.highlight ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''}`}
+                  } ${item.highlight ? 'ring-2 ring-green-200 dark:ring-green-800' : ''}`}
                   title={collapsed ? item.title : ''}
                 >
                   <Icon className={`h-5 w-5 flex-shrink-0 ${
-                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                    active ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400'
                   }`} />
                   
                   {!collapsed && (
@@ -212,7 +205,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
                       </span>
                       
                       {item.highlight && (
-                        <span className="ml-auto bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 text-xs px-2 py-1 rounded-full font-semibold">
+                        <span className="ml-auto bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 text-xs px-2 py-1 rounded-full font-semibold">
                           جديد
                         </span>
                       )}
@@ -227,13 +220,13 @@ const ClientSidebar = ({ isOpen, onClose }) => {
         {/* Footer */}
         {!collapsed && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-3">
+            <div className="bg-gradient-to-r from-green-50 to-cyan-50 dark:from-green-900/20 dark:to-cyan-900/20 rounded-lg p-3">
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                 تحتاج مساعدة؟
               </p>
               <button
-                onClick={() => window.open('/client/ai-chatbot', '_blank')}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold transition"
+                onClick={() => window.open('/lawyer/ai-assistant', '_blank')}
+                className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-semibold transition"
               >
                 تواصل مع المساعد الذكي
               </button>
@@ -246,4 +239,4 @@ const ClientSidebar = ({ isOpen, onClose }) => {
   );
 };
 
-export default ClientSidebar;
+export default LawyerSidebar;

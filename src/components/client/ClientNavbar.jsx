@@ -16,7 +16,7 @@ import {
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { useTheme } from '../../context/ThemeContext';
 
-const ClientNavbar = () => {
+const ClientNavbar = ({ onMenuClick }) => {
   const { userProfile, signOut } = useClientAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
@@ -59,10 +59,19 @@ const ClientNavbar = () => {
     <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg fixed w-full top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
+          {/* Mobile Sidebar Toggle */}
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            aria-label="Toggle sidebar"
+          >
+            <Menu className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+          </button>
+
           {/* Logo */}
           <Link to="/client/dashboard" className="flex items-center space-x-3 space-x-reverse hover:opacity-80 transition">
             <Scale className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold gradient-text">المنصة القانونية</span>
+            <span className="text-xl sm:text-2xl font-bold gradient-text">المنصة القانونية</span>
             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">- العميل</span>
           </Link>
 

@@ -206,76 +206,76 @@ const Appointments = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             إدارة المواعيد مع المحامين
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-400">
             راجع، انضم أو ألغِ مواعيدك القادمة بسهولة
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-r-4 border-blue-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-r-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">المواعيد القادمة</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.upcoming}</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">المواعيد القادمة</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stats.upcoming}</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-                <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg sm:rounded-xl">
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-r-4 border-green-500">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-r-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">المواعيد المكتملة</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">المواعيد المكتملة</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
               </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-xl">
-                <CheckSquare className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg sm:rounded-xl">
+                <CheckSquare className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-r-4 border-yellow-500">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-r-4 border-yellow-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">قيد التأكيد</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">قيد التأكيد</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
               </div>
-              <div className="p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-xl">
-                <Clock3 className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+              <div className="p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg sm:rounded-xl">
+                <Clock3 className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6">
           {/* Info Banner */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-            <div className="flex items-start space-x-3 space-x-reverse">
-              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex items-start space-x-2 sm:space-x-3 space-x-reverse">
+              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-blue-800 dark:text-blue-300">
+                <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300">
                   <span className="font-semibold">📅 المواعيد النشطة:</span> تشمل المواعيد القادمة التي لم تنتهي بعد (قيد التأكيد، مؤكدة)
                 </p>
-                <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
+                <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300 mt-1">
                   <span className="font-semibold">📋 السجل الكامل:</span> يحتوي على المواعيد المنتهية (مكتملة، ملغاة، مرفوضة)
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex space-x-2 space-x-reverse bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="flex space-x-1 sm:space-x-2 space-x-reverse bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl p-1 overflow-x-auto">
               <button
                 onClick={() => handleTabChange('upcoming')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === 'upcoming'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -285,7 +285,7 @@ const Appointments = () => {
               </button>
               <button
                 onClick={() => handleTabChange('past')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === 'past'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -295,36 +295,36 @@ const Appointments = () => {
               </button>
             </div>
 
-            <div className="flex items-center space-x-3 space-x-reverse">
-              <div className="relative flex-1 lg:w-64">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 sm:space-x-3 sm:space-x-reverse">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="ابحث في المواعيد..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-4 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full pl-3 sm:pl-4 pr-9 sm:pr-10 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center space-x-2 space-x-reverse px-4 py-2.5 border rounded-xl transition-all ${
+                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all ${
                   showFilters
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
                     : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                <Filter className="h-5 w-5" />
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-medium">فلتر</span>
               </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <select
               value={appointmentFilter}
               onChange={(e) => setAppointmentFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">جميع المواعيد</option>
               <option value="with_case">المرتبطة بقضية</option>

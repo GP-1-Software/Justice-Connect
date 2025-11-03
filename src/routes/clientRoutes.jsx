@@ -8,6 +8,7 @@ import ClientDashboard from '../pages/client/Dashboard/Dashboard';
 import BookAppointment from '../pages/client/BookAppointment';
 import Appointments from '../pages/client/Appointments';
 import Profile from '../pages/client/Profile';
+import Settings from '../pages/client/Settings';
 import SearchLawyers from '../pages/client/SearchLawyers';
 import LawyerProfile from '../pages/client/LawyerProfile';
 import CreateCase from '../pages/client/CreateCase';
@@ -87,8 +88,7 @@ const ClientRoutes = () => {
         {/* Payments and Profile */}
         <Route path="payments" element={<PlaceholderPage title="المدفوعات" />} />
         <Route path="profile-settings" element={<Profile />} />
-        <Route path="settings" element={<PlaceholderPage title="الإعدادات" />} />
-        <Route path="notifications" element={<PlaceholderPage title="الإشعارات" />} />
+        <Route path="settings" element={<Settings />} />
         
         {/* Redirect root client path to dashboard */}
         <Route path="" element={<Navigate to="dashboard" replace />} />

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Camera, User } from 'lucide-react';
 
 const ProfileForm = () => {
   const { lawyer, refreshLawyer } = useLawyerAuth();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -31,6 +33,11 @@ const ProfileForm = () => {
         years_of_experience: lawyer.years_of_experience || '',
         license_number: lawyer.license_number || ''
       });
+      
+      // Set profile image if exists
+      if (lawyer.profile_image_url) {
+        setProfileImageUrl(lawyer.profile_image_url);
+      }
     }
   }, [lawyer]);
 
@@ -39,6 +46,66 @@ const ProfileForm = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // Handle profile image upload
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('يرجى اختيار ملف صورة صالح');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الصورة يجب أن يكون أقل من 5 ميجابايت');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `lawyer_${lawyer.lawyer_id}_${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update lawyer profile with new image URL
+      const { error: updateError } = await supabase
+        .from('lawyers')
+        .update({ profile_image_url: publicUrl })
+        .eq('lawyer_id', lawyer.lawyer_id);
+      
+      if (updateError) throw updateError;
+      
+      setProfileImageUrl(publicUrl);
+      if (refreshLawyer) {
+        await refreshLawyer();
+      }
+      alert('تم تحديث صورة الملف الشخصي بنجاح');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert(`حدث خطأ في رفع الصورة: ${error.message}`);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -69,7 +136,53 @@ const ProfileForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Profile Image Section */}
+      <div className="flex flex-col items-center space-y-4 p-6 sm:p-8 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border-2 border-dashed border-green-200 dark:border-green-800">
+        <div className="relative group">
+          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gradient-to-br from-green-400 to-emerald-400 dark:from-green-600 dark:to-emerald-600 flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-xl">
+            {profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt="صورة الملف الشخصي"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-14 h-14 sm:w-16 sm:h-16 text-white" />
+            )}
+          </div>
+          
+          <label
+            htmlFor="lawyer-profile-image-upload"
+            className="absolute bottom-0 right-0 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-2 sm:p-2.5 rounded-full cursor-pointer transition-all shadow-lg hover:shadow-xl transform hover:scale-110"
+          >
+            {uploadingImage ? (
+              <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
+          </label>
+          
+          <input
+            id="lawyer-profile-image-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+            disabled={uploadingImage}
+          />
+        </div>
+        
+        <div className="text-center">
+          <p className="text-sm sm:text-base font-medium text-green-900 dark:text-green-100 mb-2">
+            {uploadingImage ? '⏳ جاري رفع الصورة...' : '📸 اضغط على أيقونة الكاميرا لتغيير الصورة'}
+          </p>
+          <p className="text-xs sm:text-sm text-green-700 dark:text-green-300">
+            JPG, PNG أو GIF • حد أقصى 5 ميجابايت
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* First Name */}
         <div>

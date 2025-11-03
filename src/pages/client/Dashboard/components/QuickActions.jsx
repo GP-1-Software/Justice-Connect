@@ -75,17 +75,17 @@ const QuickActions = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
           الإجراءات السريعة
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">
+        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
           الوصول السريع إلى الخدمات الأكثر استخداماً
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {actions.map((action, index) => {
           const Icon = action.icon;
           const colorClasses = getColorClasses(action.color);
@@ -94,34 +94,34 @@ const QuickActions = () => {
             <button
               key={index}
               onClick={() => navigate(action.path)}
-              className={`group relative p-4 rounded-xl bg-gradient-to-r ${colorClasses} text-white hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 text-right ${
+              className={`group relative p-3 sm:p-4 rounded-xl bg-gradient-to-r ${colorClasses} text-white hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 text-right ${
                 action.highlight ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
               }`}
             >
               {/* Badge */}
               {action.badge && (
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
+                <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-yellow-400 text-yellow-900 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                   {action.badge}
                 </div>
               )}
               
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Icon className="h-6 w-6" />
+              <div className="flex items-start justify-between mb-2 sm:mb-3">
+                <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 
                 {action.highlight && (
-                  <div className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                  <div className="text-[10px] sm:text-xs bg-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                     مميز
                   </div>
                 )}
               </div>
               
               <div>
-                <h3 className="font-semibold mb-1 group-hover:text-white transition">
+                <h3 className="text-sm sm:text-base font-semibold mb-1 group-hover:text-white transition">
                   {action.title}
                 </h3>
-                <p className="text-sm text-white/80 group-hover:text-white transition">
+                <p className="text-xs sm:text-sm text-white/80 group-hover:text-white transition">
                   {action.description}
                 </p>
               </div>
@@ -134,20 +134,20 @@ const QuickActions = () => {
       </div>
       
       {/* Additional Info */}
-      <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
-        <div className="flex items-center space-x-3 space-x-reverse">
-          <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <div>
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+      <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-3 sm:space-x-reverse">
+          <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-100">
               تحتاج مساعدة سريعة؟
             </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300">
+            <p className="text-[10px] sm:text-xs text-blue-700 dark:text-blue-300">
               استخدم المساعد الذكي للحصول على إجابات فورية
             </p>
           </div>
           <button
             onClick={() => navigate('/client/ai-chatbot')}
-            className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full transition"
+            className="w-full sm:w-auto sm:ml-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 sm:py-1 rounded-full transition"
           >
             ابدأ الآن
           </button>

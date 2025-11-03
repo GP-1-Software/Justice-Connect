@@ -107,20 +107,20 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl shadow-lg p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">
               مرحباً، {userProfile?.first_name} {userProfile?.last_name}
             </h1>
-            <p className="text-blue-100">
+            <p className="text-sm sm:text-base text-blue-100">
               إليك ملخص شامل لحسابك القانوني اليوم
             </p>
           </div>
-          <div className="hidden md:block">
-            <div className="text-right">
-              <p className="text-sm text-blue-100">تاريخ اليوم</p>
-              <p className="text-lg font-semibold">
+          <div className="w-full sm:w-auto">
+            <div className="text-left sm:text-right bg-white/10 rounded-lg p-3 sm:bg-transparent sm:p-0">
+              <p className="text-xs sm:text-sm text-blue-100">تاريخ اليوم</p>
+              <p className="text-base sm:text-lg font-semibold">
                 {formatDate(new Date().toISOString())}
               </p>
             </div>
@@ -151,47 +151,47 @@ const Dashboard = () => {
       </div>
 
       {/* Additional Dashboard Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         {/* Upcoming Appointments */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               المواعيد القادمة
             </h2>
-            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition">
+            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition whitespace-nowrap">
               عرض الكل
             </button>
           </div>
           
           {dashboardData.summary?.upcomingAppointments > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Sample upcoming appointment */}
-              <div className="flex items-center space-x-4 space-x-reverse p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 sm:space-x-reverse p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
                   <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                     استشارة مع المحامي أحمد محمد
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     غداً في 2:00 مساءً
                   </p>
                 </div>
-                <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full whitespace-nowrap">
                   أونلاين
                 </span>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
+            <div className="text-center py-6 sm:py-8">
+              <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
                 لا توجد مواعيد قادمة
               </p>
               <button 
                 onClick={() => window.location.href = '/client/book-appointment/1'}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
                 احجز موعد
               </button>
@@ -200,40 +200,40 @@ const Dashboard = () => {
         </div>
 
         {/* Active Cases */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               القضايا النشطة
             </h2>
-            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition">
+            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition whitespace-nowrap">
               عرض الكل
             </button>
           </div>
           
           {dashboardData.summary?.activeCases > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Sample active case */}
-              <div className="flex items-center space-x-4 space-x-reverse p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 sm:space-x-reverse p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
                   <Briefcase className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                     قضية الطلاق
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     آخر تحديث: منذ يومين
                   </p>
                 </div>
-                <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
+                <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 px-2 py-1 rounded-full whitespace-nowrap">
                   نشطة
                 </span>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">
+            <div className="text-center py-6 sm:py-8">
+              <Briefcase className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                 لا توجد قضايا نشطة
               </p>
             </div>

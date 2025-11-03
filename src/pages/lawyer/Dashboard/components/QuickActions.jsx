@@ -60,24 +60,24 @@ const QuickActions = () => {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+    <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
           الإجراءات السريعة
         </h3>
         <span className="text-xs text-gray-400">
           اختصارات للوصول السريع
         </span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {actions.map((action, idx) => (
           <button
             key={idx}
             onClick={action.onClick}
-            className={`bg-gradient-to-br ${action.bgColor} p-4 rounded-xl text-white hover:shadow-lg transform hover:scale-105 transition-all duration-200`}
+            className={`bg-gradient-to-br ${action.bgColor} p-3 sm:p-4 rounded-lg sm:rounded-xl text-white hover:shadow-lg transform hover:scale-105 transition-all duration-200`}
           >
-            <action.icon className="h-6 w-6 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-center">
+            <action.icon className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm font-semibold text-center">
               {action.labelAr}
             </p>
           </button>

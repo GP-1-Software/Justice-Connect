@@ -58,15 +58,15 @@ const StatsCards = ({ summary, loading }) => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 animate-pulse">
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 animate-pulse">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-              <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              <div className="w-12 sm:w-16 h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
-            <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-            <div className="w-32 h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="w-16 sm:w-20 h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+            <div className="w-24 sm:w-32 h-2 sm:h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
           </div>
         ))}
       </div>
@@ -74,7 +74,7 @@ const StatsCards = ({ summary, loading }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         const colorClasses = getColorClasses(stat.color);
@@ -82,27 +82,27 @@ const StatsCards = ({ summary, loading }) => {
         return (
           <div 
             key={index}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-6"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-4 sm:p-6"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg bg-gradient-to-r ${colorClasses.split(' ')[0]} ${colorClasses.split(' ')[1]}`}>
-                <Icon className="h-6 w-6 text-white" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={`p-2 sm:p-3 rounded-lg bg-gradient-to-r ${colorClasses.split(' ')[0]} ${colorClasses.split(' ')[1]}`}>
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 hidden sm:block">
                 {stat.trend}
               </span>
             </div>
             
             <div className="mb-2">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {stat.value}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {stat.description}
               </p>
             </div>
             
-            <div className="flex items-center text-sm">
+            <div className="flex items-center text-xs sm:text-sm">
               <span className="font-semibold text-gray-900 dark:text-white">
                 {stat.title}
               </span>

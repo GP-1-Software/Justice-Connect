@@ -120,19 +120,19 @@ const SearchLawyers = () => {
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isRTL ? 'rtl' : 'ltr'}`}>
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 {t('searchLawyers.title')}
               </h1>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
+              <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {t('searchLawyers.subtitle')}
               </p>
             </div>
             
             {/* View Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-2 rounded-lg transition-colors ${
@@ -169,12 +169,12 @@ const SearchLawyers = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Filters Sidebar */}
           {showFilters && (
             <div className="lg:w-80 flex-shrink-0">
-              <div className="sticky top-6">
+              <div className="lg:sticky lg:top-6">
                 <SearchFilters
                   filters={filters}
                   onFilterChange={handleFilterChange}
@@ -240,8 +240,8 @@ const SearchLawyers = () => {
               <>
                 <div className={
                   viewMode === 'grid'
-                    ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-                    : 'space-y-4'
+                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6'
+                    : 'space-y-3 sm:space-y-4'
                 }>
                   {currentLawyers.map((lawyer) => (
                     <LawyerCard key={lawyer.lawyer_id} lawyer={lawyer} />
@@ -250,21 +250,21 @@ const SearchLawyers = () => {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="mt-8 flex items-center justify-center gap-2">
+                  <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-2">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       {t('searchLawyers.previous')}
                     </button>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-x-auto max-w-full">
                       {[...Array(totalPages)].map((_, index) => (
                         <button
                           key={index}
                           onClick={() => handlePageChange(index + 1)}
-                          className={`w-10 h-10 rounded-lg transition-colors ${
+                          className={`w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base rounded-lg transition-colors flex-shrink-0 ${
                             currentPage === index + 1
                               ? 'bg-blue-600 text-white'
                               : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -278,7 +278,7 @@ const SearchLawyers = () => {
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       {t('searchLawyers.next')}
                     </button>
