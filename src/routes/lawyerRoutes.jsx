@@ -5,6 +5,7 @@ import DashboardPage from '../pages/lawyer/Dashboard/Dashboard';
 import CasesListPage from '../pages/lawyer/Cases/CasesList';
 import CaseDetailPage from '../pages/lawyer/CaseDetail/CaseDetail';
 import CalendarPage from '../pages/lawyer/Calendar/Calendar';
+import AppointmentsPage from '../pages/lawyer/Appointments/Appointments';
 import ProfilePage from '../pages/lawyer/Profile/Profile';
 import SettingsPage from '../pages/lawyer/Settings';
 
@@ -17,6 +18,7 @@ const LawyerRoutes = () => {
         <Route path="cases" element={<CasesListPage />} />
         <Route path="cases/:caseId" element={<CaseDetailPage />} />
         <Route path="calendar" element={<CalendarPage />} />
+        <Route path="appointments" element={<AppointmentsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

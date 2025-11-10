@@ -19,7 +19,7 @@ export const clientApi = {
         .from('appointments')
         .select('appointment_id')
         .eq('client_id', clientId)
-        .eq('status', 'scheduled')
+        .eq('status', 'pending')
         .gte('datetime', new Date().toISOString());
 
       if (appointmentsError) throw appointmentsError;
@@ -181,7 +181,7 @@ export const clientApi = {
           )
         `)
         .eq('client_id', clientId)
-        .eq('status', 'scheduled')
+        .eq('status', 'pending')
         .gte('datetime', new Date().toISOString())
         .order('datetime', { ascending: true })
         .limit(limit);

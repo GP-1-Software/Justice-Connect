@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, 
   Briefcase, 
-  DollarSign, 
+  Coins, 
   Star,
   Calendar,
   Eye,
@@ -126,7 +126,7 @@ const LawyerCard = ({ lawyer }) => {
 
           {/* Price */}
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <DollarSign className="w-4 h-4 flex-shrink-0" />
+            <Coins className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm">
               {t('searchLawyers.startingFrom')} {getMinPrice()}
             </span>

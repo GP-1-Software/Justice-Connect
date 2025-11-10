@@ -38,10 +38,10 @@ const StatsCards = ({ summary, loading }) => {
     },
     {
       title: 'الرصيد المتاح',
-      value: `${summary?.balance || 0} ريال`,
+      value: `${summary?.balance || 0} ₪`,
       icon: CreditCard,
       color: 'orange',
-      trend: 'دفعة جديدة +500 ريال',
+      trend: 'دفعة جديدة +500 ₪',
       description: 'رصيد الحساب'
     }
   ];

@@ -37,12 +37,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       path: 'dashboard',
       exact: true
     },
-    {
-      title: 'البحث عن محامين / حجز مواعيد',
-      icon: Search,
-      path: 'search-lawyers'
-    },
-    {
+       {
       title: 'الملف الشخصي',
       icon: User,
       path: 'profile-settings'
@@ -57,6 +52,11 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       icon: Briefcase,
       path: 'cases'
     },
+      {
+      title: 'البحث عن محامين / حجز مواعيد',
+      icon: Search,
+      path: 'search-lawyers'
+    },
     {
       title: 'تفاصيل القضية',
       icon: FileText,
@@ -68,21 +68,27 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       icon: MessageSquare,
       path: 'messages'
     },
-    {
+        {
+          title: 'الإشعارات',
+          icon: Bell,
+          path: 'notifications'
+        },
+/*    {
       title: 'المكالمات',
       icon: Video,
       path: 'video-call'
-    },
+    },  */
     {
       title: 'المدفوعات',
       icon: CreditCard,
       path: 'payments'
     },
+/*
     {
       title: 'تحليل المستندات',
       icon: FileCheck,
       path: 'document-analyzer'
-    },
+    },     */
     {
       title: 'المساعد الذكي',
       icon: Bot,

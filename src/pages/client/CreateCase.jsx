@@ -11,7 +11,7 @@ import {
   Loader,
   Scale,
   MapPin,
-  DollarSign
+  Coins
 } from 'lucide-react';
 import {
   createCase,

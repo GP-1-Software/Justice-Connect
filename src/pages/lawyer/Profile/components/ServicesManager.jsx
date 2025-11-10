@@ -166,7 +166,7 @@ const ServicesManager = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                السعر (شيقل)
+                السعر (₪)
               </label>
               <div className="relative">
                 <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-semibold">₪</span>
@@ -282,7 +282,7 @@ const ServicesManager = () => {
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500 dark:text-gray-400">السعر:</span>
-                      <span className="font-semibold text-green-600">{service.price} شيقل</span>
+                      <span className="font-semibold text-green-600">{service.price} ₪</span>
                     </div>
                     {service.duration_minutes && (
                       <div className="flex items-center gap-1">

@@ -12,9 +12,9 @@ import Settings from '../pages/client/Settings';
 import SearchLawyers from '../pages/client/SearchLawyers';
 import LawyerProfile from '../pages/client/LawyerProfile';
 import CreateCase from '../pages/client/CreateCase';
+import MyCases from '../pages/client/MyCases';
+import CaseDetails from '../pages/client/CaseDetails';
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';
-// import MyCases from '../pages/client/MyCases/MyCases';
-// import CaseDetails from '../pages/client/CaseDetails/CaseDetails';
 // import DocumentAnalyzer from '../pages/client/DocumentAnalyzer/DocumentAnalyzer';
 // import AIChatbot from '../pages/client/AIChatbot/AIChatbot';
 // import Messages from '../pages/client/Messages/Messages';
@@ -74,8 +74,8 @@ const ClientRoutes = () => {
         
         {/* Cases */}
         <Route path="create-case" element={<CreateCase />} />
-        <Route path="cases" element={<PlaceholderPage title="قضاياي" />} />
-        <Route path="case/:id" element={<PlaceholderPage title="تفاصيل القضية" />} />
+        <Route path="cases" element={<MyCases />} />
+        <Route path="cases/:caseId" element={<CaseDetails />} />
         
         {/* Communication */}
         <Route path="messages" element={<PlaceholderPage title="الرسائل" />} />

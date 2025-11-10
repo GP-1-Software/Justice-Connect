@@ -9,6 +9,7 @@ import Timeline from './components/Timeline';
 import PrivateNotes from './components/PrivateNotes';
 import EvidenceUploader from './components/EvidenceUploader';
 import TaskManager from './components/TaskManager';
+import MeetingManager from './components/MeetingManager';
 
 const CaseDetail = () => {
   const { caseId } = useParams();
@@ -18,43 +19,40 @@ const CaseDetail = () => {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const loadCaseDetails = async () => {
+    if (!lawyer || !caseId) return;
+    setLoading(true);
+    try {
+      // Load case data
+      const { data: caseInfo, error: caseError } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('case_id', caseId)
+        .single();
+
+      if (caseError) throw caseError;
+
+      // Load case timeline events
+      const { data: updatesData, error: updatesError } = await supabase
+        .from('timeline_events')
+        .select('*')
+        .eq('case_id', caseId)
+        .order('created_at', { ascending: false});
+
+      if (updatesError) console.warn('Updates load error:', updatesError.message);
+
+      setCaseData(caseInfo);
+      setUpdates(updatesData || []);
+    } catch (error) {
+      console.error('Case detail load error:', error.message);
+      setCaseData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
-    async function loadCaseDetails() {
-      if (!lawyer || !caseId) return;
-      setLoading(true);
-      try {
-        // Load case data
-        const { data: caseInfo, error: caseError } = await supabase
-          .from('cases')
-          .select('*')
-          .eq('case_id', caseId)
-          .single();
-
-        if (caseError) throw caseError;
-
-        // Load case timeline events
-        const { data: updatesData, error: updatesError } = await supabase
-          .from('timeline_events')
-          .select('*')
-          .eq('case_id', caseId)
-          .order('created_at', { ascending: false});
-
-        if (updatesError) console.warn('Updates load error:', updatesError.message);
-
-        if (mounted) {
-          setCaseData(caseInfo);
-          setUpdates(updatesData || []);
-        }
-      } catch (error) {
-        console.error('Case detail load error:', error.message);
-        if (mounted) {
-          setCaseData(null);
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
     loadCaseDetails();
 
     // Realtime subscriptions
@@ -63,10 +61,15 @@ const CaseDetail = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'timeline_events', filter: `case_id=eq.${caseId}` },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setUpdates(prev => [payload.new, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            // Only add if it's a valid event with required fields
+            if (payload.new.event_id && payload.new.event_type) {
+              setUpdates(prev => [payload.new, ...prev]);
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
             setUpdates(prev => prev.map(u => u.event_id === payload.new.event_id ? payload.new : u));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setUpdates(prev => prev.filter(u => u.event_id !== payload.old.event_id));
           }
         }
       )
@@ -93,7 +96,12 @@ const CaseDetail = () => {
   }, [lawyer, caseId]);
 
   const handleUpdateAdded = (newUpdate) => {
-    setUpdates(prev => [newUpdate, ...prev]);
+    if (newUpdate && newUpdate.event_id) {
+      setUpdates(prev => [newUpdate, ...prev]);
+    } else {
+      // If newUpdate is not valid, reload updates
+      loadCaseDetails();
+    }
   };
 
   const handleCaseUpdated = (updatedCase, newTimelineEvent) => {
@@ -176,6 +184,13 @@ const CaseDetail = () => {
 
           {/* Sidebar - Right Side */}
           <div className="space-y-6">
+            {/* Meeting Manager */}
+            <MeetingManager 
+              caseId={caseId} 
+              caseData={caseData} 
+              onTimelineEventAdded={handleUpdateAdded} 
+            />
+
             {/* Private Notes */}
             <PrivateNotes caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
 

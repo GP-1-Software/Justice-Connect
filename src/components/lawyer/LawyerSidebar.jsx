@@ -15,7 +15,8 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Scale
+  Scale,
+  CheckSquare
 } from 'lucide-react';
 
 const LawyerSidebar = ({ isOpen, onClose }) => {
@@ -36,35 +37,47 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       path: 'dashboard',
       exact: true
     },
+     {
+      title: 'الملف الشخصي',
+      icon: User,
+      path: 'profile'
+    },
+      {
+      title: 'قضاياي',
+      icon: Briefcase,
+      path: 'cases'
+    },
     {
       title: 'مواعيدي',
       icon: Calendar,
       path: 'calendar'
     },
-    {
-      title: 'قضاياي',
-      icon: Briefcase,
-      path: 'cases'
+  {
+      title: 'إدارة المواعيد',
+      icon: CheckSquare,
+      path: 'appointments'
     },
     {
       title: 'الرسائل',
       icon: MessageSquare,
       path: 'messages'
     },
+    /*
     {
       title: 'المكالمات',
       icon: Phone,
       path: 'calls'
-    },
-    {
-      title: 'الاستشارات',
-      icon: Video,
-      path: 'consultations'
-    },
+    },   */
+
     {
       title: 'الإشعارات',
       icon: Bell,
       path: 'notifications'
+    },
+      {
+      title: 'الاستشارات',
+      icon: Video,
+      path: 'consultations'
     },
     {
       title: 'تحليل المستندات',
@@ -75,11 +88,6 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       title: 'المساعد الذكي',
       icon: Bot,
       path: 'ai-assistant'
-    },
-    {
-      title: 'الملف الشخصي',
-      icon: User,
-      path: 'profile'
     },
     {
       title: 'الإعدادات',

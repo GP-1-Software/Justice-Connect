@@ -11,6 +11,10 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [certificateFile, setCertificateFile] = useState(null);
   const [idError, setIdError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -26,15 +30,50 @@ const Signup = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
+    const updatedFormData = {
+      ...formData,
+      [name]: value
+    };
+    
     // Clear ID error when user starts typing
     if (name === 'idNumber') {
       setIdError('');
+      // Check password security if password exists
+      if (updatedFormData.password) {
+        const passwordValidation = validatePasswordSecurity(updatedFormData.password, value);
+        setPasswordError(passwordValidation.isValid ? '' : passwordValidation.error);
+      }
     }
     
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    // Clear password error when user starts typing password
+    if (name === 'password' || name === 'confirmPassword') {
+      // Check password security in real-time if ID number exists
+      if (name === 'password' && updatedFormData.idNumber) {
+        const passwordValidation = validatePasswordSecurity(value, updatedFormData.idNumber);
+        setPasswordError(passwordValidation.isValid ? '' : passwordValidation.error);
+      } else if (name === 'password') {
+        setPasswordError('');
+      }
+      
+      // Check password match in real-time
+      if (name === 'password') {
+        // When typing password, check against confirmPassword
+        if (updatedFormData.confirmPassword && value !== updatedFormData.confirmPassword) {
+          setConfirmPasswordError('كلمات المرور غير متطابقة');
+        } else {
+          setConfirmPasswordError('');
+        }
+      } else if (name === 'confirmPassword') {
+        // When typing confirmPassword, check against password
+        if (updatedFormData.password && value !== updatedFormData.password) {
+          setConfirmPasswordError('كلمات المرور غير متطابقة');
+        } else {
+          setConfirmPasswordError('');
+        }
+      }
+    }
+    
+    setFormData(updatedFormData);
   };
 
   const handleIdBlur = () => {
@@ -69,6 +108,43 @@ const Signup = () => {
     if (fileInput) fileInput.value = '';
   };
 
+  // Function to check if password is similar to ID number
+  const validatePasswordSecurity = (password, idNumber) => {
+    if (!password || !idNumber) return { isValid: true, error: '' };
+    
+    const cleanId = idNumber.replace(/[\s-]/g, ''); // Remove spaces and dashes
+    const cleanPassword = password.toLowerCase();
+    
+    // Check if password contains the full ID number
+    if (cleanPassword.includes(cleanId)) {
+      return {
+        isValid: false,
+        error: 'كلمة المرور لا يجب أن تحتوي على رقم الهوية'
+      };
+    }
+    
+    // Check if password is exactly the ID number
+    if (cleanPassword === cleanId) {
+      return {
+        isValid: false,
+        error: 'كلمة المرور لا يجب أن تكون مطابقة لرقم الهوية'
+      };
+    }
+    
+    // Check if password contains significant portions of ID (4+ consecutive digits)
+    for (let i = 0; i <= cleanId.length - 4; i++) {
+      const idPortion = cleanId.substring(i, i + 4);
+      if (cleanPassword.includes(idPortion)) {
+        return {
+          isValid: false,
+          error: 'كلمة المرور لا يجب أن تحتوي على أجزاء من رقم الهوية'
+        };
+      }
+    }
+    
+    return { isValid: true, error: '' };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -81,7 +157,16 @@ const Signup = () => {
     
     // Validate password match
     if (formData.password !== formData.confirmPassword) {
-      alert('كلمات السر غير متطابقة');
+      setConfirmPasswordError('كلمات المرور غير متطابقة');
+      alert('كلمات المرور غير متطابقة');
+      return;
+    }
+    
+    // Validate password security (not similar to ID number)
+    const passwordValidation = validatePasswordSecurity(formData.password, formData.idNumber);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.error);
+      alert(passwordValidation.error);
       return;
     }
     
@@ -419,7 +504,9 @@ const Signup = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 pr-12 pl-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className={`w-full px-4 py-3 pr-12 pl-12 border ${
+                      passwordError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    } dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition`}
                     placeholder="••••••••"
                     required
                   />
@@ -431,6 +518,13 @@ const Signup = () => {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                {passwordError && (
+                  <div className="flex items-center space-x-2 space-x-reverse mt-2 text-red-600 dark:text-red-400 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+               
               </div>
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">تأكيد كلمة السر</label>
@@ -441,7 +535,9 @@ const Signup = () => {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 pr-12 pl-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className={`w-full px-4 py-3 pr-12 pl-12 border ${
+                      confirmPasswordError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    } dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition`}
                     placeholder="••••••••"
                     required
                   />
@@ -453,6 +549,12 @@ const Signup = () => {
                     {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                {confirmPasswordError && (
+                  <div className="flex items-center space-x-2 space-x-reverse mt-2 text-red-600 dark:text-red-400 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{confirmPasswordError}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -466,13 +568,21 @@ const Signup = () => {
               />
               <label htmlFor="terms" className="text-gray-600 dark:text-gray-300 text-sm">
                 أوافق على{' '}
-                <a href="#" className="text-blue-600 hover:underline font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-blue-600 hover:underline font-semibold hover:text-blue-800 dark:hover:text-blue-400"
+                >
                   الشروط والأحكام
-                </a>{' '}
+                </button>{' '}
                 و{' '}
-                <a href="#" className="text-blue-600 hover:underline font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacyModal(true)}
+                  className="text-blue-600 hover:underline font-semibold hover:text-blue-800 dark:hover:text-blue-400"
+                >
                   سياسة الخصوصية
-                </a>
+                </button>
               </label>
             </div>
 
@@ -497,6 +607,192 @@ const Signup = () => {
           </div>
         </div>
       </div>
+
+      {/* Terms and Conditions Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">الشروط والأحكام</h2>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+              >
+                <X className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[70vh] text-gray-700 dark:text-gray-300 space-y-4">
+              <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">مرحباً بك في المنصة القانونية</h3>
+              
+              <h4 className="text-lg font-semibold mt-6">1. قبول الشروط</h4>
+              <p>بموجب استخدامك لهذه المنصة، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا لم تتفق مع أي من هذه الشروط، يرجى عدم استخدام المنصة.</p>
+              
+              <h4 className="text-lg font-semibold mt-6">2. وصف الخدمة</h4>
+              <p>المنصة القانونية هي منصة رقمية تربط بين العملاء والمحامين المرخصين لتقديم الاستشارات القانونية والخدمات المتعلقة بها. تشمل خدماتنا:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>حجز المواعيد مع المحامين المعتمدين</li>
+                <li>الاستشارات القانونية عبر الفيديو أو الهاتف</li>
+                <li>إدارة القضايا والمتابعة</li>
+                <li>تبادل الوثائق والملفات بشكل آمن</li>
+                <li>تقديم التقارير والتحليلات القانونية</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">3. التسجيل والحسابات</h4>
+              <p>لاستخدام المنصة، يجب عليك:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>تقديم معلومات صحيحة ومحدثة عند التسجيل</li>
+                <li>الحفاظ على سرية كلمة المرور الخاصة بك</li>
+                <li>إشعارنا فوراً بأي استخدام غير مصرح به لحسابك</li>
+                <li>التأكد من صحة رقم الهوية المُدخل</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">4. التزامات المحامين</h4>
+              <p>المحامون المسجلون في المنصة يلتزمون بـ:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>تقديم شهادة محاماة صالحة ومعتمدة</li>
+                <li>الالتزام بأخلاقيات المهنة القانونية</li>
+                <li>تقديم خدمات قانونية عالية الجودة</li>
+                <li>الحفاظ على سرية معلومات العملاء</li>
+                <li>الرد على استفسارات العملاء في الوقت المناسب</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">5. المدفوعات والرسوم</h4>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>الأسعار محددة من قبل كل محامٍ بشكل مستقل</li>
+                <li>المدفوعات تتم عبر وسائل دفع آمنة ومعتمدة</li>
+                <li>لا توجد رسوم خفية - جميع التكاليف واضحة مسبقاً</li>
+                <li>سياسة الاسترداد تطبق وفقاً للحالات المحددة</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">6. إنهاء الحساب</h4>
+              <p>يحق لنا إنهاء أو تعليق حسابك في حالة مخالفة هذه الشروط أو سوء الاستخدام.</p>
+              
+              <h4 className="text-lg font-semibold mt-6">7. إخلاء المسؤولية</h4>
+              <p>المنصة تعمل كوسيط بين العملاء والمحامين. نحن لسنا مسؤولين عن جودة الخدمات المقدمة من المحامين أو نتائج القضايا.</p>
+              
+              <h4 className="text-lg font-semibold mt-6">8. القانون الحاكم</h4>
+              <p>تخضع هذه الشروط للقوانين المعمول بها في دولة فلسطين.</p>
+              
+              <p className="mt-6 text-sm text-gray-500">آخر تحديث: نوفمبر 2025</p>
+            </div>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+              >
+                موافق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">سياسة الخصوصية</h2>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+              >
+                <X className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[70vh] text-gray-700 dark:text-gray-300 space-y-4">
+              <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">حماية خصوصيتك أولويتنا</h3>
+              
+              <h4 className="text-lg font-semibold mt-6">1. المعلومات التي نجمعها</h4>
+              <p>نحن نجمع المعلومات التالية لتقديم خدماتنا:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li><strong>المعلومات الشخصية:</strong> الاسم، رقم الهوية، البريد الإلكتروني، رقم الهاتف</li>
+                <li><strong>معلومات الاتصال:</strong> العنوان، المدينة</li>
+                <li><strong>المعلومات المهنية:</strong> للمحامين (شهادة المحاماة، التخصص، سنوات الخبرة)</li>
+                <li><strong>معلومات الاستخدام:</strong> سجلات الدخول، الأنشطة على المنصة</li>
+                <li><strong>المحادثات والملفات:</strong> الاستشارات، الوثائق المرفقة</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">2. كيف نستخدم معلوماتك</h4>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>تقديم وتحسين خدماتنا القانونية</li>
+                <li>التحقق من هوية المستخدمين والمحامين</li>
+                <li>تسهيل التواصل بين العملاء والمحامين</li>
+                <li>معالجة المدفوعات والفواتير</li>
+                <li>إرسال إشعارات مهمة حول حسابك</li>
+                <li>تحسين أمان المنصة ومنع الاحتيال</li>
+                <li>الامتثال للمتطلبات القانونية</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">3. مشاركة المعلومات</h4>
+              <p>نحن لا نبيع أو نؤجر معلوماتك الشخصية لأطراف ثالثة. قد نشارك معلوماتك فقط في الحالات التالية:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>مع المحامين المعتمدين لتقديم الخدمات المطلوبة</li>
+                <li>مع مقدمي الخدمات التقنية الموثوقين</li>
+                <li>عند وجود أمر قانوني أو قضائي</li>
+                <li>لحماية حقوقنا أو حقوق المستخدمين الآخرين</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">4. أمان المعلومات</h4>
+              <p>نطبق تدابير أمنية متقدمة لحماية معلوماتك:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>تشفير البيانات أثناء النقل والتخزين</li>
+                <li>مراقبة الوصول وصلاحيات المستخدمين</li>
+                <li>النسخ الاحتياطي المنتظم للبيانات</li>
+                <li>تحديثات الأمان المستمرة</li>
+                <li>اختبارات الأمان الدورية</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">5. ملفات تعريف الارتباط (Cookies)</h4>
+              <p>نستخدم ملفات تعريف الارتباط لـ:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>تحسين تجربة التصفح</li>
+                <li>تذكر تفضيلاتك</li>
+                <li>تحليل استخدام المنصة</li>
+                <li>توفير ميزات الأمان</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">6. حقوقك</h4>
+              <p>لديك الحق في:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>الوصول إلى معلوماتك الشخصية</li>
+                <li>تصحيح أو تحديث معلوماتك</li>
+                <li>حذف حسابك ومعلوماتك</li>
+                <li>تقييد معالجة معلوماتك</li>
+                <li>الاعتراض على معالجة معيّنة</li>
+                <li>نقل بياناتك (عند الإمكان)</li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold mt-6">7. الاحتفاظ بالبيانات</h4>
+              <p>نحتفظ بمعلوماتك طالما كان حسابك نشطاً أو حسب الحاجة لتقديم الخدمات. قد نحتفظ ببعض المعلومات لفترة أطول للامتثال القانوني.</p>
+              
+              <h4 className="text-lg font-semibold mt-6">8. خصوصية الأطفال</h4>
+              <p>خدماتنا مخصصة للبالغين (18+ عام). نحن لا نجمع معلومات من الأطفال دون سن 18 عاماً بشكل مقصود.</p>
+              
+              <h4 className="text-lg font-semibold mt-6">9. تحديثات السياسة</h4>
+              <p>قد نحدث هذه السياسة من وقت لآخر. سنخطرك بأي تغييرات جوهرية عبر البريد الإلكتروني أو إشعار على المنصة.</p>
+              
+              <h4 className="text-lg font-semibold mt-6">10. التواصل معنا</h4>
+              <p>لأي استفسارات حول خصوصيتك أو هذه السياسة:</p>
+              <ul className="list-disc list-inside mr-6 space-y-2">
+                <li>البريد الإلكتروني: ali.odeh.pss@gmail.com</li>
+                <li>الهاتف: 0592891676</li>
+                <li>العنوان: فلسطين</li>
+              </ul>
+              
+              <p className="mt-6 text-sm text-gray-500">آخر تحديث: نوفمبر 2025</p>
+            </div>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+              >
+                موافق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

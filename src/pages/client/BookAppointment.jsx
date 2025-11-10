@@ -132,7 +132,7 @@ const BookAppointment = () => {
         duration_minutes: duration,
         appointment_type: appointmentType,
         meeting_method: meetingMethod,
-        status: 'scheduled',
+        status: 'pending',
         price: calculateTotal(),
         notes: notes
       };
@@ -245,7 +245,7 @@ const BookAppointment = () => {
                       {lawyer.services.slice(0, 3).map((service) => (
                         <div key={service.service_id} className="flex justify-between text-xs">
                           <span className="text-gray-700 dark:text-gray-300">{service.service_name}</span>
-                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{service.price} ريال</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">{service.price} ₪</span>
                         </div>
                       ))}
                     </div>
@@ -291,7 +291,7 @@ const BookAppointment = () => {
                             )}
                             <div>المدة: {service.duration_minutes} دقيقة</div>
                             <div className="text-blue-600 dark:text-blue-400 font-semibold">
-                              {service.price} ريال
+                              {service.price} ₪
                             </div>
                           </div>
                         </button>
@@ -475,7 +475,7 @@ const BookAppointment = () => {
                         <div className="flex justify-between text-lg font-semibold">
                           <span className="text-gray-900 dark:text-white">المجموع:</span>
                           <span className="text-blue-600 dark:text-blue-400">
-                            {calculateTotal().toFixed(2)} ريال
+                            {calculateTotal().toFixed(2)} ₪
                           </span>
                         </div>
                       </div>
