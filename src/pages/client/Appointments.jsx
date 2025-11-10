@@ -23,7 +23,10 @@ import {
 } from 'lucide-react';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { getClientAppointments, cancelAppointment } from '../../services/appointmentApi';
+import { getMeetingByAppointment } from '../../services/meetingApi';
 import { formatSpecialization } from '../../utils/formatters';
+import MeetingCard from '../../components/shared/MeetingCard';
+import { supabase } from '../../supabaseClient';
 
 const Appointments = () => {
   const { t } = useTranslation();
@@ -39,12 +42,21 @@ const Appointments = () => {
   const [selectedMethod, setSelectedMethod] = useState('all');
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [meetings, setMeetings] = useState({}); // Map of appointment_id -> meeting
+  const [isFiltering, setIsFiltering] = useState(false);
 
   // Reset filters when switching tabs
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSelectedStatus('all');
   };
+
+  // Trigger filtering animation
+  useEffect(() => {
+    setIsFiltering(true);
+    const timer = setTimeout(() => setIsFiltering(false), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedStatus, selectedMethod, appointmentFilter, activeTab]);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -56,6 +68,25 @@ const Appointments = () => {
       try {
         const data = await getClientAppointments(userProfile.user_id);
         setAppointments(data || []);
+        
+        // Fetch meetings for confirmed appointments with video_call
+        const confirmedVideoAppointments = (data || []).filter(
+          apt => apt.status === 'confirmed' && apt.meeting_method === 'video_call'
+        );
+        
+        const meetingsMap = {};
+        for (const apt of confirmedVideoAppointments) {
+          try {
+            const meeting = await getMeetingByAppointment(apt.id);
+            if (meeting) {
+              meetingsMap[apt.id] = meeting;
+            }
+          } catch (error) {
+            console.error(`Error fetching meeting for appointment ${apt.id}:`, error);
+          }
+        }
+        setMeetings(meetingsMap);
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -64,11 +95,101 @@ const Appointments = () => {
     };
 
     fetchAppointments();
+
+    // Real-time subscription for appointments
+    if (userProfile?.user_id) {
+      const appointmentsChannel = supabase
+        .channel('client-appointments-changes')
+        .on('postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'appointments',
+            filter: `client_id=eq.${userProfile.user_id}`
+          },
+          async (payload) => {
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'confirmed' && payload.new.meeting_method === 'video_call') {
+              // Fetch meeting if appointment is confirmed
+              try {
+                const meeting = await getMeetingByAppointment(payload.new.id);
+                if (meeting) {
+                  setMeetings(prev => ({ ...prev, [payload.new.id]: meeting }));
+                }
+              } catch (error) {
+                console.error('Error fetching meeting:', error);
+              }
+            }
+            // Refresh appointments
+            const data = await getClientAppointments(userProfile.user_id);
+            setAppointments(data || []);
+          }
+        )
+        .subscribe();
+
+      // Real-time subscription for meetings
+      const meetingsChannel = supabase
+        .channel('client-meetings-changes')
+        .on('postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'meetings'
+          },
+          async (payload) => {
+            if (payload.eventType === 'INSERT' && payload.new?.related_appointment_id) {
+              // New meeting created - check if it belongs to this client
+              try {
+                const { data: appointment } = await supabase
+                  .from('appointments')
+                  .select('id, client_id')
+                  .eq('id', payload.new.related_appointment_id)
+                  .eq('client_id', userProfile.user_id)
+                  .single();
+                
+                if (appointment) {
+                  setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
+                }
+              } catch (error) {
+                console.error('Error checking appointment:', error);
+              }
+            } else if (payload.eventType === 'UPDATE' && payload.new?.related_appointment_id) {
+              // Meeting updated - check if it belongs to this client
+              try {
+                const { data: appointment } = await supabase
+                  .from('appointments')
+                  .select('id, client_id')
+                  .eq('id', payload.new.related_appointment_id)
+                  .eq('client_id', userProfile.user_id)
+                  .single();
+                
+                if (appointment) {
+                  setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
+                }
+              } catch (error) {
+                console.error('Error checking appointment:', error);
+              }
+            } else if (payload.eventType === 'DELETE' && payload.old?.related_appointment_id) {
+              // Meeting deleted - remove from state immediately
+              setMeetings(prev => {
+                const newMeetings = { ...prev };
+                delete newMeetings[payload.old.related_appointment_id];
+                return newMeetings;
+              });
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        appointmentsChannel.unsubscribe();
+        meetingsChannel.unsubscribe();
+      };
+    }
   }, [userProfile]);
 
   const getStatusConfig = (status) => {
     const configs = {
-      scheduled: {
+      pending: {
         label: 'قيد التأكيد',
         icon: AlertTriangle,
         color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
@@ -99,7 +220,7 @@ const Appointments = () => {
         borderColor: 'border-gray-200 dark:border-gray-700'
       }
     };
-    return configs[status] || configs.scheduled;
+    return configs[status] || configs.pending;
   };
 
   const getMethodConfig = (method) => {
@@ -111,51 +232,89 @@ const Appointments = () => {
     return configs[method] || configs.video_call;
   };
 
-  const filteredAppointments = appointments.filter(appointment => {
-    const lawyerName = `${appointment.lawyers?.first_name || ''} ${appointment.lawyers?.last_name || ''}`.trim();
-    const matchesSearch = lawyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.appointment_type?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // تحديد المواعيد النشطة: المواعيد بحالة scheduled أو confirmed
-    const appointmentStatus = appointment.status?.toLowerCase();
-    const isActiveAppointment = appointmentStatus === 'scheduled' || appointmentStatus === 'confirmed';
-    
-    // تحديد المواعيد المنتهية: المواعيد بحالة completed أو cancelled أو rejected
-    const isCompletedAppointment = appointmentStatus === 'completed' || 
-                                   appointmentStatus === 'cancelled' || 
-                                   appointmentStatus === 'rejected';
-    
-    // تحديد التاب المناسب بناءً على الحالة
-    let matchesTab = false;
-    if (activeTab === 'upcoming') {
-      // المواعيد النشطة: scheduled و confirmed
-      matchesTab = isActiveAppointment;
-    } else {
-      // السجل الكامل: completed و cancelled و rejected
-      matchesTab = isCompletedAppointment;
-    }
-    
-    // إذا لم يطابق التاب، لا نتابع
-    if (!matchesTab) return false;
-    
-    const matchesAppointmentFilter = 
-      appointmentFilter === 'all' ? true :
-      appointmentFilter === 'with_case' ? appointment.case_id !== null :
-      appointmentFilter === 'standalone' ? appointment.case_id === null : true;
-    
-    // فلتر الحالة
-    const matchesStatus = selectedStatus === 'all' || appointmentStatus === selectedStatus.toLowerCase();
-    
-    const matchesMethod = selectedMethod === 'all' || appointment.meeting_method === selectedMethod;
-    
-    return matchesSearch && matchesAppointmentFilter && matchesStatus && matchesMethod;
-  });
+  // Smart filtering and sorting
+  const filteredAndSortedAppointments = React.useMemo(() => {
+    // Step 1: Filter appointments
+    const filtered = appointments.filter(appointment => {
+      const lawyerName = `${appointment.lawyers?.first_name || ''} ${appointment.lawyers?.last_name || ''}`.trim();
+      const matchesSearch = lawyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           appointment.appointment_type?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // تحديد المواعيد النشطة: المواعيد بحالة pending أو confirmed
+      const appointmentStatus = appointment.status?.toLowerCase();
+      const isActiveAppointment = appointmentStatus === 'pending' || appointmentStatus === 'confirmed';
+      
+      // تحديد المواعيد المنتهية: المواعيد بحالة completed أو cancelled
+      const isCompletedAppointment = appointmentStatus === 'completed' || 
+                                     appointmentStatus === 'cancelled';
+      
+      // تحديد التاب المناسب بناءً على الحالة
+      let matchesTab = false;
+      if (activeTab === 'upcoming') {
+        // المواعيد النشطة: pending و confirmed
+        matchesTab = isActiveAppointment;
+      } else {
+        // السجل الكامل: completed و cancelled
+        matchesTab = isCompletedAppointment;
+      }
+      
+      // إذا لم يطابق التاب، لا نتابع
+      if (!matchesTab) return false;
+      
+      const matchesAppointmentFilter = 
+        appointmentFilter === 'all' ? true :
+        appointmentFilter === 'with_case' ? appointment.case_id !== null :
+        appointmentFilter === 'standalone' ? appointment.case_id === null : true;
+      
+      // فلتر الحالة
+      const matchesStatus = selectedStatus === 'all' || appointmentStatus === selectedStatus.toLowerCase();
+      
+      const matchesMethod = selectedMethod === 'all' || appointment.meeting_method === selectedMethod;
+      
+      return matchesSearch && matchesAppointmentFilter && matchesStatus && matchesMethod;
+    });
 
-  const stats = {
+    // Step 2: Smart sorting based on action/update time
+    const sorted = [...filtered].sort((a, b) => {
+      // Priority order for statuses
+      const statusPriority = {
+        'pending': 1,      // أعلى أولوية للمواعيد قيد التأكيد
+        'confirmed': 2,    // ثم المؤكدة
+        'completed': 3,    // ثم المكتملة
+        'cancelled': 4     // أقل أولوية للملغاة
+      };
+
+      const statusA = a.status?.toLowerCase();
+      const statusB = b.status?.toLowerCase();
+      
+      // Sort by status priority first
+      const priorityDiff = (statusPriority[statusA] || 999) - (statusPriority[statusB] || 999);
+      if (priorityDiff !== 0) return priorityDiff;
+      
+      // Within same status, sort by last update time (most recent action first)
+      // Use updated_at if available, otherwise fall back to created_at or appointment date
+      const getLastActionTime = (apt) => {
+        if (apt.updated_at) return new Date(apt.updated_at);
+        if (apt.created_at) return new Date(apt.created_at);
+        return new Date(`${apt.appointment_date} ${apt.appointment_time}`);
+      };
+      
+      const lastActionA = getLastActionTime(a);
+      const lastActionB = getLastActionTime(b);
+      
+      // الأحدث في الـ action أولاً (descending)
+      return lastActionB - lastActionA;
+    });
+
+    return sorted;
+  }, [appointments, activeTab, searchTerm, appointmentFilter, selectedStatus, selectedMethod]);
+
+  // Dynamic stats with real-time updates
+  const stats = React.useMemo(() => ({
     upcoming: appointments.filter(a => {
-      // المواعيد النشطة: scheduled و confirmed
+      // المواعيد النشطة: pending و confirmed
       const status = a.status?.toLowerCase();
-      return status === 'scheduled' || status === 'confirmed';
+      return status === 'pending' || status === 'confirmed';
     }).length,
     completed: appointments.filter(a => {
       const status = a.status?.toLowerCase();
@@ -163,9 +322,13 @@ const Appointments = () => {
     }).length,
     pending: appointments.filter(a => {
       const status = a.status?.toLowerCase();
-      return status === 'scheduled';
+      return status === 'pending';
+    }).length,
+    cancelled: appointments.filter(a => {
+      const status = a.status?.toLowerCase();
+      return status === 'cancelled';
     }).length
-  };
+  }), [appointments]);
 
   const openCancelModal = (appointment) => {
     setAppointmentToCancel(appointment);
@@ -190,8 +353,8 @@ const Appointments = () => {
     navigate(`/client/cases/${caseId}`);
   };
 
-  const handleJoinSession = () => {
-    alert('سيتم فتح غرفة الاجتماع قريباً');
+  const handleJoinMeeting = (meeting) => {
+    window.open(meeting.meeting_link, '_blank');
   };
 
   if (loading) {
@@ -308,7 +471,7 @@ const Appointments = () => {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all ${
+                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all relative ${
                   showFilters
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
                     : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -316,15 +479,57 @@ const Appointments = () => {
               >
                 <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-medium">فلتر</span>
+                {(selectedStatus !== 'all' || selectedMethod !== 'all') && (
+                  <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                    {[selectedStatus !== 'all', selectedMethod !== 'all'].filter(Boolean).length}
+                  </span>
+                )}
               </button>
             </div>
           </div>
+
+          {/* Results count indicator */}
+          {(searchTerm || selectedStatus !== 'all' || selectedMethod !== 'all' || appointmentFilter !== 'all') && (
+            <div className="mb-3 flex items-center justify-between animate-slideDown">
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <div className="flex items-center space-x-2 space-x-reverse text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">
+                    {filteredAndSortedAppointments.length}
+                  </span>
+                  <span>نتيجة</span>
+                </div>
+                <div className="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <div className="flex items-center space-x-1 space-x-reverse text-xs text-gray-500 dark:text-gray-400">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>مرتبة حسب: الحالة ثم آخر تحديث</span>
+                </div>
+              </div>
+              {(searchTerm || selectedStatus !== 'all' || selectedMethod !== 'all' || appointmentFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedStatus('all');
+                    setSelectedMethod('all');
+                    setAppointmentFilter('all');
+                  }}
+                  className="flex items-center space-x-1 space-x-reverse text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                  <span>مسح الفلاتر</span>
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <select
               value={appointmentFilter}
               onChange={(e) => setAppointmentFilter(e.target.value)}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${
+                appointmentFilter !== 'all' 
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 font-semibold' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
             >
               <option value="all">جميع المواعيد</option>
               <option value="with_case">المرتبطة بقضية</option>
@@ -336,19 +541,22 @@ const Appointments = () => {
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                  className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${
+                    selectedStatus !== 'all' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
                 >
                   <option value="all">جميع الحالات</option>
                   {activeTab === 'upcoming' ? (
                     <>
-                      <option value="scheduled">قيد التأكيد</option>
+                      <option value="pending">قيد التأكيد</option>
                       <option value="confirmed">مؤكد</option>
                     </>
                   ) : (
                     <>
                       <option value="completed">مكتمل</option>
                       <option value="cancelled">ملغى</option>
-                      <option value="rejected">مرفوض</option>
                     </>
                   )}
                 </select>
@@ -356,7 +564,11 @@ const Appointments = () => {
                 <select
                   value={selectedMethod}
                   onChange={(e) => setSelectedMethod(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                  className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${
+                    selectedMethod !== 'all' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
                 >
                   <option value="all">جميع الأنواع</option>
                   <option value="video_call">مكالمة فيديو</option>
@@ -368,8 +580,18 @@ const Appointments = () => {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {filteredAppointments.length === 0 ? (
+        {/* Filtering indicator */}
+        {isFiltering && (
+          <div className="flex items-center justify-center py-2 mb-4">
+            <div className="flex items-center space-x-2 space-x-reverse text-blue-600 dark:text-blue-400">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+              <span className="text-sm font-medium">جاري التحديث...</span>
+            </div>
+          </div>
+        )}
+
+        <div className={`space-y-4 transition-opacity duration-300 ${isFiltering ? 'opacity-50' : 'opacity-100'}`}>
+          {filteredAndSortedAppointments.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center">
               <Calendar className="h-20 w-20 text-gray-400 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -390,18 +612,52 @@ const Appointments = () => {
               )}
             </div>
           ) : (
-            filteredAppointments.map((appointment) => {
+            filteredAndSortedAppointments.map((appointment) => {
               const statusConfig = getStatusConfig(appointment.status);
               const methodConfig = getMethodConfig(appointment.meeting_method);
               const StatusIcon = statusConfig.icon;
               const MethodIcon = methodConfig.icon;
-              const isUpcoming = new Date(appointment.appointment_date) >= new Date();
+              
+              // Fix: Compare dates without time component
+              const appointmentDate = new Date(appointment.appointment_date);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0); // Reset time to start of day
+              appointmentDate.setHours(0, 0, 0, 0); // Reset time to start of day
+              const isUpcoming = appointmentDate >= today;
+              
               const lawyerName = `${appointment.lawyers?.first_name || ''} ${appointment.lawyers?.last_name || ''}`.trim();
+              
+              // Calculate time since last update
+              const getTimeSinceUpdate = () => {
+                const lastUpdate = appointment.updated_at 
+                  ? new Date(appointment.updated_at) 
+                  : appointment.created_at 
+                    ? new Date(appointment.created_at)
+                    : null;
+                
+                if (!lastUpdate) return null;
+                
+                const now = new Date();
+                const diffMs = now - lastUpdate;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'الآن';
+                if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+                if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+                if (diffDays === 1) return 'منذ يوم';
+                if (diffDays < 7) return `منذ ${diffDays} أيام`;
+                return null;
+              };
+              
+              const timeSinceUpdate = getTimeSinceUpdate();
               
               return (
                 <div
                   key={appointment.id}
-                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all p-6 border-r-4 ${statusConfig.borderColor}`}
+                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border-r-4 ${statusConfig.borderColor} animate-fadeIn`}
+                  style={{ animationDelay: `${filteredAndSortedAppointments.indexOf(appointment) * 50}ms` }}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                     <div className="flex-1">
@@ -426,9 +682,16 @@ const Appointments = () => {
                         </div>
 
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                            {lawyerName}
-                          </h3>
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                              {lawyerName}
+                            </h3>
+                            {timeSinceUpdate && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full whitespace-nowrap">
+                                🕒 {timeSinceUpdate}
+                              </span>
+                            )}
+                          </div>
                           
                           <p className="text-blue-600 dark:text-blue-400 font-medium mb-3">
                             {formatSpecialization(appointment.lawyers?.specialization)}
@@ -493,7 +756,7 @@ const Appointments = () => {
                             </span>
                           )}
 
-                          {appointment.status === 'rejected' && appointment.rejection_reason && (
+                          {appointment.status === 'cancelled' && appointment.rejection_reason && (
                             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-3">
                               <div className="flex items-start space-x-2 space-x-reverse">
                                 <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -517,6 +780,20 @@ const Appointments = () => {
                               </p>
                             </div>
                           )}
+
+                          {/* Meeting Card for Video Calls */}
+                          {appointment.status === 'confirmed' && 
+                           appointment.meeting_method === 'video_call' && 
+                           meetings[appointment.id] && (
+                            <div className="mt-4">
+                              <MeetingCard
+                                meeting={meetings[appointment.id]}
+                                appointment={appointment}
+                                userType="client"
+                                onJoinMeeting={handleJoinMeeting}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -524,7 +801,7 @@ const Appointments = () => {
                     <div className="flex flex-col items-end space-y-3">
                       <div className="text-left">
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {appointment.price} ريال
+                          {appointment.price} ₪
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           {appointment.duration_minutes} دقيقة
@@ -532,15 +809,6 @@ const Appointments = () => {
                       </div>
 
                       <div className="flex flex-col space-y-2 w-full">
-                        {isUpcoming && appointment.status === 'confirmed' && appointment.meeting_method === 'video_call' && (
-                          <button
-                            onClick={handleJoinSession}
-                            className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg"
-                          >
-                            <Video className="h-4 w-4" />
-                            <span className="text-sm font-medium">انضم للجلسة</span>
-                          </button>
-                        )}
 
                         {appointment.case_id && (
                           <button
@@ -552,7 +820,7 @@ const Appointments = () => {
                           </button>
                         )}
 
-                        {isUpcoming && appointment.status === 'scheduled' && (
+                        {isUpcoming && appointment.status === 'pending' && (
                           <button
                             onClick={() => openCancelModal(appointment)}
                             className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-md hover:shadow-lg"

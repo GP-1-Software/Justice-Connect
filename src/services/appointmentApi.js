@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { createMeeting } from './meetingApi';
 
 // Get all appointments for a client with related case info
 export const getClientAppointments = async (clientId) => {
@@ -107,7 +108,7 @@ export const createAppointment = async (appointmentData) => {
 };
 
 // Update appointment status
-export const updateAppointmentStatus = async (appointmentId, status) => {
+export const updateAppointmentStatus = async (appointmentId, status, userRole = null, userId = null) => {
   try {
     const { data, error } = await supabase
       .from('appointments')
@@ -128,6 +129,35 @@ export const updateAppointmentStatus = async (appointmentId, status) => {
     if (error) {
       console.error('Error updating appointment status:', error);
       throw error;
+    }
+
+    // If appointment is confirmed and meeting_method is video_call, create meeting automatically
+    if (status === 'confirmed' && data.meeting_method === 'video_call') {
+      try {
+        // Check if meeting already exists
+        const { data: existingMeeting } = await supabase
+          .from('meetings')
+          .select('meeting_id')
+          .eq('related_appointment_id', appointmentId)
+          .eq('meeting_type', 'appointment')
+          .maybeSingle();
+
+        if (!existingMeeting) {
+          // Create meeting automatically
+          await createMeeting({
+            meeting_type: 'appointment',
+            related_appointment_id: appointmentId,
+            scheduled_date: data.appointment_date,
+            scheduled_time: data.appointment_time,
+            created_by_role: userRole || 'lawyer',
+            created_by_id: userId || data.lawyer_id,
+            meeting_status: 'confirmed'
+          });
+        }
+      } catch (meetingError) {
+        console.error('Error creating meeting for appointment:', meetingError);
+        // Don't throw - appointment is still confirmed even if meeting creation fails
+      }
     }
 
     return data;
@@ -187,7 +217,7 @@ export const getLawyerAvailableSlots = async (lawyerId, date) => {
       .select('appointment_time, duration_minutes')
       .eq('lawyer_id', parseInt(lawyerId))
       .eq('appointment_date', date)
-      .in('status', ['scheduled', 'confirmed']);
+      .in('status', ['pending', 'confirmed']);
 
     if (error) {
       console.error('Error fetching existing appointments:', error);

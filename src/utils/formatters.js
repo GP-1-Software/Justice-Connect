@@ -31,10 +31,10 @@ export const formatSpecialization = (specialization, separator = ' • ') => {
 /**
  * Format currency amount
  * @param {number|string} amount - The amount to format
- * @param {string} currency - The currency symbol (default: 'ريال')
+ * @param {string} currency - The currency symbol (default: '₪')
  * @returns {string} - Formatted currency string
  */
-export const formatCurrency = (amount, currency = 'ريال') => {
+export const formatCurrency = (amount, currency = '₪') => {
   if (!amount && amount !== 0) return '';
   
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;

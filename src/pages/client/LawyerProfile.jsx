@@ -11,7 +11,7 @@ import {
   Mail,
   Award,
   Clock,
-  DollarSign,
+  Coins,
   User,
   Loader,
   AlertCircle,
@@ -304,8 +304,8 @@ const LawyerProfile = () => {
                             {service.service_name}
                           </h3>
                           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold">
-                            <DollarSign className="w-5 h-5" />
-                            {service.price}
+                            <Coins className="w-5 h-5" />
+                            {service.price} ₪
                           </div>
                         </div>
                         {service.description && (

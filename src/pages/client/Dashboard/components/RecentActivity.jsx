@@ -27,7 +27,7 @@ const RecentActivity = ({ activities, loading }) => {
   const getActivityColor = (type, status) => {
     if (type === 'appointment') {
       switch (status) {
-        case 'scheduled':
+        case 'pending':
           return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
         case 'completed':
           return 'text-green-600 bg-green-50 dark:bg-green-900/20';
@@ -143,12 +143,12 @@ const RecentActivity = ({ activities, loading }) => {
                     {activity.status && (
                       <div className="mt-1">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          activity.status === 'scheduled' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
+                          activity.status === 'pending' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
                           activity.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
                           activity.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                         }`}>
-                          {activity.status === 'scheduled' ? 'مجدول' :
+                          {activity.status === 'pending' ? 'قيد الانتظار' :
                            activity.status === 'completed' ? 'مكتمل' :
                            activity.status === 'cancelled' ? 'ملغي' :
                            activity.status}

@@ -73,7 +73,7 @@ const CalendarView = ({ currentDate, appointments, cases, workingHours }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      'scheduled': 'bg-yellow-500',
+      'pending': 'bg-yellow-500',
       'confirmed': 'bg-blue-500',
       'completed': 'bg-gray-500',
       'cancelled': 'bg-red-500',
@@ -84,7 +84,7 @@ const CalendarView = ({ currentDate, appointments, cases, workingHours }) => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      'scheduled': 'مجدول',
+      'pending': 'قيد الانتظار',
       'confirmed': 'مؤكد',
       'completed': 'مكتمل',
       'cancelled': 'ملغي',
@@ -354,7 +354,7 @@ const CalendarView = ({ currentDate, appointments, cases, workingHours }) => {
 
                           {apt.price && (
                             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-                              <span className="font-semibold text-green-600 dark:text-green-400">{apt.price} ر.س</span>
+                              <span className="font-semibold text-green-600 dark:text-green-400">{apt.price} ₪</span>
                             </div>
                           )}
 

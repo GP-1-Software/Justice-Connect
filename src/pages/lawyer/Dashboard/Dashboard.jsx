@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
-import { Briefcase, Calendar as CalendarIcon, FileText, DollarSign } from 'lucide-react';
+import { Briefcase, Calendar as CalendarIcon, FileText, Coins } from 'lucide-react';
 import WelcomeBanner from './components/WelcomeBanner';
 import StatsCard from './components/StatsCard';
 import QuickActions from './components/QuickActions';
@@ -45,7 +45,7 @@ const Dashboard = () => {
           .select('*', { count: 'exact', head: true })
           .eq('lawyer_id', lawyer.lawyer_id)
           .gte('appointment_date', new Date().toISOString().split('T')[0])
-          .in('status', ['scheduled', 'confirmed']);
+          .in('status', ['pending', 'confirmed']);
 
         // Fetch completed cases
         const { count: completedCases } = await supabase
@@ -107,7 +107,7 @@ const Dashboard = () => {
           loading={loading}
         />
         <StatsCard
-          icon={DollarSign}
+          icon={Coins}
           label="القضايا المنجزة"
           value={stats.completedCases}
           iconBgColor="bg-orange-100 dark:bg-orange-900/30"
