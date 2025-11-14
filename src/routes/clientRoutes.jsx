@@ -15,7 +15,7 @@ import CreateCase from '../pages/client/CreateCase';
 import MyCases from '../pages/client/MyCases';
 import CaseDetails from '../pages/client/CaseDetails';
 
-import JusticeAIChat from "../pages/client/JusticeAIChat";
+import JusticeAIChat from "../pages/client/JusticeAI/JusticeAIChat.jsx";
 
 
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';

@@ -74,12 +74,12 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       icon: Bell,
       path: 'notifications'
     },
-      {
+ /*     {
       title: 'الاستشارات',
       icon: Video,
       path: 'consultations'
     },
-    {
+   {
       title: 'تحليل المستندات',
       icon: FileSearch,
       path: 'document-analysis'
@@ -88,6 +88,11 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       title: 'المساعد الذكي',
       icon: Bot,
       path: 'ai-assistant'
+    },    */
+    {
+      title: 'الذكاء القانوني',
+      icon: Bot,
+      path: 'justice-ai'
     },
     {
       title: 'الإعدادات',
