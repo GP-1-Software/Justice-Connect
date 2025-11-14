@@ -4,29 +4,60 @@
  * @param {string} separator - The separator to use when joining arrays (default: ' • ')
  * @returns {string} - Formatted specialization string
  */
+
+
 export const formatSpecialization = (specialization, separator = ' • ') => {
   if (!specialization) return '';
-  
+
+  // Helper to clean a single item
+  const cleanItem = (val) => {
+    if (val == null) return '';
+    if (typeof val !== 'string') return String(val);
+    // Pattern: {"القانون الجنائي"}
+    const m = val.match(/^\{\"(.+?)\"\}$/);
+    if (m) return m[1];
+    // Pattern: "النص" (extra enclosing quotes)
+    const q = val.match(/^\"(.+?)\"$/);
+    if (q) return q[1];
+    return val;
+  };
+
   try {
-    // Check if specialization is a JSON string
-    if (typeof specialization === 'string' && 
-        (specialization.startsWith('[') || specialization.startsWith('{'))) {
-      const parsed = JSON.parse(specialization);
-      return Array.isArray(parsed) ? parsed.join(separator) : String(parsed);
+    // If it's a JSON encoded array/object string try parse
+    if (typeof specialization === 'string' && (specialization.trim().startsWith('[') || specialization.trim().startsWith('{'))) {
+      try {
+        const parsed = JSON.parse(specialization);
+        if (Array.isArray(parsed)) {
+          return parsed.map(cleanItem).filter(Boolean).join(separator);
+        }
+        if (typeof parsed === 'object' && parsed !== null) {
+          return Object.values(parsed).map(cleanItem).filter(Boolean).join(separator);
+        }
+        return cleanItem(parsed);
+      } catch {
+        // Fallthrough to normal handling
+      }
     }
-    
-    // Check if it's already an array
+
+    // Already an array
     if (Array.isArray(specialization)) {
-      return specialization.join(separator);
+      return specialization.map(cleanItem).filter(Boolean).join(separator);
     }
-    
-    // Otherwise return as string
-    return String(specialization);
-  } catch (e) {
-    // If parsing fails, return as is
+
+    // Plain object
+    if (typeof specialization === 'object') {
+      return Object.values(specialization).map(cleanItem).filter(Boolean).join(separator);
+    }
+
+    // Single string value
+    return cleanItem(specialization);
+  } catch {
     return String(specialization);
   }
 };
+
+
+
 
 /**
  * Format currency amount

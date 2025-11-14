@@ -73,7 +73,7 @@ const Settings = () => {
     } else {
       setError(result.message || 'فشل تغيير كلمة المرور');
     }
-    
+
     setLoading(false);
   };
 
@@ -125,14 +125,14 @@ const Settings = () => {
     <div className="max-w-5xl mx-auto">
       {/* Header with gradient */}
       <div className="mb-6 sm:mb-8">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-6 sm:p-8 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl p-6 sm:p-8 text-white shadow-lg">
           <div className="flex items-center space-x-4 space-x-reverse">
             <div className="bg-white/20 p-3 rounded-lg">
               <Shield className="h-8 w-8" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-1">الإعدادات</h1>
-              <p className="text-purple-100">إدارة إعدادات الأمان والإشعارات والحساب</p>
+              <p className="text-blue-100">إدارة إعدادات الأمان والإشعارات والحساب</p>
             </div>
           </div>
         </div>
@@ -182,8 +182,8 @@ const Settings = () => {
         {activeTab === 'security' && (
           <form onSubmit={handlePasswordChange} className="space-y-8">
             <div className="flex items-center space-x-3 space-x-reverse pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg">
-                <Shield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">تغيير كلمة المرور</h3>
             </div>
@@ -199,7 +199,7 @@ const Settings = () => {
                     type="password"
                     value={passwordForm.currentPassword}
                     onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                    className="w-full px-4 py-3 pr-12 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                    className="w-full px-4 py-3 pr-12 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                     required
                     placeholder="أدخل كلمة المرور الحالية"
                   />
@@ -221,7 +221,7 @@ const Settings = () => {
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   required
                   minLength={6}
                   placeholder="أدخل كلمة المرور الجديدة"
@@ -238,7 +238,7 @@ const Settings = () => {
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   required
                   minLength={6}
                   placeholder="أعد إدخال كلمة المرور"
@@ -251,7 +251,7 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center space-x-2 space-x-reverse"
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center space-x-2 space-x-reverse"
               >
                 {loading ? (
                   <>

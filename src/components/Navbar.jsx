@@ -101,13 +101,6 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8 space-x-reverse">
             <a href="#home" onClick={(e) => handleScroll(e, 'home')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">الرئيسية</a>
             <a href="#features" onClick={(e) => handleScroll(e, 'features')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">المزايا</a>
-            <button 
-              onClick={() => navigate('/quick-consultation')}
-              className="flex items-center space-x-2 space-x-reverse text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold"
-            >
-              <MessageSquare className="h-5 w-5" />
-              <span>استشارة سريعة</span>
-            </button>
             
             {/* Search Dropdown */}
             <div className="relative">

@@ -1,4 +1,5 @@
 import { FileText, User, Scale, Calendar, AlertCircle, Info, Mail, Phone, MapPin, Award, Briefcase } from 'lucide-react';
+import { formatSpecialization } from '../../../utils/formatters';
 
 const CaseOverview = ({ caseData, lawyer }) => {
   const caseTypeLabels = {
@@ -121,7 +122,7 @@ const CaseOverview = ({ caseData, lawyer }) => {
                 </h4>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                   <Briefcase className="w-4 h-4" />
-                  <span>{lawyer.specialization}</span>
+                  <span>{formatSpecialization(lawyer.specialization)}</span>
                 </div>
                 {lawyer.years_of_experience && (
                   <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">

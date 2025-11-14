@@ -14,6 +14,10 @@ import LawyerProfile from '../pages/client/LawyerProfile';
 import CreateCase from '../pages/client/CreateCase';
 import MyCases from '../pages/client/MyCases';
 import CaseDetails from '../pages/client/CaseDetails';
+
+import JusticeAIChat from "../pages/client/JusticeAIChat";
+
+
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';
 // import DocumentAnalyzer from '../pages/client/DocumentAnalyzer/DocumentAnalyzer';
 // import AIChatbot from '../pages/client/AIChatbot/AIChatbot';
@@ -80,11 +84,14 @@ const ClientRoutes = () => {
         {/* Communication */}
         <Route path="messages" element={<PlaceholderPage title="الرسائل" />} />
         <Route path="video-call/:sessionId" element={<PlaceholderPage title="مكالمة فيديو" />} />
-        
+
         {/* AI Features */}
-        <Route path="document-analyzer" element={<PlaceholderPage title="تحليل المستندات" />} />
-        <Route path="ai-chatbot" element={<PlaceholderPage title="المساعد الذكي" />} />
-        
+        {/*<Route path="document-analyzer" element={<PlaceholderPage title="تحليل المستندات" />} />*/}
+        {/*<Route path="ai-chatbot" element={<PlaceholderPage title="المساعد الذكي" />} />*/}
+
+        <Route path="justice-ai" element={<JusticeAIChat />} />
+
+
         {/* Payments and Profile */}
         <Route path="payments" element={<PlaceholderPage title="المدفوعات" />} />
         <Route path="profile-settings" element={<Profile />} />
