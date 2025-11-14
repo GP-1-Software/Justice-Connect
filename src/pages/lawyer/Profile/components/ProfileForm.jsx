@@ -114,9 +114,23 @@ const ProfileForm = () => {
 
     setLoading(true);
     try {
+      // Clean specialization values to avoid stored patterns like {"النص"}
+      const cleanSpecs = Array.isArray(formData.specialization)
+        ? formData.specialization.map(s => {
+            if (typeof s !== 'string') return s;
+            const m = s.match(/^\{\"(.+?)\"\}$/);
+            if (m) return m[1];
+            const q = s.match(/^\"(.+?)\"$/);
+            if (q) return q[1];
+            return s;
+          })
+        : [];
+
+      const payload = { ...formData, specialization: cleanSpecs };
+
       const { error } = await supabase
         .from('lawyers')
-        .update(formData)
+        .update(payload)
         .eq('lawyer_id', lawyer.lawyer_id);
 
       if (error) throw error;

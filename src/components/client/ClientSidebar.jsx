@@ -89,10 +89,15 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       icon: FileCheck,
       path: 'document-analyzer'
     },     */
-    {
+  /*  {
       title: 'المساعد الذكي',
       icon: Bot,
       path: 'ai-chatbot'
+    },  */
+    {
+      title: 'الذكاء القانوني',
+      icon: Bot,
+      path: 'justice-ai'
     },
     {
       title: 'الإعدادات',

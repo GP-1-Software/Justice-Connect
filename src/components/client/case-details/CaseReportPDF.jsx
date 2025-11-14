@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { formatSpecialization } from '../../../utils/formatters';
 
 // تسجيل خط عربي (Cairo) - يدعم UTF-8 والنصوص العربية
 Font.register({
@@ -419,7 +420,7 @@ const CaseReportPDF = ({ caseData, client, lawyer, timeline, tasks, notes, files
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>التخصص:</Text>
-                <Text style={styles.infoValue}>{lawyer.specialization || 'غير محدد'}</Text>
+                <Text style={styles.infoValue}>{formatSpecialization(lawyer.specialization) || 'غير محدد'}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>رقم الترخيص:</Text>
