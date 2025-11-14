@@ -9,6 +9,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import DeletionRequests from './pages/admin/DeletionRequests';
 import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
+import { LawyerAuthProvider } from './hooks/useLawyerAuth.jsx';
+import { ClientAuthProvider } from './hooks/useClientAuth.jsx';
 
 
 // Import ThemeProvider
@@ -17,21 +19,24 @@ import { ThemeProvider } from './context/ThemeContext';
 function App() {
   return (
     <ThemeProvider>
-      <div>
-        <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin/verification" element={<AdminVerification />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
-        <Route path="/pending-verification" element={<PendingVerification />} />
-        {/* Client protected area */}
-        <Route path="/client/*" element={<ClientRoutes />} />
-        {/* Lawyer protected area */}
-        <Route path="/*" element={<LawyerRoutes />} />
-      </Routes>
-    </div>
+      {/* Provide both auth contexts so nested routes can consume without error */}
+      <ClientAuthProvider>
+        <LawyerAuthProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin/verification" element={<AdminVerification />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
+            <Route path="/pending-verification" element={<PendingVerification />} />
+            {/* Client protected area */}
+            <Route path="/client/*" element={<ClientRoutes />} />
+            {/* Lawyer protected area */}
+            <Route path="/*" element={<LawyerRoutes />} />
+          </Routes>
+        </LawyerAuthProvider>
+      </ClientAuthProvider>
     </ThemeProvider>
   );
 }

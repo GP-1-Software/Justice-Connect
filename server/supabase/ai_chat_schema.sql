@@ -5,13 +5,17 @@
 create extension if not exists pgcrypto;
 
 -- Conversations table
+-- Note: client_user_id and lawyer_user_id are nullable to support single-role conversations
 create table if not exists public.ai_conversations (
   id uuid primary key default gen_random_uuid(),
-  client_user_id text not null,
+  client_user_id text,
+  lawyer_user_id text,
   title text,
   created_at timestamptz not null default now(),
   last_message_at timestamptz not null default now(),
-  metadata jsonb
+  metadata jsonb,
+  -- Ensure at least one user_id is provided
+  constraint check_has_user check (client_user_id is not null or lawyer_user_id is not null)
 );
 
 -- Messages table

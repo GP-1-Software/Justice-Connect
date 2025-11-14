@@ -125,7 +125,7 @@ const Settings = () => {
     <div className="max-w-5xl mx-auto">
       {/* Header with gradient */}
       <div className="mb-6 sm:mb-8">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-6 sm:p-8 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl p-6 sm:p-8 text-white shadow-lg">
           <div className="flex items-center space-x-4 space-x-reverse">
             <div className="bg-white/20 p-3 rounded-lg">
               <Shield className="h-8 w-8" />
@@ -251,7 +251,7 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center space-x-2 space-x-reverse"
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center space-x-2 space-x-reverse"
               >
                 {loading ? (
                   <>

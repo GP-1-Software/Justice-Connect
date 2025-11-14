@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Check, Trash2, Bot, Mic, MessageSquare, Pencil } from "lucide-react";
-import { deleteConversation } from "../../services/aiChatStorage";
-import { useClientAuth } from "../../hooks/useClientAuth";
-import { useTheme } from "../../context/ThemeContext";
-import { createConversation, addMessage, getConversationMessages, listConversations, updateConversationTitle } from "../../services/aiChatStorage";
+import { deleteConversation } from "../../../services/aiChatStorage.js";
+import { useClientAuth } from "../../../hooks/useClientAuth.jsx";
+import { useTheme } from "../../../context/ThemeContext.jsx";
+import { createConversation, addMessage, getConversationMessages, listConversations, updateConversationTitle } from "../../../services/aiChatStorage.js";
 
 export default function JusticeAIChat() {
     const { userProfile } = useClientAuth();
