@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2 } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3 } from 'lucide-react';
 import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
 
 const AdminDashboard = () => {
@@ -467,7 +467,7 @@ const AdminDashboard = () => {
 
           {/* Main Tabs */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8">
-            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <button
                 onClick={() => { setMainTab('users'); setUserStatusTab('pending'); }}
                 className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
@@ -525,6 +525,13 @@ const AdminDashboard = () => {
                 <Trash2 className="h-5 w-5" />
                 <span>طلبات الحذف</span>
               </button>
+              <Link
+                to="/admin/system-ai"
+                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-500 hover:text-white hover:shadow-lg"
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>SystemAI</span>
+              </Link>
             </div>
           </div>
 

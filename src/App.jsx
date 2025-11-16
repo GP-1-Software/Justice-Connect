@@ -7,6 +7,7 @@ import AdminVerification from './pages/AdminVerification';
 import PendingVerification from './pages/PendingVerification';
 import AdminDashboard from './pages/AdminDashboard';
 import DeletionRequests from './pages/admin/DeletionRequests';
+import SystemAI from './pages/admin/SystemAI';
 import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
 import { LawyerAuthProvider } from './hooks/useLawyerAuth.jsx';
@@ -29,6 +30,7 @@ function App() {
             <Route path="/admin/verification" element={<AdminVerification />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
+            <Route path="/admin/system-ai" element={<SystemAI />} />
             <Route path="/pending-verification" element={<PendingVerification />} />
             {/* Client protected area */}
             <Route path="/client/*" element={<ClientRoutes />} />
