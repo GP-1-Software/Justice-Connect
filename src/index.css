@@ -39,6 +39,20 @@ body {
   background: linear-gradient(to bottom, #1d4ed8, #0891b2);
 }
 
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  border-radius: 6px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+}
+
 @layer utilities {
   .gradient-text {
     @apply bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent;
