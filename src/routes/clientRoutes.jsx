@@ -14,6 +14,9 @@ import LawyerProfile from '../pages/client/LawyerProfile';
 import CreateCase from '../pages/client/CreateCase';
 import MyCases from '../pages/client/MyCases';
 import CaseDetails from '../pages/client/CaseDetails';
+import ClientInvoices from '../pages/client/ClientInvoices';
+import PayInvoice from '../pages/client/PayInvoice';
+import InvoiceDetails from '../pages/client/InvoiceDetails';
 
 import JusticeAIChat from "../pages/client/JusticeAI/JusticeAIChat.jsx";
 
@@ -81,6 +84,11 @@ const ClientRoutes = () => {
         <Route path="cases" element={<MyCases />} />
         <Route path="cases/:caseId" element={<CaseDetails />} />
         
+        {/* Invoices */}
+        <Route path="invoices" element={<ClientInvoices />} />
+        <Route path="invoices/:invoiceId" element={<InvoiceDetails />} />
+        <Route path="invoices/:invoiceId/pay" element={<PayInvoice />} />
+        
         {/* Communication */}
         <Route path="messages" element={<PlaceholderPage title="الرسائل" />} />
         <Route path="video-call/:sessionId" element={<PlaceholderPage title="مكالمة فيديو" />} />
@@ -93,7 +101,6 @@ const ClientRoutes = () => {
 
 
         {/* Payments and Profile */}
-        <Route path="payments" element={<PlaceholderPage title="المدفوعات" />} />
         <Route path="profile-settings" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         

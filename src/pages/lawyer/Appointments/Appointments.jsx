@@ -27,6 +27,7 @@ import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { getLawyerAppointments, updateLawyerAppointmentStatus, getLawyerAppointmentStats } from '../../../services/lawyerAppointmentApi';
 import { getMeetingByAppointment, updateMeetingStatus, isMeetingTimeReady } from '../../../services/meetingApi';
 import MeetingCard from '../../../components/shared/MeetingCard';
+import ClientInfoModal from './components/ClientInfoModal';
 import { supabase } from '../../../supabaseClient';
 
 const Appointments = () => {
@@ -56,6 +57,8 @@ const Appointments = () => {
   const [showEndMeetingModal, setShowEndMeetingModal] = useState(false);
   const [meetingToEnd, setMeetingToEnd] = useState(null);
   const [endingMeeting, setEndingMeeting] = useState(false);
+  const [showClientInfoModal, setShowClientInfoModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
 
   // Trigger filtering animation
   useEffect(() => {
@@ -285,6 +288,11 @@ const Appointments = () => {
 
   const handleViewCase = (caseId) => {
     navigate(`/lawyer/cases/${caseId}`);
+  };
+
+  const handleViewClientInfo = (client) => {
+    setSelectedClient(client);
+    setShowClientInfoModal(true);
   };
 
   const handleJoinMeeting = (meeting) => {
@@ -727,7 +735,8 @@ const Appointments = () => {
               return (
                 <div
                   key={appointment.id}
-                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-6 border-r-4 ${statusConfig.borderColor} animate-fadeIn`}
+                  onClick={() => handleViewClientInfo(appointment.clients)}
+                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-6 border-r-4 ${statusConfig.borderColor} animate-fadeIn cursor-pointer hover:scale-[1.02]`}
                   style={{ animationDelay: `${filteredAndSortedAppointments.indexOf(appointment) * 50}ms` }}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6">
@@ -750,9 +759,16 @@ const Appointments = () => {
 
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                              {clientName || 'عميل'}
-                            </h3>
+                            <div>
+                              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                                {clientName || 'عميل'}
+                              </h3>
+                              {appointment.appointment_number && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
+                                  #{appointment.appointment_number}
+                                </p>
+                              )}
+                            </div>
                             {timeSinceUpdate && (
                               <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full whitespace-nowrap">
                                 🕒 {timeSinceUpdate}
@@ -801,7 +817,7 @@ const Appointments = () => {
                                   </span>
                                 </div>
                                 <button
-                                  onClick={() => handleViewCase(appointment.case_id)}
+                                  onClick={(e) => { e.stopPropagation(); handleViewCase(appointment.case_id); }}
                                   className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
                                 >
                                   عرض القضية
@@ -855,7 +871,8 @@ const Appointments = () => {
                               {meetings[appointment.id].meeting_status === 'confirmed' && 
                                meetingsReady[appointment.id] && (
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setMeetingToEnd(meetings[appointment.id]);
                                     setShowEndMeetingModal(true);
                                   }}
@@ -887,7 +904,7 @@ const Appointments = () => {
                         {appointment.status === 'pending' && (
                           <>
                             <button
-                              onClick={() => handleAcceptAppointment(appointment.id)}
+                              onClick={(e) => { e.stopPropagation(); handleAcceptAppointment(appointment.id); }}
                               disabled={processing === appointment.id}
                               className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                             >
@@ -895,7 +912,8 @@ const Appointments = () => {
                               <span className="font-medium">قبول الموعد</span>
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setAppointmentToReject(appointment);
                                 setRejectModalOpen(true);
                               }}
@@ -910,7 +928,7 @@ const Appointments = () => {
 
                         {appointment.status === 'confirmed' && (
                           <button
-                            onClick={() => handleCompleteAppointment(appointment.id)}
+                            onClick={(e) => { e.stopPropagation(); handleCompleteAppointment(appointment.id); }}
                             disabled={processing === appointment.id}
                             className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                           >
@@ -921,7 +939,7 @@ const Appointments = () => {
 
                         {appointment.case_id && (
                           <button
-                            onClick={() => handleViewCase(appointment.case_id)}
+                            onClick={(e) => { e.stopPropagation(); handleViewCase(appointment.case_id); }}
                             className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
                           >
                             <FileText className="h-4 w-4" />
@@ -1026,6 +1044,16 @@ const Appointments = () => {
           </div>
         </div>
       )}
+
+      {/* Client Info Modal */}
+      <ClientInfoModal
+        isOpen={showClientInfoModal}
+        onClose={() => {
+          setShowClientInfoModal(false);
+          setSelectedClient(null);
+        }}
+        client={selectedClient}
+      />
     </div>
   );
 };

@@ -683,9 +683,16 @@ const Appointments = () => {
 
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                              {lawyerName}
-                            </h3>
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {lawyerName}
+                              </h3>
+                              {appointment.appointment_number && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
+                                  #{appointment.appointment_number}
+                                </p>
+                              )}
+                            </div>
                             {timeSinceUpdate && (
                               <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full whitespace-nowrap">
                                 🕒 {timeSinceUpdate}

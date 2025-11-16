@@ -43,10 +43,11 @@ export const formatDate = (timestamp, options = {}) => {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      weekday: 'long'
+      weekday: 'long',
+      calendar: 'gregory'
     };
     
-    return date.toLocaleDateString('ar-SA', { ...defaultOptions, ...options });
+    return date.toLocaleDateString('ar-JO', { ...defaultOptions, ...options });
   } catch (error) {
     return 'تاريخ غير صحيح';
   }
@@ -55,12 +56,13 @@ export const formatDate = (timestamp, options = {}) => {
 export const formatDateTime = (timestamp) => {
   try {
     const date = new Date(timestamp);
-    return date.toLocaleString('ar-SA', {
+    return date.toLocaleString('ar-JO', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      calendar: 'gregory'
     });
   } catch (error) {
     return 'تاريخ غير صحيح';

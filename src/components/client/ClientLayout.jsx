@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import ClientNavbar from './ClientNavbar';
 import ClientSidebar from './ClientSidebar';
 import { useLocation } from 'react-router-dom';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 const ClientLayout = ({ children }) => {
   const { userProfile, loading } = useClientAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const toastPayload = sessionStorage.getItem('clientLoginToast');
+    if (toastPayload) {
+      try {
+        const { type, message } = JSON.parse(toastPayload);
+        if (type === 'success' && message) {
+          toast.success(message);
+        }
+      } catch (error) {
+        console.warn('Failed to parse client login toast payload:', error);
+      } finally {
+        sessionStorage.removeItem('clientLoginToast');
+      }
+    }
+  }, [loading]);
 
   // Show loading spinner while checking authentication
   if (loading) {
