@@ -1,6 +1,22 @@
 import { supabase } from '../supabaseClient';
 import { createMeeting } from './meetingApi';
 
+/**
+ * Generate unique appointment number
+ * @returns {Promise<string>} Appointment number (e.g., APT-2025-00001)
+ */
+const generateAppointmentNumber = async () => {
+  const year = new Date().getFullYear();
+  const { count, error } = await supabase
+    .from('appointments')
+    .select('*', { count: 'exact', head: true });
+
+  if (error) throw error;
+
+  const aptNum = (count || 0) + 1;
+  return `APT-${year}-${String(aptNum).padStart(5, '0')}`;
+};
+
 // Get all appointments for a client with related case info
 export const getClientAppointments = async (clientId) => {
   try {
@@ -73,11 +89,15 @@ export const getAppointmentsByStatus = async (clientId, status) => {
 // Create a new appointment
 export const createAppointment = async (appointmentData) => {
   try {
+    // Generate appointment number
+    const appointmentNumber = await generateAppointmentNumber();
+
     // Ensure client_id and lawyer_id are integers
     const dataToInsert = {
       ...appointmentData,
       client_id: parseInt(appointmentData.client_id),
-      lawyer_id: parseInt(appointmentData.lawyer_id)
+      lawyer_id: parseInt(appointmentData.lawyer_id),
+      appointment_number: appointmentNumber
     };
 
     const { data, error } = await supabase

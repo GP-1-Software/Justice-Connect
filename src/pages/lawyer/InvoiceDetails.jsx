@@ -1,0 +1,263 @@
+import React from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useInvoice } from '../../hooks/useInvoices';
+import { formatCurrency } from '../../services/invoiceService';
+import InvoiceStatusBadge from '../../components/invoices/InvoiceStatusBadge';
+import { 
+  ArrowRight, 
+  FileText, 
+  Calendar, 
+  User, 
+  Building2,
+  Phone,
+  Mail,
+  Download,
+  Edit,
+  Trash2,
+  DollarSign
+} from 'lucide-react';
+
+/**
+ * Invoice Details Page
+ * Displays full invoice information
+ */
+const InvoiceDetails = () => {
+  const { invoiceId } = useParams();
+  const navigate = useNavigate();
+  const { invoice, loading, error } = useInvoice(parseInt(invoiceId));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error || !invoice) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">الفاتورة غير موجودة</h2>
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            العودة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('ar-JO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      calendar: 'gregory'
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowRight className="w-5 h-5" />
+            <span>العودة</span>
+          </button>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {invoice.invoice_number}
+              </h1>
+              <p className="text-gray-600 mt-1">تفاصيل الفاتورة</p>
+            </div>
+            <InvoiceStatusBadge status={invoice.status} />
+          </div>
+        </div>
+
+        {/* Invoice Card */}
+        <div className="bg-white rounded-lg shadow-md p-8 mb-6">
+          {/* Header Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-200">
+            {/* Client Info */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 mb-3">معلومات العميل</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-900">
+                    {invoice.client?.first_name} {invoice.client?.last_name}
+                  </span>
+                </div>
+                {invoice.client?.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-600">{invoice.client.email}</span>
+                  </div>
+                )}
+                {invoice.client?.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-600">{invoice.client.phone}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice Info */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 mb-3">معلومات الفاتورة</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-600">
+                    تاريخ الإصدار: {formatDate(invoice.issue_date)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-600">
+                    تاريخ الاستحقاق: {formatDate(invoice.due_date)}
+                  </span>
+                </div>
+                {invoice.case && (
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-600">
+                      القضية: {invoice.case.title}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Invoice Items */}
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">بنود الفاتورة</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">الوصف</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">الكمية</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">السعر</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">المجموع</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {invoice.items?.map((item, index) => (
+                    <tr key={index}>
+                      <td className="px-4 py-3 text-gray-900">{item.description}</td>
+                      <td className="px-4 py-3 text-center text-gray-600">{item.quantity}</td>
+                      <td className="px-4 py-3 text-center text-gray-600">
+                        {formatCurrency(item.unit_price, invoice.currency)}
+                      </td>
+                      <td className="px-4 py-3 text-left text-gray-900 font-medium">
+                        {formatCurrency(item.total_price, invoice.currency)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="max-w-sm mr-auto space-y-3">
+              <div className="flex items-center justify-between text-gray-600">
+                <span>المجموع الفرعي</span>
+                <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+              </div>
+              
+              {invoice.tax_percentage > 0 && (
+                <div className="flex items-center justify-between text-gray-600">
+                  <span>الضريبة ({invoice.tax_percentage}%)</span>
+                  <span>{formatCurrency(invoice.tax_amount, invoice.currency)}</span>
+                </div>
+              )}
+              
+              {invoice.discount_amount > 0 && (
+                <div className="flex items-center justify-between text-green-600">
+                  <span>الخصم</span>
+                  <span>-{formatCurrency(invoice.discount_amount, invoice.currency)}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between text-xl font-bold text-gray-900 pt-3 border-t border-gray-200">
+                <span>المجموع الإجمالي</span>
+                <span className="text-blue-600">
+                  {formatCurrency(invoice.total_amount, invoice.currency)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          {invoice.notes && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">ملاحظات</h3>
+              <p className="text-gray-600 whitespace-pre-wrap">{invoice.notes}</p>
+            </div>
+          )}
+
+          {/* Terms */}
+          {invoice.terms_conditions && (
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">الشروط والأحكام</h3>
+              <p className="text-gray-600 text-sm whitespace-pre-wrap">{invoice.terms_conditions}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => alert('سيتم تنفيذ تحميل PDF قريباً')}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            <span>تحميل PDF</span>
+          </button>
+
+          {(invoice.status === 'pending' || invoice.status === 'overdue') && (
+            <>
+              <button
+                onClick={() => navigate(`/lawyer/invoices/edit/${invoice.invoice_id}`)}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <Edit className="w-5 h-5" />
+                <span>تعديل</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) {
+                    // TODO: Implement delete
+                    alert('سيتم تنفيذ الحذف قريباً');
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span>حذف</span>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InvoiceDetails;

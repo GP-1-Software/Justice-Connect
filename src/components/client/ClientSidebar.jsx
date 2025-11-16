@@ -52,6 +52,11 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       icon: Briefcase,
       path: 'cases'
     },
+    {
+      title: 'الفواتير',
+      icon: FileText,
+      path: 'invoices'
+    },
       {
       title: 'البحث عن محامين / حجز مواعيد',
       icon: Search,
@@ -78,11 +83,13 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       icon: Video,
       path: 'video-call'
     },  */
+/*
     {
       title: 'المدفوعات',
       icon: CreditCard,
       path: 'payments'
     },
+*/
 /*
     {
       title: 'تحليل المستندات',

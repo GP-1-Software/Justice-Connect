@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Scale,
-  CheckSquare
+  CheckSquare,
+  FileText
 } from 'lucide-react';
 
 const LawyerSidebar = ({ isOpen, onClose }) => {
@@ -56,6 +57,11 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       title: 'إدارة المواعيد',
       icon: CheckSquare,
       path: 'appointments'
+    },
+    {
+      title: 'الفواتير',
+      icon: FileText,
+      path: 'invoices'
     },
     {
       title: 'الرسائل',

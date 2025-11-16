@@ -14,10 +14,15 @@ export const getLawyerAppointments = async (lawyerId) => {
         *,
         clients:users!appointments_client_id_fkey (
           user_id,
+          user_type,
           first_name,
           last_name,
           email,
           phone,
+          city,
+          id_number,
+          account_status,
+          created_at,
           profile_image_url
         )
       `)
@@ -84,10 +89,15 @@ export const updateLawyerAppointmentStatus = async (appointmentId, status, lawye
         *,
         clients:users!appointments_client_id_fkey (
           user_id,
+          user_type,
           first_name,
           last_name,
           email,
           phone,
+          city,
+          id_number,
+          account_status,
+          created_at,
           profile_image_url
         )
       `)

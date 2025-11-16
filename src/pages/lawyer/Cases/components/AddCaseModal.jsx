@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
-import { supabase } from '../../../../supabaseClient';
+import { createCase } from '../../../../services/caseApi';
 import { X, Save, Loader2 } from 'lucide-react';
 
 const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
@@ -33,48 +33,19 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
 
     setLoading(true);
     try {
-      // Insert case (client_id can be null for lawyer-created cases)
-      const { data: caseData, error: caseError } = await supabase
-        .from('cases')
-        .insert([
-          {
-            client_id: null, // Lawyer-created case without client
-            assigned_lawyer_id: lawyer.lawyer_id,
-            title: formData.case_title,
-            case_type: formData.case_type,
-            description: formData.description,
-            court_name: formData.court_name,
-            filing_date: formData.filing_date || null,
-            next_hearing_date: formData.next_hearing_date || null,
-            priority: formData.priority,
-            status: formData.status
-          }
-        ])
-        .select()
-        .single();
-
-      if (caseError) {
-        console.error('Case insert error:', caseError);
-        throw caseError;
-      }
-
-      // Create timeline event for case creation
-      const { error: timelineError } = await supabase
-        .from('timeline_events')
-        .insert({
-          case_id: caseData.case_id,
-          event_type: 'case_created',
-          author_id: lawyer.lawyer_id,
-          author_type: 'lawyer',
-          title: 'تم إنشاء القضية',
-          description: `تم إنشاء القضية: ${formData.case_title}`,
-          visibility: 'public'
-        });
-
-      if (timelineError) {
-        console.warn('Timeline event error:', timelineError);
-        // Continue even if timeline fails
-      }
+      // Create case using the shared API function (will auto-generate case_number)
+      const caseData = await createCase({
+        client_id: null, // Lawyer-created case without client
+        assigned_lawyer_id: lawyer.lawyer_id,
+        title: formData.case_title,
+        case_type: formData.case_type,
+        description: formData.description,
+        court_name: formData.court_name,
+        filing_date: formData.filing_date || null,
+        next_hearing_date: formData.next_hearing_date || null,
+        priority: formData.priority,
+        status: formData.status
+      });
 
       alert('تمت إضافة القضية بنجاح');
       if (onCaseAdded) onCaseAdded(caseData);

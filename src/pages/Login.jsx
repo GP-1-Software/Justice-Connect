@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Scale, CreditCard, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { validatePalestinianID } from '../utils/idValidation';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
@@ -64,8 +65,8 @@ const Login = () => {
       if (adminData && !adminError) {
         // Admin login successful
         localStorage.setItem('user', JSON.stringify(adminData));
-        alert('تم تسجيل الدخول كمسؤول بنجاح!');
-        navigate('/');
+        toast.success('تم تسجيل الدخول كمسؤول بنجاح!');
+        navigate('/admin/dashboard');
         return;
       }
 
@@ -93,20 +94,23 @@ const Login = () => {
 
         
         // Check if it's a client
-if (userData.user_type === 'client') {
-  console.log('Client login successful!');
-  localStorage.setItem('user', JSON.stringify(userData));
-  alert('تم تسجيل الدخول كعميل بنجاح!');
-  // Force refresh the page to trigger auth check
-  window.location.href = '/client/dashboard';
-  return;
-}
+        if (userData.user_type === 'client') {
+          console.log('Client login successful!');
+          localStorage.setItem('user', JSON.stringify(userData));
+          sessionStorage.setItem(
+            'clientLoginToast',
+            JSON.stringify({ type: 'success', message: 'تم تسجيل الدخول كعميل بنجاح!' })
+          );
+          // Use window.location to force reload and trigger auth check
+          window.location.href = '/client/dashboard';
+          return;
+        }
 
-// Other user types
-localStorage.setItem('user', JSON.stringify(userData));
-alert('تم تسجيل الدخول بنجاح!');
-navigate('/');
-return;
+        // Other user types
+        localStorage.setItem('user', JSON.stringify(userData));
+        toast.success('تم تسجيل الدخول بنجاح!');
+        navigate('/');
+        return;
 }
 
 // Try lawyer login
@@ -133,7 +137,7 @@ if (lawyerData && !lawyerError) {
 
   // Save lawyer data and redirect to lawyer dashboard
   localStorage.setItem('user', JSON.stringify({ ...lawyerData, user_type: 'lawyer' }));
-  alert('تم تسجيل الدخول كمحامي بنجاح!');
+  toast.success('تم تسجيل الدخول كمحامي بنجاح!');
   navigate('/lawyer/dashboard');
   return;
 }

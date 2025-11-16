@@ -31,11 +31,16 @@ export const createCase = async (caseData) => {
     if (error) throw error;
 
     // Create initial timeline event
+    // Determine author based on who created the case
+    const isLawyerCreated = !caseData.client_id && caseData.assigned_lawyer_id;
+    const authorId = isLawyerCreated ? caseData.assigned_lawyer_id : caseData.client_id;
+    const authorType = isLawyerCreated ? 'lawyer' : 'client';
+
     await createTimelineEvent({
       case_id: data.case_id,
       event_type: 'case_created',
-      author_id: caseData.client_id,
-      author_type: 'client',
+      author_id: authorId,
+      author_type: authorType,
       title: 'تم إنشاء القضية',
       description: `تم إنشاء القضية: ${caseData.title}`,
       visibility: 'all'

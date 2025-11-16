@@ -9,6 +9,9 @@ import AppointmentsPage from '../pages/lawyer/Appointments/Appointments';
 import ProfilePage from '../pages/lawyer/Profile/Profile';
 import SettingsPage from '../pages/lawyer/Settings';
 import JusticeAIChat from '../pages/lawyer/JusticeAI/JusticeAIChat';
+import LawyerInvoices from '../pages/lawyer/LawyerInvoices';
+import CreateInvoice from '../pages/lawyer/CreateInvoice';
+import InvoiceDetails from '../pages/lawyer/InvoiceDetails';
 
 const LawyerRoutes = () => {
   return (
@@ -20,6 +23,9 @@ const LawyerRoutes = () => {
         <Route path="cases/:caseId" element={<CaseDetailPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="appointments" element={<AppointmentsPage />} />
+        <Route path="invoices" element={<LawyerInvoices />} />
+        <Route path="invoices/create" element={<CreateInvoice />} />
+        <Route path="invoices/:invoiceId" element={<InvoiceDetails />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="justice-ai" element={<JusticeAIChat />} />

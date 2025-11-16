@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import HomePage from './pages/HomePage';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
@@ -37,6 +38,32 @@ function App() {
             {/* Lawyer protected area */}
             <Route path="/*" element={<LawyerRoutes />} />
           </Routes>
+          <Toaster
+            position="top-center"
+            reverseOrder={false}
+            gutter={8}
+            containerClassName=""
+            containerStyle={{}}
+            toastOptions={{
+              // Define default options
+              className: '',
+              duration: 4000,
+              style: {
+                background: '#06B6D4',
+                color: '#FFFFFF',
+                fontFamily: 'Cairo, sans-serif',
+                direction: 'rtl',
+              },
+              // Default options for specific types
+              success: {
+                duration: 3000,
+                theme: {
+                  primary: 'green',
+                  secondary: 'black',
+                },
+              },
+            }}
+          />
         </LawyerAuthProvider>
       </ClientAuthProvider>
     </ThemeProvider>

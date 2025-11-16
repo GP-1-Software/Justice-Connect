@@ -42,7 +42,7 @@ const Navbar = () => {
     setIsLoggedIn(false);
     setUserData(null);
     setUserMenuOpen(false);
-    navigate('/');
+    navigate('/login');
   };
 
   const searchOptions = ['حسب الاسم', 'حسب الخبرة', 'حسب المدينة', 'حسب القسم'];
