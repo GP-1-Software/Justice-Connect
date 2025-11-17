@@ -12,6 +12,7 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
     client_name: '',
     client_phone: '',
     client_email: '',
+    client_id_number: '',
     description: '',
     court_name: '',
     filing_date: '',
@@ -44,7 +45,8 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
         filing_date: formData.filing_date || null,
         next_hearing_date: formData.next_hearing_date || null,
         priority: formData.priority,
-        status: formData.status
+        status: formData.status,
+        client_id_number: formData.client_id_number || null
       });
 
       alert('تمت إضافة القضية بنجاح');
@@ -58,6 +60,7 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
         client_name: '',
         client_phone: '',
         client_email: '',
+        client_id_number: '',
         description: '',
         court_name: '',
         filing_date: '',
@@ -161,6 +164,21 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
                 value={formData.court_name}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            {/* Client ID Number */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                رقم هوية العميل
+              </label>
+              <input
+                type="text"
+                name="client_id_number"
+                value={formData.client_id_number}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="أدخل رقم الهوية الوطنية للعميل (اختياري)"
               />
             </div>
 

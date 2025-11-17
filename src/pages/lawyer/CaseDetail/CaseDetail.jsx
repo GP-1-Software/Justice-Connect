@@ -10,6 +10,7 @@ import PrivateNotes from './components/PrivateNotes';
 import EvidenceUploader from './components/EvidenceUploader';
 import TaskManager from './components/TaskManager';
 import MeetingManager from './components/MeetingManager';
+import ClientInfo from './components/ClientInfo';
 
 const CaseDetail = () => {
   const { caseId } = useParams();
@@ -184,6 +185,9 @@ const CaseDetail = () => {
 
           {/* Sidebar - Right Side */}
           <div className="space-y-6">
+            {/* Client Info */}
+            <ClientInfo caseData={caseData} />
+
             {/* Meeting Manager */}
             <MeetingManager 
               caseId={caseId} 

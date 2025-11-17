@@ -49,7 +49,8 @@ const CreateCase = () => {
     description: '',
     priority: 'normal',
     court_name: '',
-    filing_date: ''
+    filing_date: '',
+    client_id_number: ''
   });
 
   const [showTerms, setShowTerms] = useState(false);
@@ -158,7 +159,8 @@ const CreateCase = () => {
         priority: formData.priority,
         status: 'pending',
         court_name: formData.court_name || null,
-        filing_date: formData.filing_date || null
+        filing_date: formData.filing_date || null,
+        client_id_number: formData.client_id_number || null
       };
 
       const createdCase = await createCase(caseData);
@@ -407,6 +409,22 @@ const CreateCase = () => {
                   value={formData.filing_date}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              {/* Client ID Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  {t('createCase.clientIdNumber')}
+                </label>
+                <input
+                  type="text"
+                  name="client_id_number"
+                  value={formData.client_id_number}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder={t('createCase.clientIdNumberPlaceholder')}
                 />
               </div>
             </div>
