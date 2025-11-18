@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { createCase } from '../../../../services/caseApi';
+import { supabase } from '../../../../supabaseClient';
 import { X, Save, Loader2 } from 'lucide-react';
 
 const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
@@ -34,9 +35,28 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
 
     setLoading(true);
     try {
-      // Create case using the shared API function (will auto-generate case_number)
+      let clientId = null;
+
+      // If client ID number is provided, search for existing client in users table
+      if (formData.client_id_number) {
+        const { data: existingClient, error: clientError } = await supabase
+          .from('users')
+          .select('user_id')
+          .eq('id_number', formData.client_id_number)
+          .eq('user_type', 'client')
+          .single();
+
+        if (existingClient) {
+          clientId = existingClient.user_id;
+          console.log('Found existing client:', clientId);
+        } else if (clientError && clientError.code !== 'PGRST116') {
+          console.error('Error searching for client:', clientError);
+        }
+      }
+
+      // Create case using the shared API function
       const caseData = await createCase({
-        client_id: null, // Lawyer-created case without client
+        client_id: clientId, // Will be user_id if found, null otherwise
         assigned_lawyer_id: lawyer.lawyer_id,
         title: formData.case_title,
         case_type: formData.case_type,
@@ -46,7 +66,7 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
         next_hearing_date: formData.next_hearing_date || null,
         priority: formData.priority,
         status: formData.status,
-        client_id_number: formData.client_id_number || null
+        client_id_number: clientId ? null : (formData.client_id_number || null) // Only store id_number if client not found
       });
 
       alert('تمت إضافة القضية بنجاح');

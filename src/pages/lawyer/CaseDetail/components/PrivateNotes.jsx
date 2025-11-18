@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
-import { StickyNote, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { StickyNote, Plus, Trash2, Edit2, Save, X, Lock, Unlock } from 'lucide-react';
 
 const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
@@ -208,6 +208,28 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
     }
   };
 
+  const handleToggleShared = async (noteId, currentShared) => {
+    try {
+      const { error } = await supabase
+        .from('case_notes')
+        .update({ is_shared: !currentShared })
+        .eq('note_id', noteId);
+
+      if (error) throw error;
+
+      setNotes(prev => 
+        prev.map(note => 
+          note.note_id === noteId 
+            ? { ...note, is_shared: !currentShared } 
+            : note
+        )
+      );
+    } catch (error) {
+      console.error('Toggle shared error:', error.message);
+      alert('حدث خطأ أثناء تحديث الملاحظة');
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -292,6 +314,28 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
                       </span>
                     </div>
                   )}
+                  {/* Sharing Status Badge for Lawyer Notes */}
+                  {isOwnNote && (
+                    <div className="mb-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        note.is_shared
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {note.is_shared ? (
+                          <>
+                            <Unlock className="w-3 h-3" />
+                            مشتركة مع العميل
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            خاصة
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-sm text-gray-800 dark:text-gray-200">{note.content}</p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-gray-500">
@@ -300,6 +344,20 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
                     {/* Show delete for both own notes and client notes */}
                     {(isOwnNote || isClientNote) && (
                       <div className="flex gap-2">
+                        {/* Show share toggle for lawyer's own notes */}
+                        {isOwnNote && (
+                          <button
+                            onClick={() => handleToggleShared(note.note_id, note.is_shared)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                              note.is_shared
+                                ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                                : 'bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300'
+                            }`}
+                            title={note.is_shared ? 'جعلها خاصة' : 'مشاركة مع العميل'}
+                          >
+                            {note.is_shared ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                          </button>
+                        )}
                         {/* Only show edit for lawyer's own notes */}
                         {isOwnNote && (
                           <button

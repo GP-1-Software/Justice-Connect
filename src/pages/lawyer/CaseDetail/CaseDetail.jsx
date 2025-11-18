@@ -186,7 +186,7 @@ const CaseDetail = () => {
           {/* Sidebar - Right Side */}
           <div className="space-y-6">
             {/* Client Info */}
-            <ClientInfo caseData={caseData} />
+            <ClientInfo caseData={caseData} lawyerId={lawyer?.lawyer_id} />
 
             {/* Meeting Manager */}
             <MeetingManager 
