@@ -25,22 +25,44 @@ const CaseNotes = ({ caseId, caseStatus }) => {
   const fetchNotes = async () => {
     try {
       setLoading(true);
+      
+      // Fetch client's own notes and shared lawyer notes
       const { data, error } = await supabase
         .from('case_notes')
-        .select(`
-          *,
-          lawyer:lawyers!case_notes_lawyer_id_fkey (
-            lawyer_id,
-            first_name,
-            last_name,
-            profile_image_url
-          )
-        `)
+        .select('*')
         .eq('case_id', caseId)
+        .or(`and(created_by_type.eq.client,created_by_id.eq.${userProfile.user_id}),and(created_by_type.eq.lawyer,is_shared.eq.true)`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotes(data || []);
+
+      // Fetch lawyer names for shared lawyer notes
+      if (data && data.length > 0) {
+        const lawyerNotes = data.filter(note => note.created_by_type === 'lawyer');
+        const lawyerIds = [...new Set(lawyerNotes.map(note => note.created_by_id))];
+        
+        if (lawyerIds.length > 0) {
+          const { data: lawyers } = await supabase
+            .from('lawyers')
+            .select('lawyer_id, first_name, last_name')
+            .in('lawyer_id', lawyerIds);
+          
+          // Map lawyer info to notes
+          const notesWithLawyers = data.map(note => {
+            if (note.created_by_type === 'lawyer' && lawyers) {
+              const lawyer = lawyers.find(l => l.lawyer_id === note.created_by_id);
+              return { ...note, lawyer };
+            }
+            return note;
+          });
+          
+          setNotes(notesWithLawyers);
+        } else {
+          setNotes(data);
+        }
+      } else {
+        setNotes(data || []);
+      }
     } catch (error) {
       console.error('Error fetching notes:', error);
     } finally {
@@ -363,15 +385,16 @@ const CaseNotes = ({ caseId, caseStatus }) => {
         <div className="space-y-3 sm:space-y-4">
           {notes.map((note) => {
             const own = isOwnNote(note);
+            const isLawyerNote = note.created_by_type === 'lawyer';
             
             return (
               <div
                 key={note.note_id}
                 className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 transition-all ${
-                  own
+                  isLawyerNote
+                    ? 'border-yellow-200 dark:border-yellow-800'
+                    : own
                     ? 'border-blue-200 dark:border-blue-800'
-                    : note.is_shared
-                    ? 'border-green-200 dark:border-green-800'
                     : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
@@ -381,29 +404,35 @@ const CaseNotes = ({ caseId, caseStatus }) => {
                     <div className="flex items-center gap-2">
                       <User className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {note.created_by_type === 'lawyer' 
+                        {isLawyerNote
                           ? `المحامي ${note.lawyer?.first_name || ''} ${note.lawyer?.last_name || ''}`
                           : 'أنت'
                         }
                       </span>
                       {/* Badge */}
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                        note.is_shared
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                      }`}>
-                        {note.is_shared ? (
-                          <>
-                            <Unlock className="w-3 h-3" />
-                            مشتركة
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-3 h-3" />
-                            خاصة
-                          </>
-                        )}
-                      </span>
+                      {isLawyerNote ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
+                          من المحامي
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          note.is_shared
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {note.is_shared ? (
+                            <>
+                              <Unlock className="w-3 h-3" />
+                              مشتركة
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-3 h-3" />
+                              خاصة
+                            </>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {new Date(note.created_at).toLocaleDateString('ar-EG', {

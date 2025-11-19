@@ -464,6 +464,8 @@
     "courtName": "اسم المحكمة",
     "courtNamePlaceholder": "أدخل اسم المحكمة (اختياري)",
     "filingDate": "تاريخ رفع القضية",
+    "clientIdNumber": "رقم هوية العميل",
+    "clientIdNumberPlaceholder": "أدخل رقم الهوية الوطنية للعميل (اختياري)",
     "nextHearingDate": "تاريخ الجلسة القادمة",
     "attachDocuments": "إرفاق مستندات",
     "attachDocumentsDescription": "يمكنك إرفاق المستندات المتعلقة بالقضية (اختياري)",

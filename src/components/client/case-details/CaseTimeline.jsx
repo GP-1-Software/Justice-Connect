@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Clock, FileText, Calendar, Scale, AlertCircle, CheckCircle2, User, Download, Eye, Filter } from 'lucide-react';
+import { Clock, FileText, Calendar, Scale, AlertCircle, CheckCircle2, User, Download, Eye, Filter, Maximize2 } from 'lucide-react';
 import { supabase } from '../../../supabaseClient';
+import TimelineModal from './TimelineModal';
 
 const CaseTimeline = ({ caseId }) => {
   const [events, setEvents] = useState([]);
@@ -8,12 +9,30 @@ const CaseTimeline = ({ caseId }) => {
   const [filter, setFilter] = useState('all');
   const [showAll, setShowAll] = useState(false);
   const [isExpanding, setIsExpanding] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [caseTitle, setCaseTitle] = useState('');
 
   useEffect(() => {
     if (caseId) {
       fetchTimelineEvents();
+      fetchCaseTitle();
     }
   }, [caseId, filter]);
+
+  const fetchCaseTitle = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cases')
+        .select('title')
+        .eq('case_id', caseId)
+        .single();
+
+      if (error) throw error;
+      setCaseTitle(data?.title || '');
+    } catch (error) {
+      console.error('Error fetching case title:', error);
+    }
+  };
 
   const fetchTimelineEvents = async () => {
     try {
@@ -25,15 +44,56 @@ const CaseTimeline = ({ caseId }) => {
         .order('created_at', { ascending: false });
 
       if (filter !== 'all') {
-        query = query.eq('event_type', filter);
+        // For task filter, include all task-related event types
+        if (filter === 'task') {
+          query = query.in('event_type', ['task', 'task_done', 'task_del']);
+        } else {
+          query = query.eq('event_type', filter);
+        }
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      setEvents(data || []);
+
+      // Fetch author information separately
+      const eventsWithAuthors = await Promise.all(
+        (data || []).map(async (event) => {
+          let authorName = 'النظام';
+          
+          if (event.author_type === 'client' && event.author_id) {
+            const { data: client } = await supabase
+              .from('users')
+              .select('first_name, last_name')
+              .eq('user_id', event.author_id)
+              .single();
+            
+            if (client) {
+              authorName = `${client.first_name} ${client.last_name}`;
+            }
+          } else if (event.author_type === 'lawyer' && event.author_id) {
+            const { data: lawyer } = await supabase
+              .from('lawyers')
+              .select('first_name, last_name')
+              .eq('lawyer_id', event.author_id)
+              .single();
+            
+            if (lawyer) {
+              authorName = `${lawyer.first_name} ${lawyer.last_name}`;
+            }
+          }
+          
+          return {
+            ...event,
+            authorName
+          };
+        })
+      );
+
+      setEvents(eventsWithAuthors);
     } catch (error) {
       console.error('Error fetching timeline events:', error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -46,6 +106,8 @@ const CaseTimeline = ({ caseId }) => {
       'status_change': AlertCircle,
       'note': FileText,
       'task': CheckCircle2,
+      'task_done': CheckCircle2,
+      'task_del': AlertCircle,
       'file_upload': FileText
     };
     return icons[eventType] || Clock;
@@ -58,6 +120,8 @@ const CaseTimeline = ({ caseId }) => {
       'status_change': 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800',
       'note': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
       'task': 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800',
+      'task_done': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+      'task_del': 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800',
       'file_upload': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
     };
     return colors[eventType] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600';
@@ -70,6 +134,8 @@ const CaseTimeline = ({ caseId }) => {
       'status_change': 'تغيير حالة',
       'note': 'ملاحظة',
       'task': 'مهمة',
+      'task_done': 'إنجاز مهمة',
+      'task_del': 'حذف مهمة',
       'file_upload': 'رفع ملف'
     };
     return labels[eventType] || eventType;
@@ -163,9 +229,18 @@ const CaseTimeline = ({ caseId }) => {
                 <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">الأحداث الأخيرة</h3>
               </div>
-              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {events.length} {events.length === 1 ? 'حدث' : 'أحداث'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  {events.length} {events.length === 1 ? 'حدث' : 'أحداث'}
+                </span>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors group"
+                  title="عرض الجدول الزمني الكامل"
+                >
+                  <Maximize2 className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -214,6 +289,9 @@ const CaseTimeline = ({ caseId }) => {
                     const EventIcon = getEventIcon(event.event_type);
                     const eventColor = getEventColor(event.event_type);
                     const isLast = index === displayedEvents.length - 1;
+                    
+                    // Use the authorName from the enriched event
+                    const authorName = event.authorName || 'النظام';
 
                     return (
                       <div 
@@ -235,9 +313,14 @@ const CaseTimeline = ({ caseId }) => {
                               <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-1">
                                 {event.title}
                               </h4>
-                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${eventColor}`}>
-                                {getEventTypeLabel(event.event_type)}
-                              </span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${eventColor}`}>
+                                  {getEventTypeLabel(event.event_type)}
+                                </span>
+                                <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                                  بواسطة: <span className="font-medium text-gray-700 dark:text-gray-300">{authorName}</span>
+                                </span>
+                              </div>
                             </div>
                             <div className="text-left flex-shrink-0">
                               <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
@@ -319,6 +402,14 @@ const CaseTimeline = ({ caseId }) => {
           )}
         </div>
       )}
+
+      {/* Timeline Modal */}
+      <TimelineModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        events={events}
+        caseTitle={caseTitle}
+      />
     </div>
   );
 };
