@@ -2,7 +2,9 @@
 
 
 npm install
+
 npm install recharts
+
 npm install vite --save-dev
 
 
