@@ -261,6 +261,8 @@
     "courtName": "Court Name",
     "courtNamePlaceholder": "Enter court name (optional)",
     "filingDate": "Filing Date",
+    "clientIdNumber": "Client ID Number",
+    "clientIdNumberPlaceholder": "Enter client's national ID number (optional)",
     "nextHearingDate": "Next Hearing Date",
     "attachDocuments": "Attach Documents",
     "attachDocumentsDescription": "You can attach documents related to the case (optional)",

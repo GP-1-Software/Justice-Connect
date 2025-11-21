@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
-import { StickyNote, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { StickyNote, Plus, Trash2, Edit2, Save, X, Lock, Unlock } from 'lucide-react';
 
 const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
@@ -16,15 +16,43 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
     async function loadNotes() {
       if (!lawyer || !caseId) return;
       try {
+        // Fetch both lawyer notes and shared client notes
         const { data, error } = await supabase
           .from('case_notes')
           .select('*')
           .eq('case_id', caseId)
-          .eq('lawyer_id', lawyer.lawyer_id)
+          .or(`and(created_by_type.eq.lawyer,created_by_id.eq.${lawyer.lawyer_id}),and(created_by_type.eq.client,is_shared.eq.true)`)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        if (mounted) setNotes(data || []);
+
+        // Fetch client names for client notes
+        if (data && data.length > 0) {
+          const clientNotes = data.filter(note => note.created_by_type === 'client');
+          const clientIds = [...new Set(clientNotes.map(note => note.created_by_id))];
+          
+          if (clientIds.length > 0) {
+            const { data: clients } = await supabase
+              .from('users')
+              .select('user_id, first_name, last_name')
+              .in('user_id', clientIds);
+            
+            // Map client info to notes
+            const notesWithClients = data.map(note => {
+              if (note.created_by_type === 'client' && clients) {
+                const client = clients.find(c => c.user_id === note.created_by_id);
+                return { ...note, client };
+              }
+              return note;
+            });
+            
+            if (mounted) setNotes(notesWithClients);
+          } else {
+            if (mounted) setNotes(data);
+          }
+        } else {
+          if (mounted) setNotes(data || []);
+        }
       } catch (error) {
         console.warn('Notes load error:', error.message);
         if (mounted) setNotes([]);
@@ -38,18 +66,33 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
     if (!newNote.trim() || !lawyer) return;
     setLoading(true);
     try {
+      console.log('Adding note with:', {
+        case_id: caseId,
+        created_by_type: 'lawyer',
+        created_by_id: lawyer.lawyer_id,
+        content: newNote.trim(),
+        is_shared: false
+      });
+
       // Add the note to case_notes
       const { data: noteData, error: noteError } = await supabase
         .from('case_notes')
         .insert([{
           case_id: caseId,
-          lawyer_id: lawyer.lawyer_id,
-          content: newNote.trim()
+          created_by_type: 'lawyer',
+          created_by_id: lawyer.lawyer_id,
+          content: newNote.trim(),
+          is_shared: false
         }])
         .select()
         .single();
 
-      if (noteError) throw noteError;
+      if (noteError) {
+        console.error('Note insert error:', noteError);
+        throw noteError;
+      }
+
+      console.log('Note added successfully:', noteData);
 
       // Create a timeline event for the note
       const { data: timelineEvent, error: timelineError } = await supabase
@@ -76,8 +119,9 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
       setNotes(prev => [noteData, ...prev]);
       setNewNote('');
     } catch (error) {
-      console.error('Add note error:', error.message);
-      alert('حدث خطأ أثناء إضافة الملاحظة');
+      console.error('Add note error:', error);
+      console.error('Error details:', error.message, error.details, error.hint);
+      alert('حدث خطأ أثناء إضافة الملاحظة: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -133,16 +177,56 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
   const handleDelete = async (noteId) => {
     if (!confirm('هل أنت متأكد من حذف هذه الملاحظة؟')) return;
     try {
-      const { error } = await supabase
-        .from('case_notes')
-        .delete()
-        .eq('note_id', noteId);
+      const note = notes.find(n => n.note_id === noteId);
+      if (!note) return;
 
-      if (error) throw error;
-      setNotes(prev => prev.filter(n => n.note_id !== noteId));
+      // If it's a client note, just unshare it instead of deleting
+      if (note.created_by_type === 'client') {
+        const { error } = await supabase
+          .from('case_notes')
+          .update({ is_shared: false })
+          .eq('note_id', noteId);
+
+        if (error) throw error;
+        
+        // Remove from lawyer's view
+        setNotes(prev => prev.filter(n => n.note_id !== noteId));
+        alert('تم إلغاء مشاركة الملاحظة مع المحامي');
+      } else {
+        // If it's lawyer's own note, delete it
+        const { error } = await supabase
+          .from('case_notes')
+          .delete()
+          .eq('note_id', noteId);
+
+        if (error) throw error;
+        setNotes(prev => prev.filter(n => n.note_id !== noteId));
+      }
     } catch (error) {
       console.error('Delete note error:', error.message);
       alert('حدث خطأ أثناء حذف الملاحظة');
+    }
+  };
+
+  const handleToggleShared = async (noteId, currentShared) => {
+    try {
+      const { error } = await supabase
+        .from('case_notes')
+        .update({ is_shared: !currentShared })
+        .eq('note_id', noteId);
+
+      if (error) throw error;
+
+      setNotes(prev => 
+        prev.map(note => 
+          note.note_id === noteId 
+            ? { ...note, is_shared: !currentShared } 
+            : note
+        )
+      );
+    } catch (error) {
+      console.error('Toggle shared error:', error.message);
+      alert('حدث خطأ أثناء تحديث الملاحظة');
     }
   };
 
@@ -181,8 +265,19 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
             لا توجد ملاحظات
           </p>
         ) : (
-          notes.map((note) => (
-            <div key={note.note_id} className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+          notes.map((note) => {
+            const isClientNote = note.created_by_type === 'client';
+            const isOwnNote = note.created_by_type === 'lawyer' && note.created_by_id === lawyer?.lawyer_id;
+            
+            return (
+              <div 
+                key={note.note_id} 
+                className={`p-3 rounded-lg border ${
+                  isClientNote 
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
+                    : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
+                }`}
+              >
               {editingId === note.note_id ? (
                 <div>
                   <textarea
@@ -210,30 +305,83 @@ const PrivateNotes = ({ caseId, onTimelineEventAdded }) => {
                 </div>
               ) : (
                 <div>
+                  {/* Author Badge */}
+                  {isClientNote && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs font-medium">
+                        من العميل
+                        {note.client && ` - ${note.client.first_name} ${note.client.last_name}`}
+                      </span>
+                    </div>
+                  )}
+                  {/* Sharing Status Badge for Lawyer Notes */}
+                  {isOwnNote && (
+                    <div className="mb-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        note.is_shared
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {note.is_shared ? (
+                          <>
+                            <Unlock className="w-3 h-3" />
+                            مشتركة مع العميل
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            خاصة
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-sm text-gray-800 dark:text-gray-200">{note.content}</p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-gray-500">
                       {new Date(note.created_at).toLocaleDateString('ar-EG')}
                     </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setEditingId(note.note_id); setEditText(note.content); }}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(note.note_id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
+                    {/* Show delete for both own notes and client notes */}
+                    {(isOwnNote || isClientNote) && (
+                      <div className="flex gap-2">
+                        {/* Show share toggle for lawyer's own notes */}
+                        {isOwnNote && (
+                          <button
+                            onClick={() => handleToggleShared(note.note_id, note.is_shared)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                              note.is_shared
+                                ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                                : 'bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300'
+                            }`}
+                            title={note.is_shared ? 'جعلها خاصة' : 'مشاركة مع العميل'}
+                          >
+                            {note.is_shared ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                          </button>
+                        )}
+                        {/* Only show edit for lawyer's own notes */}
+                        {isOwnNote && (
+                          <button
+                            onClick={() => { setEditingId(note.note_id); setEditText(note.content); }}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(note.note_id)}
+                          className="text-red-600 hover:text-red-700"
+                          title={isClientNote ? 'إلغاء المشاركة' : 'حذف'}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

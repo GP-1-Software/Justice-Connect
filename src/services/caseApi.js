@@ -23,7 +23,8 @@ export const createCase = async (caseData) => {
         case_number: caseNumber,
         court_name: caseData.court_name || null,
         filing_date: caseData.filing_date || null,
-        next_hearing_date: caseData.next_hearing_date || null
+        next_hearing_date: caseData.next_hearing_date || null,
+        client_id_number: caseData.client_id_number || null
       }])
       .select()
       .single();
