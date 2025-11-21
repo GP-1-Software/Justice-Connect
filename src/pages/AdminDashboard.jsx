@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar } from 'lucide-react';
 import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
 import { getAllTicketsForAdmin, updateTicketStatus, addReplyToTicket } from '../services/supportApi';
 import { toast } from 'react-hot-toast';
@@ -542,7 +542,7 @@ const AdminDashboard = () => {
 
           {/* Main Tabs */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8">
-            <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
               <button
                 onClick={() => { setMainTab('users'); setUserStatusTab('pending'); }}
                 className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'users'
@@ -605,6 +605,34 @@ const AdminDashboard = () => {
                 <MessageSquare className="h-5 w-5" />
                 <span>الدعم الفني</span>
               </button>
+              <Link
+                to="/admin/analytics"
+                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-500 hover:text-white hover:shadow-lg"
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>الإحصائيات</span>
+              </Link>
+              <Link
+                to="/admin/cases"
+                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-500 hover:text-white hover:shadow-lg"
+              >
+                <FileText className="h-5 w-5" />
+                <span>القضايا</span>
+              </Link>
+              <Link
+                to="/admin/appointments"
+                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-500 hover:text-white hover:shadow-lg"
+              >
+                <Calendar className="h-5 w-5" />
+                <span>المواعيد</span>
+              </Link>
+              <Link
+                to="/admin/payments"
+                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-green-500 hover:text-white hover:shadow-lg"
+              >
+                <CreditCard className="h-5 w-5" />
+                <span>المدفوعات</span>
+              </Link>
               <Link
                 to="/admin/system-ai"
                 className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-500 hover:text-white hover:shadow-lg"

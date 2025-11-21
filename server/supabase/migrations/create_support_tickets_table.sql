@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS support_tickets (
   priority VARCHAR NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
   admin_response TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  replies JSONB DEFAULT '[]'::jsonb
 );
 
 -- Enable Row Level Security

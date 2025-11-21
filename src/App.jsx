@@ -9,6 +9,10 @@ import PendingVerification from './pages/PendingVerification';
 import AdminDashboard from './pages/AdminDashboard';
 import DeletionRequests from './pages/admin/DeletionRequests';
 import SystemAI from './pages/admin/SystemAI';
+import Analytics from './pages/admin/Analytics';
+import CasesManagement from './pages/admin/CasesManagement';
+import AppointmentsManagement from './pages/admin/AppointmentsManagement';
+import PaymentsManagement from './pages/admin/PaymentsManagement';
 import SupportTickets from './pages/SupportTickets';
 import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
@@ -32,6 +36,10 @@ function App() {
             <Route path="/admin/verification" element={<AdminVerification />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
+            <Route path="/admin/analytics" element={<Analytics />} />
+            <Route path="/admin/cases" element={<CasesManagement />} />
+            <Route path="/admin/appointments" element={<AppointmentsManagement />} />
+            <Route path="/admin/payments" element={<PaymentsManagement />} />
             <Route path="/admin/system-ai" element={<SystemAI />} />
             <Route path="/pending-verification" element={<PendingVerification />} />
             <Route path="/support" element={<SupportTickets />} />

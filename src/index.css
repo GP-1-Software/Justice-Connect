@@ -73,6 +73,30 @@ body {
   .animate-slideUp {
     animation: slideUp 0.3s ease-out;
   }
+
+  /* Thin Scrollbar Utilities */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 4px;
+  }
+
+  .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+    border-radius: 4px;
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  .dark .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+  }
 }
 
 @keyframes slideDown {
