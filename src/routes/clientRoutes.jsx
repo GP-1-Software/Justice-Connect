@@ -19,6 +19,7 @@ import PayInvoice from '../pages/client/PayInvoice';
 import InvoiceDetails from '../pages/client/InvoiceDetails';
 
 import JusticeAIChat from "../pages/client/JusticeAI/JusticeAIChat.jsx";
+import SupportTickets from '../pages/SupportTickets';
 
 
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';
@@ -70,25 +71,25 @@ const ClientRoutes = () => {
       <Routes>
         {/* Dashboard */}
         <Route path="dashboard" element={<ClientDashboard />} />
-        
+
         {/* Search and Discovery */}
         <Route path="search-lawyers" element={<SearchLawyers />} />
         <Route path="lawyer/:lawyerId" element={<LawyerProfile />} />
-        
+
         {/* Appointments */}
         <Route path="book-appointment/:lawyerId" element={<BookAppointment />} />
         <Route path="appointments" element={<Appointments />} />
-        
+
         {/* Cases */}
         <Route path="create-case" element={<CreateCase />} />
         <Route path="cases" element={<MyCases />} />
         <Route path="cases/:caseId" element={<CaseDetails />} />
-        
+
         {/* Invoices */}
         <Route path="invoices" element={<ClientInvoices />} />
         <Route path="invoices/:invoiceId" element={<InvoiceDetails />} />
         <Route path="invoices/:invoiceId/pay" element={<PayInvoice />} />
-        
+
         {/* Communication */}
         <Route path="messages" element={<PlaceholderPage title="الرسائل" />} />
         <Route path="video-call/:sessionId" element={<PlaceholderPage title="مكالمة فيديو" />} />
@@ -99,14 +100,15 @@ const ClientRoutes = () => {
 
         <Route path="justice-ai" element={<JusticeAIChat />} />
 
+        <Route path="support" element={<SupportTickets />} />
 
         {/* Payments and Profile */}
         <Route path="profile-settings" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
-        
+
         {/* Redirect root client path to dashboard */}
         <Route path="" element={<Navigate to="dashboard" replace />} />
-        
+
         {/* Catch all route - redirect to dashboard */}
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>

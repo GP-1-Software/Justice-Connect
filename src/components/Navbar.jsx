@@ -55,7 +55,7 @@ const Navbar = () => {
 
   const handleScroll = (e, targetId) => {
     e.preventDefault();
-    
+
     // Check if we're on the home page
     if (window.location.pathname !== '/') {
       // Navigate to home page with hash
@@ -63,7 +63,7 @@ const Navbar = () => {
       setIsOpen(false);
       return;
     }
-    
+
     // If already on home page, scroll to section
     const element = document.getElementById(targetId);
     if (element) {
@@ -101,7 +101,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8 space-x-reverse">
             <a href="#home" onClick={(e) => handleScroll(e, 'home')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">الرئيسية</a>
             <a href="#features" onClick={(e) => handleScroll(e, 'features')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">المزايا</a>
-            
+
             {/* Search Dropdown */}
             <div className="relative">
               <button
@@ -113,16 +113,15 @@ const Navbar = () => {
                 <span>بحث عن محامي</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${searchOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {searchOpen && (
                 <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
                   {searchOptions.map((option) => (
                     <button
                       key={option}
                       onClick={() => handleSearchOptionClick(option)}
-                      className={`w-full text-right px-4 py-2 hover:bg-blue-50 transition ${
-                        selectedSearchType === option ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'
-                      }`}
+                      className={`w-full text-right px-4 py-2 hover:bg-blue-50 transition ${selectedSearchType === option ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'
+                        }`}
                     >
                       {option}
                     </button>
@@ -130,7 +129,7 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-            
+
             <a href="#contact" onClick={(e) => handleScroll(e, 'contact')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">تواصل معنا</a>
           </div>
 
@@ -239,6 +238,17 @@ const Navbar = () => {
                       <span>الإعدادات</span>
                     </button>
 
+                    <button
+                      onClick={() => {
+                        navigate('/support');
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                      <span>الدعم الفني</span>
+                    </button>
+
                     <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
                     <button
@@ -253,14 +263,14 @@ const Navbar = () => {
               </div>
             ) : (
               <>
-                <button 
+                <button
                   onClick={() => navigate('/login')}
                   className="flex items-center space-x-2 space-x-reverse px-4 py-2 text-blue-600 hover:text-blue-700 transition font-semibold"
                 >
                   <LogIn className="h-5 w-5" />
                   <span>تسجيل الدخول</span>
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/signup')}
                   className="flex items-center space-x-2 space-x-reverse px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg transition transform hover:scale-105 font-semibold"
                 >
@@ -285,7 +295,7 @@ const Navbar = () => {
             <div className="flex flex-col space-y-3">
               <a href="#home" onClick={(e) => handleScroll(e, 'home')} className="text-gray-700 hover:text-blue-600 transition font-semibold">الرئيسية</a>
               <a href="#features" onClick={(e) => handleScroll(e, 'features')} className="text-gray-700 hover:text-blue-600 transition font-semibold">المزايا</a>
-              
+
               {/* Mobile Search Options */}
               <div className="border-t border-b border-gray-200 py-2">
                 <p className="text-sm text-gray-500 px-2 mb-2">بحث عن محامي:</p>
@@ -293,30 +303,130 @@ const Navbar = () => {
                   <button
                     key={option}
                     onClick={() => handleSearchOptionClick(option)}
-                    className={`w-full text-right px-4 py-2 hover:bg-blue-50 transition rounded ${
-                      selectedSearchType === option ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'
-                    }`}
+                    className={`w-full text-right px-4 py-2 hover:bg-blue-50 transition rounded ${selectedSearchType === option ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'
+                      }`}
                   >
                     {option}
                   </button>
                 ))}
               </div>
-              
+
               <a href="#contact" onClick={(e) => handleScroll(e, 'contact')} className="text-gray-700 hover:text-blue-600 transition font-semibold">تواصل معنا</a>
-              <button 
-                onClick={() => navigate('/login')}
-                className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold"
-              >
-                <LogIn className="h-5 w-5" />
-                <span>تسجيل الدخول</span>
-              </button>
-              <button 
-                onClick={() => navigate('/signup')}
-                className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg transition font-semibold"
-              >
-                <User className="h-5 w-5" />
-                <span>إنشاء حساب</span>
-              </button>
+
+              {isLoggedIn ? (
+                <>
+                  <div className="border-t border-gray-200 my-2"></div>
+                  <div className="px-4 py-2">
+                    <p className="font-bold text-gray-900">{userData?.first_name} {userData?.last_name}</p>
+                    <p className="text-xs text-gray-500">{userData?.email}</p>
+                  </div>
+
+                  {(userData?.role === 'admin' || userData?.role === 'super_admin') && (
+                    <button
+                      onClick={() => {
+                        navigate('/admin/dashboard');
+                        setIsOpen(false);
+                      }}
+                      className="w-full text-right px-4 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg"
+                    >
+                      لوحة التحكم
+                    </button>
+                  )}
+
+                  {userData?.user_type === 'lawyer' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          navigate('/lawyer/dashboard');
+                          setIsOpen(false);
+                        }}
+                        className="w-full text-right px-4 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg"
+                      >
+                        لوحة المحامي
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/lawyer/cases');
+                          setIsOpen(false);
+                        }}
+                        className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        القضايا
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/lawyer/calendar');
+                          setIsOpen(false);
+                        }}
+                        className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        التقويم
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (userData?.user_type === 'client') {
+                        navigate('/client/dashboard');
+                      } else if (userData?.user_type === 'lawyer') {
+                        navigate('/lawyer/dashboard');
+                      } else {
+                        navigate('/profile');
+                      }
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  >
+                    الملف الشخصي
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      navigate('/settings');
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  >
+                    الإعدادات
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      navigate('/support');
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg flex items-center gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>الدعم الفني</span>
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-right px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                  >
+                    تسجيل الخروج
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold"
+                  >
+                    <LogIn className="h-5 w-5" />
+                    <span>تسجيل الدخول</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/signup')}
+                    className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg transition font-semibold"
+                  >
+                    <User className="h-5 w-5" />
+                    <span>إنشاء حساب</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
