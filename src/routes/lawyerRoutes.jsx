@@ -12,11 +12,12 @@ import JusticeAIChat from '../pages/lawyer/JusticeAI/JusticeAIChat';
 import LawyerInvoices from '../pages/lawyer/LawyerInvoices';
 import CreateInvoice from '../pages/lawyer/CreateInvoice';
 import InvoiceDetails from '../pages/lawyer/InvoiceDetails';
+import SupportTickets from '../pages/SupportTickets';
 
 const LawyerRoutes = () => {
   return (
     <Routes>
-      <Route path="/lawyer" element={<LawyerLayout />}> 
+      <Route path="/lawyer" element={<LawyerLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="cases" element={<CasesListPage />} />
@@ -29,6 +30,7 @@ const LawyerRoutes = () => {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="justice-ai" element={<JusticeAIChat />} />
+        <Route path="support" element={<SupportTickets />} />
       </Route>
     </Routes>
   );

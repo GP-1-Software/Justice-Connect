@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3 } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare } from 'lucide-react';
 import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
+import { getAllTicketsForAdmin, updateTicketStatus, addReplyToTicket } from '../services/supportApi';
+import { toast } from 'react-hot-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -15,12 +17,18 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState(null);
-  
+
   // Deletion requests state
   const [deletionRequests, setDeletionRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Support tickets state
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicketUser, setSelectedTicketUser] = useState(null);
+  const [replyText, setReplyText] = useState('');
 
   // Check if user is admin
   useEffect(() => {
@@ -29,20 +37,22 @@ const AdminDashboard = () => {
       navigate('/login');
       return;
     }
-    
+
     const userData = JSON.parse(user);
     if (!userData.role || (userData.role !== 'admin' && userData.role !== 'super_admin')) {
       alert('ليس لديك صلاحية للوصول إلى هذه الصفحة');
       navigate('/');
       return;
     }
-    
+
     setCurrentAdmin(userData);
     fetchData();
-    
+
     // Fetch deletion requests if on that tab
     if (mainTab === 'deletion_requests') {
       fetchDeletionRequests();
+    } else if (mainTab === 'support_tickets') {
+      fetchSupportTickets();
     }
   }, [navigate, mainTab, userStatusTab]);
 
@@ -133,7 +143,7 @@ const AdminDashboard = () => {
         .eq(idColumn, userId);
 
       if (error) throw error;
-      
+
       alert('تم قبول المستخدم بنجاح!');
       fetchData();
     } catch (error) {
@@ -158,14 +168,14 @@ const AdminDashboard = () => {
 
       const { error } = await supabase
         .from(table)
-        .update({ 
+        .update({
           account_status: 'rejected',
-          rejection_reason: rejectionReason 
+          rejection_reason: rejectionReason
         })
         .eq(idColumn, userId);
 
       if (error) throw error;
-      
+
       alert('تم رفض المستخدم');
       setSelectedUser(null);
       setRejectionReason('');
@@ -250,6 +260,71 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error demoting admin:', error);
       alert('حدث خطأ أثناء تخفيض الرتبة');
+    }
+  };
+
+  // Support tickets functions
+  const fetchSupportTickets = async () => {
+    setLoading(true);
+    try {
+      const data = await getAllTicketsForAdmin();
+      setSupportTickets(data || []);
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      alert('حدث خطأ في تحميل التذاكر');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Realtime subscription for support tickets
+  useEffect(() => {
+    if (mainTab !== 'support_tickets') return;
+
+    const channel = supabase
+      .channel('support_tickets_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'support_tickets'
+        },
+        (payload) => {
+          console.log('Support ticket changed:', payload);
+          fetchSupportTickets();
+          
+          // Update selected ticket if it's open
+          if (selectedTicket && payload.new && payload.new.ticket_id === selectedTicket.ticket_id) {
+            setSelectedTicket(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [mainTab, selectedTicket]);
+
+  const handleReplyTicket = async (ticketId) => {
+    if (!replyText.trim()) {
+      toast.error('يرجى كتابة الرد');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const adminName = `${currentAdmin.first_name} ${currentAdmin.last_name}`;
+      await addReplyToTicket(ticketId, 'admin', currentAdmin.admin_id, adminName, replyText);
+      toast.success('تم إرسال الرد بنجاح! ✅');
+      setReplyText('');
+      fetchSupportTickets();
+    } catch (error) {
+      console.error('Error replying to ticket:', error);
+      toast.error('حدث خطأ أثناء الرد على التذكرة');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -367,86 +442,86 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-      <div className="space-y-3 mb-4">
-        <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-          <Mail className="h-4 w-4" />
-          <span className="text-sm">{user.email}</span>
-        </div>
-        <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-          <Phone className="h-4 w-4" />
-          <span className="text-sm">{user.phone}</span>
-        </div>
-        <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-          <MapPin className="h-4 w-4" />
-          <span className="text-sm">{user.city}</span>
-        </div>
-        <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-          <CreditCard className="h-4 w-4" />
-          <span className="text-sm">{user.id_number}</span>
-        </div>
-        <div className="flex items-center space-x-2 space-x-reverse text-gray-500 dark:text-gray-400">
-          <Clock className="h-4 w-4" />
-          <span className="text-xs">
-            تاريخ التسجيل: {new Date(user.created_at).toLocaleDateString('ar-EG')}
-          </span>
-        </div>
-      </div>
-
-      {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'pending' && (
-        <div className="flex space-x-3 space-x-reverse">
-          <button
-            onClick={() => handleApprove(user.user_id || user.lawyer_id)}
-            className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
-          >
-            <CheckCircle className="h-5 w-5" />
-            <span>قبول</span>
-          </button>
-          <button
-            onClick={() => setSelectedUser(user)}
-            className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-          >
-            <XCircle className="h-5 w-5" />
-            <span>رفض</span>
-          </button>
-        </div>
-      )}
-
-      {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'approved' && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-semibold">
-            <CheckCircle className="h-5 w-5" />
-            <span>مقبول</span>
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+            <Mail className="h-4 w-4" />
+            <span className="text-sm">{user.email}</span>
           </div>
-          {currentAdmin?.role === 'super_admin' && (
+          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+            <Phone className="h-4 w-4" />
+            <span className="text-sm">{user.phone}</span>
+          </div>
+          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+            <MapPin className="h-4 w-4" />
+            <span className="text-sm">{user.city}</span>
+          </div>
+          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+            <CreditCard className="h-4 w-4" />
+            <span className="text-sm">{user.id_number}</span>
+          </div>
+          <div className="flex items-center space-x-2 space-x-reverse text-gray-500 dark:text-gray-400">
+            <Clock className="h-4 w-4" />
+            <span className="text-xs">
+              تاريخ التسجيل: {new Date(user.created_at).toLocaleDateString('ar-EG')}
+            </span>
+          </div>
+        </div>
+
+        {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'pending' && (
+          <div className="flex space-x-3 space-x-reverse">
             <button
-              onClick={() => handlePromoteToAdmin(user)}
-              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+              onClick={() => handleApprove(user.user_id || user.lawyer_id)}
+              className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
             >
-              <ArrowUp className="h-5 w-5" />
-              <span>ترقية إلى مسؤول</span>
+              <CheckCircle className="h-5 w-5" />
+              <span>قبول</span>
             </button>
-          )}
-        </div>
-      )}
+            <button
+              onClick={() => setSelectedUser(user)}
+              className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+            >
+              <XCircle className="h-5 w-5" />
+              <span>رفض</span>
+            </button>
+          </div>
+        )}
 
-      {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'rejected' && (
-        <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold">
-          <XCircle className="h-5 w-5" />
-          <span>مرفوض</span>
-        </div>
-      )}
+        {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'approved' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-semibold">
+              <CheckCircle className="h-5 w-5" />
+              <span>مقبول</span>
+            </div>
+            {currentAdmin?.role === 'super_admin' && (
+              <button
+                onClick={() => handlePromoteToAdmin(user)}
+                className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+              >
+                <ArrowUp className="h-5 w-5" />
+                <span>ترقية إلى مسؤول</span>
+              </button>
+            )}
+          </div>
+        )}
 
-      {/* Admin/Super Admin Actions */}
-      {(mainTab === 'admins' || mainTab === 'super_admins') && currentAdmin?.role === 'super_admin' && user.role !== 'super_admin' && (
-        <button
-          onClick={() => handleDemoteAdmin(user)}
-          className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold"
-        >
-          <ArrowUp className="h-5 w-5 rotate-180" />
-          <span>تخفيض إلى مستخدم</span>
-        </button>
-      )}
-    </div>
+        {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'rejected' && (
+          <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold">
+            <XCircle className="h-5 w-5" />
+            <span>مرفوض</span>
+          </div>
+        )}
+
+        {/* Admin/Super Admin Actions */}
+        {(mainTab === 'admins' || mainTab === 'super_admins') && currentAdmin?.role === 'super_admin' && user.role !== 'super_admin' && (
+          <button
+            onClick={() => handleDemoteAdmin(user)}
+            className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold"
+          >
+            <ArrowUp className="h-5 w-5 rotate-180" />
+            <span>تخفيض إلى مستخدم</span>
+          </button>
+        )}
+      </div>
     );
   };
 
@@ -470,45 +545,41 @@ const AdminDashboard = () => {
             <div className={`grid gap-2 ${currentAdmin?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <button
                 onClick={() => { setMainTab('users'); setUserStatusTab('pending'); }}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                  mainTab === 'users'
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'users'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <Users className="h-5 w-5" />
                 <span>المستخدمين</span>
               </button>
               <button
                 onClick={() => { setMainTab('lawyers'); setUserStatusTab('pending'); }}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                  mainTab === 'lawyers'
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'lawyers'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <Briefcase className="h-5 w-5" />
                 <span>المحاميين</span>
               </button>
               <button
                 onClick={() => { setMainTab('admins'); setUserStatusTab('pending'); }}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                  mainTab === 'admins'
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'admins'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <Shield className="h-5 w-5" />
                 <span>المسؤولين</span>
               </button>
               {currentAdmin?.role === 'super_admin' && (
                 <button
-                onClick={() => { setMainTab('super_admins'); setUserStatusTab('pending'); }}
-                  className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                    mainTab === 'super_admins'
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  onClick={() => { setMainTab('super_admins'); setUserStatusTab('pending'); }}
+                  className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'super_admins'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                 >
                   <Crown className="h-5 w-5" />
                   <span>Super Admin</span>
@@ -516,14 +587,23 @@ const AdminDashboard = () => {
               )}
               <button
                 onClick={() => setMainTab('deletion_requests')}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${
-                  mainTab === 'deletion_requests'
-                    ? 'bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'deletion_requests'
+                  ? 'bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <Trash2 className="h-5 w-5" />
                 <span>طلبات الحذف</span>
+              </button>
+              <button
+                onClick={() => setMainTab('support_tickets')}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'support_tickets'
+                  ? 'bg-gradient-to-r from-green-600 to-teal-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span>الدعم الفني</span>
               </button>
               <Link
                 to="/admin/system-ai"
@@ -542,9 +622,8 @@ const AdminDashboard = () => {
               <>
                 <button
                   onClick={() => setUserStatusTab('pending')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${
-                    userStatusTab === 'pending' ? 'ring-4 ring-yellow-500 ring-opacity-50' : ''
-                  }`}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'pending' ? 'ring-4 ring-yellow-500 ring-opacity-50' : ''
+                    }`}
                 >
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
@@ -558,9 +637,8 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   onClick={() => setUserStatusTab('approved')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${
-                    userStatusTab === 'approved' ? 'ring-4 ring-green-500 ring-opacity-50' : ''
-                  }`}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'approved' ? 'ring-4 ring-green-500 ring-opacity-50' : ''
+                    }`}
                 >
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -574,9 +652,8 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   onClick={() => setUserStatusTab('rejected')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${
-                    userStatusTab === 'rejected' ? 'ring-4 ring-red-500 ring-opacity-50' : ''
-                  }`}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'rejected' ? 'ring-4 ring-red-500 ring-opacity-50' : ''
+                    }`}
                 >
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
@@ -590,7 +667,7 @@ const AdminDashboard = () => {
                 </button>
               </>
             )}
-            
+
             {mainTab === 'admins' && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 space-x-reverse">
@@ -606,7 +683,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
-            
+
             {mainTab === 'super_admins' && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 space-x-reverse">
@@ -622,7 +699,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
-            
+
             {mainTab === 'deletion_requests' && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <div className="flex items-center space-x-3 space-x-reverse">
@@ -633,6 +710,22 @@ const AdminDashboard = () => {
                     <p className="text-gray-500 dark:text-gray-400 text-sm">طلبات الحذف المعلقة</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {deletionRequests.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mainTab === 'support_tickets' && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-3 space-x-reverse">
+                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">تذاكر الدعم الفني</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {supportTickets.length}
                     </p>
                   </div>
                 </div>
@@ -713,24 +806,89 @@ const AdminDashboard = () => {
                 ))}
               </div>
             )
-          ) : loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
-            </div>
-          ) : displayData.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-              <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-xl text-gray-600 dark:text-gray-300">
-                لا توجد بيانات لعرضها
-              </p>
-            </div>
+          ) : mainTab === 'support_tickets' ? (
+            // Support Tickets Content
+            loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
+              </div>
+            ) : supportTickets.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-xl text-gray-600 dark:text-gray-300">لا توجد تذاكر دعم فني</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {supportTickets.map((ticket) => (
+                  <div key={ticket.ticket_id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center space-x-3 space-x-reverse mb-2">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{ticket.subject}</h3>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                            ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                            {ticket.status === 'open' ? 'مفتوحة' : ticket.status === 'resolved' ? 'تم الحل' : ticket.status}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                            {ticket.priority === 'high' ? 'عالية' : ticket.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 mb-2">{ticket.description}</p>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-4">
+                          <span>{ticket.submitter_type === 'client' ? 'عميل' : 'محامي'}</span>
+                          <button
+                            onClick={() => setSelectedTicketUser(ticket.submitter_type === 'client' ? ticket.users : ticket.lawyers)}
+                            className="text-blue-600 hover:text-blue-800 underline"
+                          >
+                            {ticket.submitter_type === 'client'
+                              ? `${ticket.users?.first_name} ${ticket.users?.last_name}`
+                              : `${ticket.lawyers?.first_name} ${ticket.lawyers?.last_name}`
+                            }
+                          </button>
+                          <span>{new Date(ticket.created_at).toLocaleDateString('ar-EG')}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedTicket(ticket);
+                          setReplyText('');
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        عرض / رد
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayData.map((item) => (
-                <UserCard key={item.user_id || item.lawyer_id || item.admin_id} user={item} />
-              ))}
-            </div>
+            // Default Content (Users, Lawyers, Admins)
+            loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
+              </div>
+            ) : displayData.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-xl text-gray-600 dark:text-gray-300">
+                  لا توجد بيانات لعرضها
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayData.map((item) => (
+                  <UserCard key={item.user_id || item.lawyer_id || item.admin_id} user={item} />
+                ))}
+              </div>
+            )
           )}
         </div>
       </div>
@@ -772,6 +930,125 @@ const AdminDashboard = () => {
               >
                 إلغاء
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Support Ticket Modal */}
+      {selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedTicket.subject}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {selectedTicket.submitter_type === 'client' 
+                    ? `${selectedTicket.users?.first_name} ${selectedTicket.users?.last_name}` 
+                    : `${selectedTicket.lawyers?.first_name} ${selectedTicket.lawyers?.last_name}`}
+                </p>
+              </div>
+              <button onClick={() => setSelectedTicket(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Conversation Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Original Message */}
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {selectedTicket.submitter_type === 'client' 
+                          ? `${selectedTicket.users?.first_name} ${selectedTicket.users?.last_name}` 
+                          : `${selectedTicket.lawyers?.first_name} ${selectedTicket.lawyers?.last_name}`}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(selectedTicket.created_at).toLocaleString('ar-EG')}
+                      </span>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedTicket.description}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Replies */}
+              {selectedTicket.replies && selectedTicket.replies.length > 0 && selectedTicket.replies.map((reply, index) => (
+                <div key={index} className={`flex gap-3 ${reply.sender_type === 'admin' ? 'flex-row-reverse' : ''}`}>
+                  <div className="flex-shrink-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      reply.sender_type === 'admin' 
+                        ? 'bg-green-100 dark:bg-green-900/30' 
+                        : 'bg-blue-100 dark:bg-blue-900/30'
+                    }`}>
+                      {reply.sender_type === 'admin' ? (
+                        <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className={`rounded-lg p-4 ${
+                      reply.sender_type === 'admin'
+                        ? 'bg-green-50 dark:bg-green-900/20'
+                        : 'bg-blue-50 dark:bg-blue-900/20'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                          {reply.sender_name}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          reply.sender_type === 'admin' 
+                            ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' 
+                            : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400'
+                        }`}>
+                          {reply.sender_type === 'admin' ? 'إدارة' : reply.sender_type === 'client' ? 'عميل' : 'محامي'}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(reply.created_at).toLocaleString('ar-EG')}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{reply.message}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Reply Input */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">رد جديد</label>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                placeholder="اكتب ردك هنا..."
+                rows="3"
+              />
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setSelectedTicket(null)}
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+                >
+                  إغلاق
+                </button>
+                <button
+                  onClick={() => handleReplyTicket(selectedTicket.ticket_id)}
+                  disabled={processing || !replyText.trim()}
+                  className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processing ? 'جاري الإرسال...' : 'إرسال الرد'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -829,6 +1106,96 @@ const AdminDashboard = () => {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? 'جاري...' : 'موافقة'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Profile Modal */}
+      {selectedTicketUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                بيانات المستخدم
+              </h3>
+              <button
+                onClick={() => setSelectedTicketUser(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">الاسم الكامل</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedTicketUser.first_name} {selectedTicketUser.last_name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                  <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">البريد الإلكتروني</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedTicketUser.email}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                  <Phone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">رقم الهاتف</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedTicketUser.phone}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-full">
+                  <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">المدينة</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedTicketUser.city || 'غير محدد'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full">
+                  <CreditCard className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">رقم الهوية</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedTicketUser.id_number || 'غير محدد'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <button
+                onClick={() => setSelectedTicketUser(null)}
+                className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition font-semibold"
+              >
+                إغلاق
               </button>
             </div>
           </div>

@@ -1,0 +1,354 @@
+Table Name,Column,Data Type,PK,FK,Nullable
+
+account_deletion_requests:
+request_id,integer,PK,,NOT NULL
+,user_id,integer,,FK → users(user_id),NULL
+,user_type,character varying,,,NOT NULL
+,reason,text,,,NULL
+,status,character varying,,,NOT NULL
+,requested_at,timestamp with time zone,,,NULL
+,reviewed_by,integer,,FK → admins(admin_id),NULL
+,reviewed_at,timestamp with time zone,,,NULL
+,admin_notes,text,,,NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NULL
+
+admins:
+admin_id,integer,PK,,NOT NULL
+,id_number,character varying,,,NOT NULL
+,first_name,character varying,,,NOT NULL
+,last_name,character varying,,,NOT NULL
+,email,character varying,,,NOT NULL
+,phone,character varying,,,NOT NULL
+,city,character varying,,,NOT NULL
+,password_hash,character varying,,,NOT NULL
+,role,character varying,,,NOT NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+
+ai_conversations:
+id,uuid,PK,,NOT NULL
+,client_user_id,text,,,NULL
+,title,text,,,NULL
+,created_at,timestamp with time zone,,,NOT NULL
+,last_message_at,timestamp with time zone,,,NOT NULL
+,metadata,jsonb,,,NULL
+,lawyer_user_id,text,,,NULL
+ai_messages:,id,uuid,PK,,NOT NULL
+,conversation_id,uuid,,FK → ai_conversations(id),NOT NULL
+,role,text,,,NOT NULL
+,content,text,,,NOT NULL
+,model,text,,,NULL
+,tokens,integer,,,NULL
+,created_at,timestamp with time zone,,,NOT NULL
+
+appointments:
+id,uuid,PK,,NOT NULL
+,client_id,integer,,FK → users(user_id),NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NULL
+,appointment_date,date,,,NOT NULL
+,appointment_time,time without time zone,,,NOT NULL
+,duration_minutes,integer,,,NULL
+,appointment_type,character varying,,,NOT NULL
+,meeting_method,character varying,,,NOT NULL
+,status,character varying,,,NULL
+,price,numeric,,,NOT NULL
+,notes,text,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+,case_id,integer,,FK → cases(case_id),NULL
+,rejection_reason,text,,,NULL
+,appointment_number,text,,,NULL
+
+case_files:
+file_id,integer,PK,,NOT NULL
+,case_id,integer,,FK → cases(case_id),NULL
+,uploaded_by,integer,,,NOT NULL
+,uploader_type,character varying,,,NOT NULL
+,file_name,character varying,,,NOT NULL
+,file_url,text,,,NOT NULL
+,file_type,character varying,,,NULL
+,file_size,bigint,,,NULL
+,description,text,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+case_notes:note_id,integer,PK,,NOT NULL
+,case_id,integer,,FK → cases(case_id),NOT NULL
+,content,text,,,NOT NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+,created_by_type,character varying,,,NULL
+,created_by_id,integer,,,NULL
+,is_shared,boolean,,,NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NULL
+
+case_reports:
+report_id,integer,PK,,NOT NULL
+,case_id,integer,,FK → cases(case_id),NOT NULL
+,generated_by,integer,,,NOT NULL
+,generated_by_type,character varying,,,NOT NULL
+,report_title,character varying,,,NULL
+,report_description,text,,,NULL
+,report_type,character varying,,,NULL
+,file_url,text,,,NOT NULL
+,file_size,integer,,,NULL
+,generated_at,timestamp with time zone,,,NULL
+
+case_tasks:
+task_id,integer,PK,,NOT NULL
+,case_id,integer,,FK → cases(case_id),NOT NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NOT NULL
+,title,character varying,,,NOT NULL
+,description,text,,,NULL
+,is_completed,boolean,,,NULL
+,due_date,date,,,NULL
+,priority,character varying,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+
+cases:
+case_id,integer,PK,,NOT NULL
+,client_id,integer,,FK → users(user_id),NULL
+,assigned_lawyer_id,integer,,FK → lawyers(lawyer_id),NULL
+,title,character varying,,,NOT NULL
+,case_type,character varying,,,NOT NULL
+,description,text,,,NULL
+,status,character varying,,,NULL
+,priority,character varying,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+,court_name,character varying,,,NULL
+,filing_date,date,,,NULL
+,next_hearing_date,date,,,NULL
+,rejection_reason,text,,,NULL
+,case_number,character varying,,,NULL
+,client_id_number,text,,,NULL
+
+invoice_items:
+item_id,integer,PK,,NOT NULL
+,invoice_id,integer,,FK → invoices(invoice_id),NOT NULL
+,description,text,,,NOT NULL
+,quantity,numeric,,,NULL
+,unit_price,numeric,,,NOT NULL
+,total_price,numeric,,,NOT NULL
+,item_order,integer,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+invoices:
+invoice_id,integer,PK,,NOT NULL
+,invoice_number,character varying,,,NOT NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NOT NULL
+,client_id,integer,,FK → users(user_id),NOT NULL
+,case_id,integer,,FK → cases(case_id),NULL
+,appointment_id,uuid,,FK → appointments(id),NULL
+,subtotal,numeric,,,NOT NULL
+,tax_percentage,numeric,,,NULL
+,tax_amount,numeric,,,NULL
+,discount_amount,numeric,,,NULL
+,total_amount,numeric,,,NOT NULL
+,currency,character varying,,,NULL
+,status,character varying,,,NULL
+,issue_date,date,,,NOT NULL
+,due_date,date,,,NOT NULL
+,paid_date,timestamp with time zone,,,NULL
+,notes,text,,,NULL
+,terms_conditions,text,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+
+lawyer_availability:
+availability_id,integer,PK,,NOT NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NOT NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+,schedule,jsonb,,,NOT NULL
+
+lawyer_documents:
+document_id,integer,PK,,NOT NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NOT NULL
+,document_type,character varying,,,NOT NULL
+,file_name,character varying,,,NOT NULL
+,file_url,text,,,NOT NULL
+,file_size,bigint,,,NULL
+,verification_status,character varying,,,NULL
+,verified_at,timestamp with time zone,,,NULL
+,verified_by,integer,,,NULL
+,notes,text,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,uploaded_at,timestamp without time zone,,,NULL
+
+lawyer_services:
+service_id,integer,PK,,NOT NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NOT NULL
+,service_name,character varying,,,NOT NULL
+,description,text,,,NULL
+,price,numeric,,,NOT NULL
+,duration_minutes,integer,,,NULL
+,is_active,boolean,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+
+lawyers:
+lawyer_id,integer,PK,,NOT NULL
+,user_type,character varying,,,NOT NULL
+,first_name,character varying,,,NOT NULL
+,last_name,character varying,,,NOT NULL
+,email,character varying,,,NOT NULL
+,phone,character varying,,,NOT NULL
+,city,character varying,,,NOT NULL
+,id_number,character varying,,,NOT NULL
+,password_hash,character varying,,,NOT NULL
+,certificate_url,text,,,NULL
+,account_status,character varying,,,NOT NULL
+,rejection_reason,text,,,NULL
+,created_at,timestamp with time zone,,,NOT NULL
+,updated_at,timestamp with time zone,,,NOT NULL
+,auth_id,uuid,,,NULL
+,specialization,ARRAY,,,NULL
+,years_of_experience,integer,,,NULL
+,license_number,character varying,,,NULL
+,bio,text,,,NULL
+,profile_image_url,text,,,NULL
+,license_url,text,,,NULL
+,license_verification_status,text,,,NULL
+,certificate_verification_status,text,,,NULL
+,id_card_url,text,,,NULL
+,id_card_verification_status,text,,,NULL
+
+meetings:
+meeting_id,uuid,PK,,NOT NULL
+,meeting_type,character varying,,,NOT NULL
+,related_appointment_id,uuid,,FK → appointments(id),NULL
+,related_case_id,integer,,FK → cases(case_id),NULL
+,meeting_link,text,,,NOT NULL
+,meeting_provider,character varying,,,NULL
+,meeting_status,character varying,,,NULL
+,scheduled_date,date,,,NULL
+,scheduled_time,time without time zone,,,NULL
+,created_by_role,character varying,,,NULL
+,created_by_id,integer,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+,started_at,timestamp with time zone,,,NULL
+,ended_at,timestamp with time zone,,,NULL
+
+messages:
+message_id,integer,PK,,NOT NULL
+,conversation_id,integer,,,NOT NULL
+,sender_id,integer,,,NOT NULL
+,topic,text,,,NOT NULL
+,extension,text,,,NOT NULL
+,sender_type,character varying,,,NOT NULL
+,payload,jsonb,,,NULL
+,receiver_id,integer,,,NOT NULL
+,receiver_type,character varying,,,NOT NULL
+,event,text,,,NULL
+,private,boolean,,,NULL
+,content,text,,,NOT NULL
+,updated_at,timestamp without time zone,,,NOT NULL
+,message_type,character varying,,,NULL
+,inserted_at,timestamp without time zone,PK,,NOT NULL
+,file_url,text,,,NULL
+,id,uuid,PK,,NOT NULL
+,case_id,integer,,FK → cases(case_id),NULL
+,is_read,boolean,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+notifications:
+notification_id,integer,PK,,NOT NULL
+,user_id,integer,,,NOT NULL
+,user_type,character varying,,,NOT NULL
+,title,character varying,,,NOT NULL
+,message,text,,,NOT NULL
+,type,character varying,,,NOT NULL
+,related_id,integer,,,NULL
+,related_type,character varying,,,NULL
+,is_read,boolean,,,NULL
+,read_at,timestamp with time zone,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+payments:
+payment_id,integer,PK,,NOT NULL
+,invoice_id,integer,,FK → invoices(invoice_id),NOT NULL
+,client_id,integer,,FK → users(user_id),NOT NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NOT NULL
+,amount,numeric,,,NOT NULL
+,currency,character varying,,,NULL
+,payment_method,character varying,,,NOT NULL
+,transaction_id,character varying,,,NULL
+,payment_gateway,character varying,,,NULL
+,status,character varying,,,NULL
+,payment_proof_url,text,,,NULL
+,notes,text,,,NULL
+,payment_date,timestamp with time zone,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+system_ai_conversations:
+id,uuid,PK,,NOT NULL
+,admin_id,integer,,FK → admins(admin_id),NOT NULL
+,title,text,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,last_message_at,timestamp with time zone,,,NULL
+system_ai_messages:,id,uuid,PK,,NOT NULL
+,conversation_id,uuid,,FK → system_ai_conversations(id),NOT NULL
+,sender,text,,,NOT NULL
+,message,text,,,NOT NULL
+,sql_query,text,,,NULL
+,raw_result,jsonb,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+timeline_events:
+event_id,integer,PK,,NOT NULL
+,case_id,integer,,FK → cases(case_id),NULL
+,event_type,character varying,,,NOT NULL
+,author_id,integer,,,NOT NULL
+,author_type,character varying,,,NOT NULL
+,title,character varying,,,NULL
+,description,text,,,NULL
+,visibility,character varying,,,NULL
+,files,jsonb,,,NULL
+,created_at,timestamp with time zone,,,NULL
+
+user_details:
+detail_id,integer,PK,,NOT NULL
+,user_id,integer,,,NULL
+,lawyer_id,integer,,FK → lawyers(lawyer_id),NULL
+,phone_number,text,,,NULL
+,city,text,,,NULL
+,created_at,timestamp with time zone,,,NULL
+,updated_at,timestamp with time zone,,,NULL
+,id_number,text,,,NULL
+,first_name,text,,,NULL
+,last_name,text,,,NULL
+,email,text,,,NULL
+,case_number,text,,,NULL
+
+users:
+user_id,integer
+user_type,character varying
+first_name,character varying
+last_name,character varying
+email,character varying
+phone,character varying
+city,character varying
+id_number,character varying
+password_hash,character varying
+id_card_image,text
+account_status,character varying
+rejection_reason,text
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
+auth_id,uuid
+profile_image_url,text
+
+support_tickets
+ticket_id,uuid
+user_id,integer
+lawyer_id,integer
+submitter_type,character varying
+subject,text
+description,text
+status,character varying
+priority,character varying
+admin_response,text
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
