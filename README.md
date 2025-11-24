@@ -32,5 +32,5 @@ npm run dev
 _________
 
 
-Tables Schema:
-server/supabase/Schema_for_Tables/Schemas
+**Tables Schema:**
+**server/supabase/Schema_for_Tables/Schemas**
