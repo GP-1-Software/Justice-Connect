@@ -66,9 +66,7 @@ const ClientLayout = ({ children }) => {
         <main className={`flex-1 transition-all duration-300 w-full
           ${shouldHideSidebar ? 'mr-0' : 'lg:mr-80'}
         `}>
-          <div className="p-4 sm:p-6 lg:p-8 max-w-full">
-            {children}
-          </div>
+          {children}
         </main>
       </div>
     </div>

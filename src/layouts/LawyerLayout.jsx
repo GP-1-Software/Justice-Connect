@@ -36,9 +36,7 @@ const LawyerLayout = () => {
         
         {/* Main Content */}
         <main className="flex-1 transition-all duration-300 w-full lg:mr-80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-            <Outlet />
-          </div>
+          <Outlet />
         </main>
       </div>
     </div>
