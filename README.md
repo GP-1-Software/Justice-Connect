@@ -13,7 +13,7 @@ npm install vite --save-dev
 
  ```
 _________
-**Run backend & Install dependencies**
+**Run backend & Install dependencies - Backend**
 
 ```bash
 cd backend
