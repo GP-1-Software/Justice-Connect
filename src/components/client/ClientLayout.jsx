@@ -47,6 +47,9 @@ const ClientLayout = ({ children }) => {
   // Check if current route should hide sidebar (e.g., full-screen pages)
   const hideSidebarRoutes = ['/client/video-call', '/client/ai-chatbot'];
   const shouldHideSidebar = hideSidebarRoutes.some(route => location.pathname.includes(route));
+  
+  // Check if current page is messages
+  const isMessagesPage = location.pathname.includes('/messages');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
@@ -63,10 +66,14 @@ const ClientLayout = ({ children }) => {
         )}
         
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 w-full
-          ${shouldHideSidebar ? 'mr-0' : 'lg:mr-80'}
-        `}>
-          {children}
+        <main className="flex-1 transition-all duration-300 w-full overflow-x-hidden lg:mr-80">
+          {isMessagesPage ? (
+            children
+          ) : (
+            <div className="p-4 sm:p-6 lg:p-8">
+              {children}
+            </div>
+          )}
         </main>
       </div>
     </div>

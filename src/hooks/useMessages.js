@@ -9,7 +9,8 @@ import {
     subscribeToConversations,
     unsubscribeFromChannel,
     subscribeToTyping,
-    broadcastTyping
+    broadcastTyping,
+    getOrCreateConversation
 } from '../services/messageService';
 
 export const useMessages = (userId, userType) => {
@@ -65,7 +66,7 @@ export const useMessages = (userId, userType) => {
         if (!activeConversation) return;
 
         try {
-            const conversation = conversations.find(c => c.conversation_id === activeConversation);
+            let conversation = conversations.find(c => c.conversation_id === activeConversation);
             if (!conversation) return;
 
             const isParticipant1 = 
@@ -76,7 +77,7 @@ export const useMessages = (userId, userType) => {
             const receiverType = isParticipant1 ? conversation.participant2_type : conversation.participant1_type;
 
             const message = await sendMessage(
-                activeConversation,
+                conversation.conversation_id,
                 userId,
                 userType,
                 receiverId,
@@ -92,18 +93,48 @@ export const useMessages = (userId, userType) => {
                 created_at: message.created_at || new Date().toISOString()
             };
             
+            // Play send sound
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                console.log('Send sound error:', e);
+            }
+            
             setMessages(prev => {
                 const exists = prev.some(m => m.message_id === newMessage.message_id);
                 if (exists) return prev;
                 return [...prev, newMessage];
             });
             
-            // Reload conversations to update last message
-            loadConversations();
+            // Update conversation's last_message_at in local state instead of reloading all
+            setConversations(prev => prev.map(c => 
+                c.conversation_id === conversation.conversation_id 
+                    ? { ...c, last_message_at: newMessage.created_at }
+                    : c
+            ));
             
             setError(null);
         } catch (err) {
-            setError(err.message);
+            // Check if error is due to blocking
+            if (err.message.includes('blocked') || err.message.includes('User is blocked')) {
+                setError('لا يمكن إرسال الرسالة. أحد المستخدمين محظور.');
+            } else {
+                setError(err.message);
+            }
             console.error('Error sending message:', err);
         }
     };
@@ -111,6 +142,15 @@ export const useMessages = (userId, userType) => {
     // Set active conversation and load its messages
     const selectConversation = async (conversationId) => {
         console.log('Selecting conversation:', conversationId);
+        
+        // Check if this is a temporary conversation
+        const conversation = conversations.find(c => c.conversation_id === conversationId);
+        if (conversation && conversation.isTemp) {
+            // For temp conversations, just set it active with empty messages
+            setActiveConversation(conversationId);
+            setMessages([]);
+            return;
+        }
         
         // Unsubscribe from previous conversation
         if (messageChannel.current) {
@@ -150,6 +190,29 @@ export const useMessages = (userId, userType) => {
         // Subscribe to new messages
         messageChannel.current = subscribeToMessages(conversationId, (newMessage) => {
             console.log('New message received:', newMessage);
+            
+            // Play receive sound if message is from other user
+            if (newMessage.sender_id !== parseInt(userId) || newMessage.sender_type !== userType) {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = 600;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.15);
+                } catch (e) {
+                    console.log('Receive sound error:', e);
+                }
+            }
             
             // Check if message already exists
             setMessages(prev => {
@@ -233,8 +296,11 @@ export const useMessages = (userId, userType) => {
 
     return {
         conversations,
+        setConversations,
         activeConversation,
+        setActiveConversation,
         messages,
+        setMessages,
         loading,
         error,
         isOtherUserTyping,

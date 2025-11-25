@@ -266,3 +266,99 @@ export const unsubscribeFromChannel = async (channel) => {
         await supabase.removeChannel(channel);
     }
 };
+
+// Block user
+export const blockUser = async (blockerId, blockerType, blockedId, blockedType, reason = null) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/block`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                blocker_id: blockerId,
+                blocker_type: blockerType,
+                blocked_id: blockedId,
+                blocked_type: blockedType,
+                reason
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to block user");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error blocking user:", error);
+        throw error;
+    }
+};
+
+// Unblock user
+export const unblockUser = async (blockerId, blockerType, blockedId, blockedType) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/unblock`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                blocker_id: blockerId,
+                blocker_type: blockerType,
+                blocked_id: blockedId,
+                blocked_type: blockedType
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to unblock user");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error unblocking user:", error);
+        throw error;
+    }
+};
+
+// Check if user is blocked
+export const checkIfBlocked = async (userId, userType, otherUserId, otherUserType) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/check-blocked/${userId}/${userType}/${otherUserId}/${otherUserType}`);
+
+        if (!response.ok) {
+            throw new Error("Failed to check block status");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error checking block status:", error);
+        throw error;
+    }
+};
+
+// Delete conversation
+export const deleteConversation = async (conversationId, userId, userType) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/delete`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                user_type: userType
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to delete conversation");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error deleting conversation:", error);
+        throw error;
+    }
+};

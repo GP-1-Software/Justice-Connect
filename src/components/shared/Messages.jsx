@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMessages } from '../../hooks/useMessages';
-import { searchUsers, getOrCreateConversation } from '../../services/messageService';
+import { searchUsers, getOrCreateConversation, blockUser, unblockUser, checkIfBlocked, deleteConversation } from '../../services/messageService';
 import { useTranslation } from 'react-i18next';
 import { Send, Search, User, MessageCircle, X, Phone, Video, MoreVertical } from 'lucide-react';
+import { supabase } from '../../supabaseClient';
 
 const Messages = ({ userId, userType }) => {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const {
         conversations,
+        setConversations,
         activeConversation,
+        setActiveConversation,
         messages,
+        setMessages,
         loading,
         error,
         isOtherUserTyping,
@@ -26,12 +30,95 @@ const Messages = ({ userId, userType }) => {
     const [searchResults, setSearchResults] = useState([]);
     const [showSearch, setShowSearch] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockedByMe, setBlockedByMe] = useState(false);
     const messagesEndRef = useRef(null);
+
+    // Get active conversation details
+    const activeConvDetails = conversations.find(c => c.conversation_id === activeConversation);
 
     // Auto scroll to bottom when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Check block status when conversation changes
+    useEffect(() => {
+        const checkBlockStatus = async () => {
+            if (!activeConversation || !activeConvDetails) return;
+            
+            const otherUserId = activeConvDetails.other_participant?.id || 
+                              (activeConvDetails.participant1_id === parseInt(userId) 
+                                  ? activeConvDetails.participant2_id 
+                                  : activeConvDetails.participant1_id);
+            const otherUserType = activeConvDetails.other_participant_type;
+            
+            try {
+                const result = await checkIfBlocked(userId, userType, otherUserId, otherUserType);
+                console.log('Block status result:', result);
+                // Block UI if either user has blocked the other
+                setIsBlocked(result.isBlocked);
+                setBlockedByMe(result.blockedByMe);
+            } catch (error) {
+                console.error('Error checking block status:', error);
+            }
+        };
+        
+        checkBlockStatus();
+    }, [activeConversation, activeConvDetails, userId, userType]);
+
+    // Real-time subscription for block status changes
+    useEffect(() => {
+        if (!userId || !userType) return;
+
+        console.log('Setting up block status real-time subscription for user:', userId, userType);
+
+        // Subscribe to ALL blocked_users changes involving this user
+        const blockChannel = supabase
+            .channel(`block-status-user-${userId}-${userType}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'blocked_users'
+                },
+                async (payload) => {
+                    console.log('Block table changed:', payload);
+                    
+                    // Check if this change involves the current user
+                    const record = payload.new || payload.old;
+                    const involvesCurrentUser = 
+                        (record.blocker_id == userId && record.blocker_type === userType) ||
+                        (record.blocked_id == userId && record.blocked_type === userType);
+                    
+                    if (involvesCurrentUser && activeConversation && activeConvDetails) {
+                        const otherUserId = activeConvDetails.other_participant?.id || 
+                                          (activeConvDetails.participant1_id === parseInt(userId) 
+                                              ? activeConvDetails.participant2_id 
+                                              : activeConvDetails.participant1_id);
+                        const otherUserType = activeConvDetails.other_participant_type;
+                        
+                        // Refresh block status for active conversation
+                        try {
+                            const result = await checkIfBlocked(userId, userType, otherUserId, otherUserType);
+                            console.log('Updated block status:', result);
+                            setIsBlocked(result.isBlocked);
+                            setBlockedByMe(result.blockedByMe);
+                        } catch (error) {
+                            console.error('Error updating block status:', error);
+                        }
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            console.log('Cleaning up block status subscription');
+            supabase.removeChannel(blockChannel);
+        };
+    }, [userId, userType, activeConversation, activeConvDetails]);
 
     // Check for conversation parameter in URL (only once when conversations load initially)
     useEffect(() => {
@@ -77,28 +164,89 @@ const Messages = ({ userId, userType }) => {
     const handleStartConversation = async (otherUser) => {
         try {
             console.log('Starting conversation with:', otherUser);
+            
+            // Create or get existing conversation (this will remove from deleted_conversations)
             const conversation = await getOrCreateConversation(
                 userId,
                 userType,
                 otherUser.id,
                 otherUser.role
             );
-            console.log('Conversation created/found:', conversation);
+            
+            console.log('Got conversation:', conversation);
+            
+            // Add to conversations list if not already there
+            setConversations(prev => {
+                const exists = prev.find(c => c.conversation_id === conversation.conversation_id);
+                if (exists) {
+                    return prev;
+                }
+                // Add new conversation with participant details
+                return [{
+                    ...conversation,
+                    other_participant: otherUser,
+                    other_participant_type: otherUser.role,
+                    unread_count: 0
+                }, ...prev];
+            });
             
             // Close search
             setShowSearch(false);
             setSearchTerm('');
             setSearchResults([]);
             
-            // Reload conversations and select the new one
-            await loadConversations();
-            
-            // Select this conversation immediately
-            setTimeout(() => {
-                selectConversation(conversation.conversation_id);
-            }, 500);
+            // Select the conversation
+            setActiveConversation(conversation.conversation_id);
+            setMessages([]);
         } catch (err) {
             console.error('Error starting conversation:', err);
+        }
+    };
+
+    // Handle block/unblock
+    const handleToggleBlock = async () => {
+        if (!activeConvDetails) return;
+        
+        const otherUserId = activeConvDetails.other_participant?.id || 
+                          (activeConvDetails.participant1_id === parseInt(userId) 
+                              ? activeConvDetails.participant2_id 
+                              : activeConvDetails.participant1_id);
+        const otherUserType = activeConvDetails.other_participant_type;
+        
+        try {
+            if (blockedByMe) {
+                await unblockUser(userId, userType, otherUserId, otherUserType);
+                setIsBlocked(false);
+                setBlockedByMe(false);
+            } else {
+                await blockUser(userId, userType, otherUserId, otherUserType);
+                setIsBlocked(true);
+                setBlockedByMe(true);
+            }
+            setShowOptionsMenu(false);
+        } catch (error) {
+            console.error('Error toggling block:', error);
+            alert('حدث خطأ أثناء تنفيذ العملية');
+        }
+    };
+
+    // Handle delete conversation
+    const handleDeleteConversation = async () => {
+        if (!activeConversation) return;
+        
+        if (!confirm('هل أنت متأكد من حذف هذه المحادثة؟')) return;
+        
+        try {
+            await deleteConversation(activeConversation, userId, userType);
+            
+            // Remove from local state
+            setConversations(prev => prev.filter(c => c.conversation_id !== activeConversation));
+            setActiveConversation(null);
+            setMessages([]);
+            setShowOptionsMenu(false);
+        } catch (error) {
+            console.error('Error deleting conversation:', error);
+            alert('حدث خطأ أثناء حذف المحادثة');
         }
     };
 
@@ -110,9 +258,6 @@ const Messages = ({ userId, userType }) => {
         handleSendMessage(messageInput);
         setMessageInput('');
     };
-
-    // Get active conversation details
-    const activeConvDetails = conversations.find(c => c.conversation_id === activeConversation);
 
     // Format time
     const formatTime = (date) => {
@@ -131,7 +276,7 @@ const Messages = ({ userId, userType }) => {
     };
 
     return (
-        <div className="flex h-[calc(100vh-52px)] w-full bg-white dark:bg-gray-900">
+        <div className="flex h-[calc(100vh-4rem)] w-full bg-white dark:bg-gray-900 overflow-hidden">
             {/* Conversations List */}
             <div className="w-full sm:w-96 md:w-96 lg:w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
                 {/* Header */}
@@ -335,16 +480,32 @@ const Messages = ({ userId, userType }) => {
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                                <button className="p-2.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-colors">
-                                    <Phone size={20} />
-                                </button>
-                                <button className="p-2.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-colors">
-                                    <Video size={20} />
-                                </button>
-                                <button className="p-2.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-colors">
+                            <div className="relative flex items-center gap-1">
+                                <button 
+                                    onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                                    className="p-2.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-colors"
+                                >
                                     <MoreVertical size={20} />
                                 </button>
+                                
+                                {/* Dropdown Menu */}
+                                {showOptionsMenu && (
+                                    <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                                        <button
+                                            onClick={handleToggleBlock}
+                                            className="w-full px-4 py-3 text-right hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200"
+                                        >
+                                            <span>{blockedByMe ? 'إلغاء الحظر' : 'حظر'}</span>
+                                        </button>
+                                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                                        <button
+                                            onClick={handleDeleteConversation}
+                                            className="w-full px-4 py-3 text-right hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3 text-sm text-red-600 dark:text-red-400"
+                                        >
+                                            <span>حذف المحادثة</span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -365,10 +526,10 @@ const Messages = ({ userId, userType }) => {
                                         return (
                                             <div
                                                 key={message.message_id}
-                                                className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
+                                                className={`flex ${isSender ? 'justify-end' : 'justify-start'} mx-8`}
                                             >
                                                 <div
-                                                    className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${
+                                                    className={`max-w-[70%] rounded-lg px-3 py-2 shadow-sm ${
                                                         isSender
                                                             ? 'bg-blue-600 text-white rounded-br-none'
                                                             : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
@@ -399,37 +560,47 @@ const Messages = ({ userId, userType }) => {
                         </div>
 
                         {/* Message Input */}
-                        <form onSubmit={onSendMessage} className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                            <div className="flex gap-2 items-end">
-                                <textarea
-                                    value={messageInput}
-                                    onChange={(e) => {
-                                        setMessageInput(e.target.value);
-                                        handleUserTyping();
-                                    }}
-                                    placeholder="اكتب رسالة..."
-                                    className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white transition-all text-sm resize-none max-h-32 overflow-y-auto"
-                                    rows="1"
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            onSendMessage(e);
-                                        }
-                                    }}
-                                    onInput={(e) => {
-                                        e.target.style.height = 'auto';
-                                        e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
-                                    }}
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!messageInput.trim()}
-                                    className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-all flex-shrink-0"
-                                >
-                                    <Send size={20} />
-                                </button>
+                        {isBlocked ? (
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800 text-center">
+                                <p className="text-sm text-red-600 dark:text-red-400">
+                                    {blockedByMe 
+                                        ? 'لا يمكن إرسال الرسائل. قم بإلغاء الحظر أولاً.'
+                                        : 'لا يمكن إرسال الرسائل.'}
+                                </p>
                             </div>
-                        </form>
+                        ) : (
+                            <form onSubmit={onSendMessage} className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex gap-2 items-end">
+                                    <textarea
+                                        value={messageInput}
+                                        onChange={(e) => {
+                                            setMessageInput(e.target.value);
+                                            handleUserTyping();
+                                        }}
+                                        placeholder="اكتب رسالة..."
+                                        className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white transition-all text-sm resize-none max-h-32 overflow-y-auto"
+                                        rows="1"
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                onSendMessage(e);
+                                            }
+                                        }}
+                                        onInput={(e) => {
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+                                        }}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!messageInput.trim()}
+                                        className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-all flex-shrink-0"
+                                    >
+                                        <Send size={20} />
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </>
                 ) : (
                     <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">

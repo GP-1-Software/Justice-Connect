@@ -30,6 +30,12 @@ router.post("/conversations/get-or-create", async (req, res) => {
             .single();
 
         if (existingConversation) {
+            // Remove from deleted_conversations if it was previously deleted
+            await supabase
+                .from("deleted_conversations")
+                .delete()
+                .eq("conversation_id", existingConversation.conversation_id);
+            
             return res.json({ conversation: existingConversation });
         }
 
@@ -79,9 +85,21 @@ router.get("/conversations/:userId/:userType", async (req, res) => {
             return res.status(500).json({ error: error.message });
         }
 
+        // Get deleted conversations for this user
+        const { data: deletedConvs } = await supabase
+            .from("deleted_conversations")
+            .select("conversation_id")
+            .eq("deleted_by_user_id", userId)
+            .eq("deleted_by_user_type", userType);
+
+        const deletedIds = new Set(deletedConvs?.map(d => d.conversation_id) || []);
+
+        // Filter out deleted conversations
+        const activeConversations = conversations.filter(conv => !deletedIds.has(conv.conversation_id));
+
         // Get details for other participants
         const conversationsWithDetails = await Promise.all(
-            conversations.map(async (conv) => {
+            activeConversations.map(async (conv) => {
                 const isParticipant1 = conv.participant1_id === parseInt(userId) && conv.participant1_type === userType;
                 const otherParticipantId = isParticipant1 ? conv.participant2_id : conv.participant1_id;
                 const otherParticipantType = isParticipant1 ? conv.participant2_type : conv.participant1_type;
@@ -144,6 +162,25 @@ router.post("/messages/send", async (req, res) => {
         if (!['client', 'lawyer'].includes(sender_type) || !['client', 'lawyer'].includes(receiver_type)) {
             return res.status(400).json({ error: "Invalid participant type" });
         }
+
+        // Check if either user has blocked the other
+        const { data: blockData, error: blockError } = await supabase
+            .from("blocked_users")
+            .select("*")
+            .or(`and(blocker_id.eq.${sender_id},blocker_type.eq.${sender_type},blocked_id.eq.${receiver_id},blocked_type.eq.${receiver_type}),and(blocker_id.eq.${receiver_id},blocker_type.eq.${receiver_type},blocked_id.eq.${sender_id},blocked_type.eq.${sender_type})`);
+
+        if (blockData && blockData.length > 0) {
+            console.log('Message blocked due to blocking:', blockData);
+            return res.status(403).json({ error: "Cannot send message. User is blocked." });
+        }
+
+        // Remove from deleted_conversations if conversation was previously deleted by sender
+        await supabase
+            .from("deleted_conversations")
+            .delete()
+            .eq("conversation_id", conversation_id)
+            .eq("deleted_by_user_id", sender_id)
+            .eq("deleted_by_user_type", sender_type);
 
         // Verify conversation exists and sender is a participant
         const { data: conversation, error: convError } = await supabase
@@ -370,6 +407,157 @@ router.delete("/messages/:messageId/:userId/:userType", async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error("Error in delete message:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Block user
+router.post("/block", async (req, res) => {
+    try {
+        const { blocker_id, blocker_type, blocked_id, blocked_type, reason } = req.body;
+
+        // Validation
+        if (!blocker_id || !blocker_type || !blocked_id || !blocked_type) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Insert block record
+        const { data, error } = await supabase
+            .from("blocked_users")
+            .insert({
+                blocker_id,
+                blocker_type,
+                blocked_id,
+                blocked_type,
+                reason
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error blocking user:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true, block: data });
+    } catch (error) {
+        console.error("Error in block user:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Unblock user
+router.post("/unblock", async (req, res) => {
+    try {
+        const { blocker_id, blocker_type, blocked_id, blocked_type } = req.body;
+
+        // Validation
+        if (!blocker_id || !blocker_type || !blocked_id || !blocked_type) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Delete block record
+        const { error } = await supabase
+            .from("blocked_users")
+            .delete()
+            .eq("blocker_id", blocker_id)
+            .eq("blocker_type", blocker_type)
+            .eq("blocked_id", blocked_id)
+            .eq("blocked_type", blocked_type);
+
+        if (error) {
+            console.error("Error unblocking user:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error in unblock user:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Check if user is blocked
+router.get("/check-blocked/:userId/:userType/:otherUserId/:otherUserType", async (req, res) => {
+    try {
+        const { userId, userType, otherUserId, otherUserType } = req.params;
+
+        console.log('Checking block status:', { userId, userType, otherUserId, otherUserType });
+
+        // Check both directions
+        const { data, error } = await supabase
+            .from("blocked_users")
+            .select("*")
+            .or(`and(blocker_id.eq.${userId},blocker_type.eq.${userType},blocked_id.eq.${otherUserId},blocked_type.eq.${otherUserType}),and(blocker_id.eq.${otherUserId},blocker_type.eq.${otherUserType},blocked_id.eq.${userId},blocked_type.eq.${userType})`);
+
+        if (error) {
+            console.error("Error checking block status:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        console.log('Block data found:', data);
+
+        const isBlocked = data && data.length > 0;
+        const blockedByMe = data && data.find(b => b.blocker_id === parseInt(userId) && b.blocker_type === userType);
+        const blockedByThem = data && data.find(b => b.blocker_id === parseInt(otherUserId) && b.blocker_type === otherUserType);
+
+        const result = { 
+            isBlocked,
+            blockedByMe: !!blockedByMe,
+            blockedByThem: !!blockedByThem
+        };
+
+        console.log('Block check result:', result);
+
+        res.json(result);
+    } catch (error) {
+        console.error("Error in check blocked:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete conversation (soft delete)
+router.post("/conversations/:conversationId/delete", async (req, res) => {
+    try {
+        const { conversationId } = req.params;
+        const { user_id, user_type } = req.body;
+
+        // Validation
+        if (!user_id || !user_type) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Insert delete record
+        const { error } = await supabase
+            .from("deleted_conversations")
+            .insert({
+                conversation_id: conversationId,
+                deleted_by_user_id: user_id,
+                deleted_by_user_type: user_type
+            });
+
+        if (error) {
+            // If already deleted, update the timestamp
+            if (error.code === '23505') { // Unique violation
+                const { error: updateError } = await supabase
+                    .from("deleted_conversations")
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq("conversation_id", conversationId)
+                    .eq("deleted_by_user_id", user_id)
+                    .eq("deleted_by_user_type", user_type);
+
+                if (updateError) {
+                    return res.status(500).json({ error: updateError.message });
+                }
+            } else {
+                console.error("Error deleting conversation:", error);
+                return res.status(500).json({ error: error.message });
+            }
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error in delete conversation:", error);
         res.status(500).json({ error: error.message });
     }
 });
