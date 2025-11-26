@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMessages } from '../../hooks/useMessages';
 import { searchUsers, getOrCreateConversation, blockUser, unblockUser, checkIfBlocked, deleteConversation } from '../../services/messageService';
 import { useTranslation } from 'react-i18next';
-import { Send, Search, User, MessageCircle, X, Phone, Video, MoreVertical } from 'lucide-react';
+import { Send, Search, User, MessageCircle, X, Phone, Video, MoreVertical, Menu } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 
 const Messages = ({ userId, userType }) => {
@@ -33,6 +33,7 @@ const Messages = ({ userId, userType }) => {
     const [showOptionsMenu, setShowOptionsMenu] = useState(false);
     const [isBlocked, setIsBlocked] = useState(false);
     const [blockedByMe, setBlockedByMe] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const messagesEndRef = useRef(null);
 
     // Get active conversation details
@@ -42,6 +43,18 @@ const Messages = ({ userId, userType }) => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Handle window resize for sidebar
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setIsSidebarOpen(true);
+            }
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Check block status when conversation changes
     useEffect(() => {
@@ -276,15 +289,40 @@ const Messages = ({ userId, userType }) => {
     };
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] w-full bg-white dark:bg-gray-900 overflow-hidden">
-            {/* Conversations List */}
-            <div className="w-full sm:w-96 md:w-96 lg:w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+        <div className="flex h-[calc(100vh-4rem)] w-full bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
+            {/* Sidebar Overlay for mobile */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* Conversations Sidebar */}
+            <div className={`
+                fixed lg:relative inset-y-0 right-0 z-50 lg:z-0
+                bg-white dark:bg-gray-800 
+                flex flex-col shadow-2xl lg:shadow-none
+                transition-all duration-300 ease-in-out
+                ${isSidebarOpen 
+                    ? 'w-80 lg:w-96 translate-x-0 border-l border-gray-200 dark:border-gray-700' 
+                    : 'w-0 translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden border-0'
+                }
+            `}>
                 {/* Header */}
-                <div className="p-4 bg-slate-800 dark:bg-gray-900">
-                    <h2 className="text-xl font-bold text-white mb-3">الرسائل</h2>
+                <div className="p-4 bg-gradient-to-r from-blue-400 to-blue-500 dark:from-blue-700 dark:to-blue-800">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-xl font-bold text-white">الرسائل</h2>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                     <button
                         onClick={() => setShowSearch(!showSearch)}
-                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                        className="w-full px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium backdrop-blur-sm"
                     >
                         <MessageCircle size={18} />
                         محادثة جديدة
@@ -365,20 +403,25 @@ const Messages = ({ userId, userType }) => {
                 {/* Conversations List */}
                 <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
                     {loading && conversations.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500 text-sm">جاري التحميل...</div>
+                        <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">جاري التحميل...</div>
                     ) : conversations.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
-                            <MessageCircle size={48} className="mx-auto mb-3 text-gray-300" />
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                            <MessageCircle size={48} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                             <p className="text-sm">لا توجد محادثات</p>
                         </div>
                     ) : (
                         conversations.map((conv) => (
                             <div
                                 key={conv.conversation_id}
-                                onClick={() => selectConversation(conv.conversation_id)}
-                                className={`p-3 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700 ${
+                                onClick={() => {
+                                    selectConversation(conv.conversation_id);
+                                    if (window.innerWidth < 1024) {
+                                        setIsSidebarOpen(false);
+                                    }
+                                }}
+                                className={`p-4 cursor-pointer transition-all border-b border-gray-100 dark:border-gray-700 ${
                                     activeConversation === conv.conversation_id
-                                        ? 'bg-gray-100 dark:bg-gray-700'
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-r-blue-600'
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                 }`}
                             >
@@ -442,39 +485,47 @@ const Messages = ({ userId, userType }) => {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
                 {activeConversation && activeConvDetails ? (
                     <>
                         {/* Chat Header */}
-                        <div className="px-4 py-3 flex items-center justify-between backdrop-blur-sm" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23e5e7eb\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")', backgroundColor: 'rgba(30, 41, 59, 0.05)'}}>
+                        <div className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm relative">
                             <div className="flex items-center gap-3">
+                                {/* Toggle Sidebar Button */}
+                                <button
+                                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                    className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                >
+                                    <Menu size={20} />
+                                </button>
+
                                 {activeConvDetails.other_participant?.profile_image_url ? (
                                     <img
                                         src={activeConvDetails.other_participant.profile_image_url}
                                         alt={`${activeConvDetails.other_participant.first_name} ${activeConvDetails.other_participant.last_name}`}
-                                        className="w-12 h-12 rounded-full object-cover"
+                                        className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700"
                                     />
                                 ) : (
-                                    <div className="w-12 h-12 rounded-full bg-gray-600 flex items-center justify-center">
-                                        <User className="text-gray-300" size={24} />
+                                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center ring-2 ring-gray-200 dark:ring-gray-700">
+                                        <User className="text-white" size={22} />
                                     </div>
                                 )}
                                 <div>
-                                    <p className="font-semibold text-white text-base">
+                                    <p className="font-semibold text-gray-900 dark:text-white text-base">
                                         {activeConvDetails.other_participant?.first_name}{' '}
                                         {activeConvDetails.other_participant?.last_name}
                                     </p>
                                     {isOtherUserTyping ? (
-                                        <p className="text-sm text-blue-400 flex items-center gap-1.5">
+                                        <p className="text-sm text-blue-500 dark:text-blue-400 flex items-center gap-1.5">
                                             <span className="flex gap-1 items-center">
-                                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
-                                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></span>
-                                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce"></span>
+                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></span>
+                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
                                             </span>
                                             يكتب الآن
                                         </p>
                                     ) : (
-                                        <p className="text-sm text-gray-400">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
                                             {activeConvDetails.other_participant_type === 'lawyer' ? 'محامي' : 'عميل'}
                                         </p>
                                     )}
@@ -483,70 +534,77 @@ const Messages = ({ userId, userType }) => {
                             <div className="relative flex items-center gap-1">
                                 <button 
                                     onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-                                    className="p-2.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-colors"
+                                    className="p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                 >
                                     <MoreVertical size={20} />
                                 </button>
                                 
                                 {/* Dropdown Menu */}
                                 {showOptionsMenu && (
-                                    <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-                                        <button
-                                            onClick={handleToggleBlock}
-                                            className="w-full px-4 py-3 text-right hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200"
-                                        >
-                                            <span>{blockedByMe ? 'إلغاء الحظر' : 'حظر'}</span>
-                                        </button>
-                                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
-                                        <button
-                                            onClick={handleDeleteConversation}
-                                            className="w-full px-4 py-3 text-right hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3 text-sm text-red-600 dark:text-red-400"
-                                        >
-                                            <span>حذف المحادثة</span>
-                                        </button>
-                                    </div>
+                                    <>
+                                        {/* Overlay to close menu */}
+                                        <div 
+                                            className="fixed inset-0 z-40" 
+                                            onClick={() => setShowOptionsMenu(false)}
+                                        />
+                                        <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                                            <button
+                                                onClick={handleToggleBlock}
+                                                className="w-full px-4 py-3 text-right hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200 rounded-t-lg"
+                                            >
+                                                <span>{blockedByMe ? 'إلغاء الحظر' : 'حظر'}</span>
+                                            </button>
+                                            <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                                            <button
+                                                onClick={handleDeleteConversation}
+                                                className="w-full px-4 py-3 text-right hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3 text-sm text-red-600 dark:text-red-400 rounded-b-lg"
+                                            >
+                                                <span>حذف المحادثة</span>
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23e5e7eb\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
+                        <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
                             {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-full">
-                                    <div className="text-center text-gray-400">
+                                    <div className="text-center text-gray-400 dark:text-gray-500">
                                         <MessageCircle size={56} className="mx-auto mb-3 opacity-30" />
                                         <p className="text-sm">لا توجد رسائل</p>
                                         <p className="text-xs mt-1">ابدأ المحادثة الآن</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2 max-w-4xl mx-auto">
                                     {messages.map((message) => {
                                         const isSender = message.sender_id === parseInt(userId) && message.sender_type === userType;
                                         return (
                                             <div
                                                 key={message.message_id}
-                                                className={`flex ${isSender ? 'justify-end' : 'justify-start'} mx-8`}
+                                                className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
                                             >
                                                 <div
-                                                    className={`max-w-[70%] rounded-lg px-3 py-2 shadow-sm ${
+                                                    className={`max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm ${
                                                         isSender
-                                                            ? 'bg-blue-600 text-white rounded-br-none'
-                                                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
+                                                            ? 'bg-blue-600 text-white rounded-br-sm'
+                                                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'
                                                     }`}
                                                 >
-                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                                                    <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                                                     <div
-                                                        className={`text-xs mt-1 flex items-center gap-1 justify-end ${
+                                                        className={`text-xs mt-1.5 flex items-center gap-1 justify-end ${
                                                             isSender ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                                                         }`}
                                                     >
                                                         <span>{formatTime(message.created_at)}</span>
                                                         {isSender && (
                                                             message.is_read ? (
-                                                                <span className="text-blue-400">✓✓</span>
+                                                                <span className="text-blue-200">✓✓</span>
                                                             ) : (
-                                                                <span className="text-gray-300">✓</span>
+                                                                <span className="text-blue-300">✓</span>
                                                             )
                                                         )}
                                                     </div>
@@ -562,15 +620,15 @@ const Messages = ({ userId, userType }) => {
                         {/* Message Input */}
                         {isBlocked ? (
                             <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800 text-center">
-                                <p className="text-sm text-red-600 dark:text-red-400">
+                                <p className="text-sm text-red-600 dark:text-red-400 font-medium">
                                     {blockedByMe 
                                         ? 'لا يمكن إرسال الرسائل. قم بإلغاء الحظر أولاً.'
                                         : 'لا يمكن إرسال الرسائل.'}
                                 </p>
                             </div>
                         ) : (
-                            <form onSubmit={onSendMessage} className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                                <div className="flex gap-2 items-end">
+                            <form onSubmit={onSendMessage} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex gap-3 items-end max-w-4xl mx-auto">
                                     <textarea
                                         value={messageInput}
                                         onChange={(e) => {
@@ -578,7 +636,7 @@ const Messages = ({ userId, userType }) => {
                                             handleUserTyping();
                                         }}
                                         placeholder="اكتب رسالة..."
-                                        className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white transition-all text-sm resize-none max-h-32 overflow-y-auto"
+                                        className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all text-[15px] resize-none max-h-32 overflow-y-auto"
                                         rows="1"
                                         onKeyPress={(e) => {
                                             if (e.key === 'Enter' && !e.shiftKey) {
@@ -594,7 +652,7 @@ const Messages = ({ userId, userType }) => {
                                     <button
                                         type="submit"
                                         disabled={!messageInput.trim()}
-                                        className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-all flex-shrink-0"
+                                        className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-all flex-shrink-0 shadow-lg hover:shadow-xl disabled:shadow-md"
                                     >
                                         <Send size={20} />
                                     </button>
@@ -603,13 +661,21 @@ const Messages = ({ userId, userType }) => {
                         )}
                     </>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                        <div className="text-center text-gray-400">
-                            <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <MessageCircle size={64} className="opacity-40" />
+                    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+                        {/* Toggle Sidebar Button for mobile when no conversation selected */}
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden absolute top-4 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <Menu size={24} />
+                        </button>
+                        
+                        <div className="text-center text-gray-400 dark:text-gray-500 px-4">
+                            <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                <MessageCircle size={64} className="text-blue-500 dark:text-blue-400 opacity-60" />
                             </div>
-                            <p className="text-lg font-medium text-gray-600 dark:text-gray-300">اختر محادثة للبدء</p>
-                            <p className="text-sm text-gray-400 mt-2">اختر محادثة من القائمة أو ابدأ محادثة جديدة</p>
+                            <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">اختر محادثة للبدء</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">اختر محادثة من القائمة أو ابدأ محادثة جديدة</p>
                         </div>
                     </div>
                 )}
