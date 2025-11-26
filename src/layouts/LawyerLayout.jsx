@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useLawyerAuth } from '../hooks/useLawyerAuth';
 import LawyerNavbar from '../components/lawyer/LawyerNavbar';
 import LawyerSidebar from '../components/lawyer/LawyerSidebar';
@@ -9,6 +9,10 @@ import LoadingSpinner from '../components/shared/LoadingSpinner';
 const LawyerLayout = () => {
   const { loading, lawyer } = useLawyerAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  
+  // Check if current page is messages
+  const isMessagesPage = location.pathname.includes('/messages');
 
   if (loading) {
     return (
@@ -35,10 +39,14 @@ const LawyerLayout = () => {
         />
         
         {/* Main Content */}
-        <main className="flex-1 transition-all duration-300 w-full lg:mr-80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <main className="flex-1 transition-all duration-300 w-full overflow-x-hidden lg:mr-80">
+          {isMessagesPage ? (
             <Outlet />
-          </div>
+          ) : (
+            <div className="p-4 sm:p-6 lg:p-8">
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
     </div>

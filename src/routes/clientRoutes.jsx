@@ -20,6 +20,7 @@ import InvoiceDetails from '../pages/client/InvoiceDetails';
 
 import JusticeAIChat from "../pages/client/JusticeAI/JusticeAIChat.jsx";
 import SupportTickets from '../pages/SupportTickets';
+import ClientMessages from '../pages/client/ClientMessages';
 
 
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';
@@ -91,7 +92,7 @@ const ClientRoutes = () => {
         <Route path="invoices/:invoiceId/pay" element={<PayInvoice />} />
 
         {/* Communication */}
-        <Route path="messages" element={<PlaceholderPage title="الرسائل" />} />
+        <Route path="messages" element={<ClientMessages />} />
         <Route path="video-call/:sessionId" element={<PlaceholderPage title="مكالمة فيديو" />} />
 
         {/* AI Features */}

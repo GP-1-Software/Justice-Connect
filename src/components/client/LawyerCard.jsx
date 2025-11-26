@@ -9,14 +9,18 @@ import {
   Calendar,
   Eye,
   User,
-  FileText
+  FileText,
+  MessageCircle
 } from 'lucide-react';
 import { formatSpecialization } from '../../utils/formatters';
+import { getOrCreateConversation } from '../../services/messageService';
+import { useClientAuth } from '../../hooks/useClientAuth';
 
 const LawyerCard = ({ lawyer }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isRTL = i18n.language === 'ar';
+  const { user } = useClientAuth();
 
   // Calculate minimum price from services
   const getMinPrice = () => {
@@ -63,6 +67,43 @@ const LawyerCard = ({ lawyer }) => {
 
   const handleOpenCase = () => {
     navigate(`/client/create-case?lawyerId=${lawyer.lawyer_id}`);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('handleSendMessage clicked', { user, lawyer });
+    
+    try {
+      // Use user.id instead of user.user_id
+      const clientId = user?.id || user?.user_id;
+      
+      if (!user || !clientId) {
+        console.error('User not logged in', user);
+        alert('يجب تسجيل الدخول أولاً');
+        return;
+      }
+      
+      console.log('Creating conversation between:', {
+        client: clientId,
+        lawyer: lawyer.lawyer_id
+      });
+      
+      const conversation = await getOrCreateConversation(
+        clientId,
+        'client',
+        lawyer.lawyer_id,
+        'lawyer'
+      );
+      
+      console.log('Conversation created:', conversation);
+      
+      navigate(`/client/messages?conversation=${conversation.conversation_id}`);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      alert('حدث خطأ في بدء المحادثة: ' + error.message);
+    }
   };
 
   return (
@@ -179,6 +220,15 @@ const LawyerCard = ({ lawyer }) => {
             <Eye className="w-4 h-4" />
             <span className="text-sm font-medium">{t('searchLawyers.viewProfile')}</span>
           </button>
+          
+          <button
+            onClick={handleSendMessage}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span className="text-sm font-medium">تواصل عبر الرسائل</span>
+          </button>
+          
           <div className="flex gap-2">
             <button
               onClick={handleBookAppointment}

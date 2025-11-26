@@ -13,6 +13,7 @@ import LawyerInvoices from '../pages/lawyer/LawyerInvoices';
 import CreateInvoice from '../pages/lawyer/CreateInvoice';
 import InvoiceDetails from '../pages/lawyer/InvoiceDetails';
 import SupportTickets from '../pages/SupportTickets';
+import LawyerMessages from '../pages/lawyer/LawyerMessages';
 
 const LawyerRoutes = () => {
   return (
@@ -31,6 +32,7 @@ const LawyerRoutes = () => {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="justice-ai" element={<JusticeAIChat />} />
         <Route path="support" element={<SupportTickets />} />
+        <Route path="messages" element={<LawyerMessages />} />
       </Route>
     </Routes>
   );

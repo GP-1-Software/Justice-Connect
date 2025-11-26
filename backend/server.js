@@ -6,6 +6,7 @@ import cors from "cors";
 
 import justiceChatRoute from "./routes/justiceChatRoute.js";
 import systemChatRouter from "./routes/systemChatRouter.js";
+import messageRouter from "./routes/messageRouter.js";
 
 
 const app = express();
@@ -20,6 +21,9 @@ app.use("/api/justice-chat", justiceChatRoute);
 
 // Route for SystemAI (Admin Chat)
 app.use("/api/system-ai", systemChatRouter);
+
+// Route for Messages
+app.use("/api/messages", messageRouter);
 
 app.get("/", (req, res) => {
     res.send("Justice-Connect Backend is running ✅");
