@@ -174,13 +174,12 @@ router.post("/messages/send", async (req, res) => {
             return res.status(403).json({ error: "Cannot send message. User is blocked." });
         }
 
-        // Remove from deleted_conversations if conversation was previously deleted by sender
+        // Remove from deleted_conversations for BOTH users if conversation was previously deleted
+        // This allows both parties to see the conversation again when someone sends a new message
         await supabase
             .from("deleted_conversations")
             .delete()
-            .eq("conversation_id", conversation_id)
-            .eq("deleted_by_user_id", sender_id)
-            .eq("deleted_by_user_type", sender_type);
+            .eq("conversation_id", conversation_id);
 
         // Verify conversation exists and sender is a participant
         const { data: conversation, error: convError } = await supabase
@@ -238,7 +237,7 @@ router.post("/messages/send", async (req, res) => {
 router.get("/messages/:conversationId", async (req, res) => {
     try {
         const { conversationId } = req.params;
-        const { limit = 50, offset = 0 } = req.query;
+        const { limit = 50, offset = 0, userId, userType } = req.query;
 
         const { data: messages, error } = await supabase
             .from("messages")
@@ -252,7 +251,29 @@ router.get("/messages/:conversationId", async (req, res) => {
             return res.status(500).json({ error: error.message });
         }
 
-        res.json({ messages: messages.reverse() }); // Reverse to show oldest first
+        // Filter out messages that were deleted by this user
+        let filteredMessages = messages;
+        if (userId && userType) {
+            const userKey = `${userId}_${userType}`;
+            filteredMessages = messages.filter(msg => {
+                if (!msg.deleted_for) return true;
+                
+                // Parse deleted_for array
+                let deletedFor = [];
+                try {
+                    deletedFor = typeof msg.deleted_for === 'string' 
+                        ? JSON.parse(msg.deleted_for) 
+                        : msg.deleted_for;
+                } catch {
+                    deletedFor = Array.isArray(msg.deleted_for) ? msg.deleted_for : [];
+                }
+                
+                // Return false if message is deleted for this user
+                return !deletedFor.includes(userKey);
+            });
+        }
+
+        res.json({ messages: filteredMessages.reverse() }); // Reverse to show oldest first
     } catch (error) {
         console.error("Error in get messages:", error);
         res.status(500).json({ error: error.message });
@@ -516,7 +537,7 @@ router.get("/check-blocked/:userId/:userType/:otherUserId/:otherUserType", async
     }
 });
 
-// Delete conversation (soft delete)
+// Delete conversation (soft delete messages for the user who deleted)
 router.post("/conversations/:conversationId/delete", async (req, res) => {
     try {
         const { conversationId } = req.params;
@@ -527,7 +548,46 @@ router.post("/conversations/:conversationId/delete", async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // Insert delete record
+        console.log(`Soft deleting messages for user ${user_id} (${user_type}) in conversation ${conversationId}`);
+
+        // Step 1: Get all messages in this conversation
+        const { data: messages, error: fetchError } = await supabase
+            .from("messages")
+            .select("message_id, deleted_for")
+            .eq("conversation_id", conversationId);
+
+        if (fetchError) {
+            console.error("Error fetching messages:", fetchError);
+        } else if (messages && messages.length > 0) {
+            // Step 2: Update each message to mark it as deleted for this user
+            const updates = messages.map(async (message) => {
+                // Parse existing deleted_for array (if any)
+                let deletedFor = [];
+                if (message.deleted_for) {
+                    // If it's already an array, use it; otherwise parse JSON
+                    deletedFor = Array.isArray(message.deleted_for) 
+                        ? message.deleted_for 
+                        : (typeof message.deleted_for === 'string' ? JSON.parse(message.deleted_for) : []);
+                }
+
+                // Add this user to the deleted_for array if not already there
+                const userKey = `${user_id}_${user_type}`;
+                if (!deletedFor.includes(userKey)) {
+                    deletedFor.push(userKey);
+                }
+
+                // Update the message - Supabase JSONB accepts arrays directly
+                return supabase
+                    .from("messages")
+                    .update({ deleted_for: deletedFor })
+                    .eq("message_id", message.message_id);
+            });
+
+            await Promise.all(updates);
+            console.log(`Messages marked as deleted for user ${user_id}`);
+        }
+
+        // Step 3: Mark conversation as deleted for this user
         const { error } = await supabase
             .from("deleted_conversations")
             .insert({
@@ -550,7 +610,7 @@ router.post("/conversations/:conversationId/delete", async (req, res) => {
                     return res.status(500).json({ error: updateError.message });
                 }
             } else {
-                console.error("Error deleting conversation:", error);
+                console.error("Error marking conversation as deleted:", error);
                 return res.status(500).json({ error: error.message });
             }
         }

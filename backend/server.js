@@ -7,6 +7,8 @@ import cors from "cors";
 import justiceChatRoute from "./routes/justiceChatRoute.js";
 import systemChatRouter from "./routes/systemChatRouter.js";
 import messageRouter from "./routes/messageRouter.js";
+import notificationRouter from "./routes/notificationRouter.js";
+import { startNotificationScheduler } from "./services/notificationScheduler.js";
 
 
 const app = express();
@@ -25,10 +27,16 @@ app.use("/api/system-ai", systemChatRouter);
 // Route for Messages
 app.use("/api/messages", messageRouter);
 
+// Route for Notifications
+app.use("/api/notifications", notificationRouter);
+
 app.get("/", (req, res) => {
     res.send("Justice-Connect Backend is running ✅");
 });
 
 app.listen(PORT, () => {
     console.log(`Backend running on http://localhost:${PORT}`);
+    
+    // Start notification scheduler
+    startNotificationScheduler();
 });
