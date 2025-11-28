@@ -17,7 +17,6 @@ const StatsCards = ({ summary, loading }) => {
       value: summary?.activeCases || 0,
       icon: Briefcase,
       color: 'blue',
-      trend: '+2 هذا الأسبوع',
       description: 'قضايا قيد المتابعة'
     },
     {
@@ -25,7 +24,6 @@ const StatsCards = ({ summary, loading }) => {
       value: summary?.upcomingAppointments || 0,
       icon: Calendar,
       color: 'green',
-      trend: '3 مواعيد هذا الأسبوع',
       description: 'مواعيد مجدولة'
     },
     {
@@ -33,7 +31,6 @@ const StatsCards = ({ summary, loading }) => {
       value: summary?.unreadMessages || 0,
       icon: MessageSquare,
       color: 'purple',
-      trend: '2 رسائل جديدة',
       description: 'رسائل تحتاج مراجعة'
     },
     {
@@ -41,7 +38,6 @@ const StatsCards = ({ summary, loading }) => {
       value: `${summary?.balance || 0} ₪`,
       icon: CreditCard,
       color: 'orange',
-      trend: 'دفعة جديدة +500 ₪',
       description: 'رصيد الحساب'
     }
   ];
@@ -88,9 +84,6 @@ const StatsCards = ({ summary, loading }) => {
               <div className={`p-2 sm:p-3 rounded-lg bg-gradient-to-r ${colorClasses.split(' ')[0]} ${colorClasses.split(' ')[1]}`}>
                 <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 hidden sm:block">
-                {stat.trend}
-              </span>
             </div>
             
             <div className="mb-2">

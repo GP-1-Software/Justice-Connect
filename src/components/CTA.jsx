@@ -20,7 +20,7 @@ const CTA = () => {
           <div className="relative z-10 py-16 px-8 md:px-16 text-center">
             <div className="inline-flex items-center space-x-2 space-x-reverse bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold mb-6">
               <Sparkles className="h-4 w-4" />
-              <span>عرض خاص للمستخدمين الجدد</span>
+              <span>انضم إلى منصتنا الآن</span>
             </div>
 
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -28,7 +28,7 @@ const CTA = () => {
             </h2>
             
             <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-10 leading-relaxed">
-              انضم إلى آلاف العملاء الذين وثقوا بنا. احصل على استشارة قانونية مجانية لأول مرة!
+              ابدأ رحلتك القانونية مع منصة متكاملة تجمع بين التقنية والخبرة القانونية
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -39,8 +39,16 @@ const CTA = () => {
                 <span>ابدأ الآن مجاناً</span>
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <button className="px-10 py-4 bg-transparent border-2 border-white text-white rounded-xl hover:bg-white/10 transition font-bold text-lg">
-                تحدث مع مستشار
+              <button 
+                onClick={() => {
+                  const element = document.getElementById('features');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="px-10 py-4 bg-transparent border-2 border-white text-white rounded-xl hover:bg-white/10 transition font-bold text-lg"
+              >
+                استكشف المزيد
               </button>
             </div>
 

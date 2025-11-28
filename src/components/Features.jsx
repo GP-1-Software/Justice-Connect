@@ -18,7 +18,7 @@ const Features = () => {
     {
       icon: <MessageSquare className="h-8 w-8" />,
       title: 'تواصل آمن',
-      description: 'محاثات  مشفرة، مكالمات صوتية وفيديو، ومشاركة ملفات آمنة مع محاميك',
+      description: 'محادثات مشفرة، مكالمات صوتية وفيديو، ومشاركة ملفات آمنة مع محاميك',
       color: 'from-green-500 to-green-600'
     },
     {

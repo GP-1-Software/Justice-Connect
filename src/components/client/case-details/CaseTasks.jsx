@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Filter, Loader2 } from 'lucide-react';
 import { supabase } from '../../../supabaseClient';
 
-const CaseTasks = ({ caseId }) => {
+const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
@@ -79,6 +79,11 @@ const CaseTasks = ({ caseId }) => {
   };
 
   const handleToggleTask = async (taskId, currentStatus) => {
+    // التحقق من إمكانية التعديل
+    if (!canPerformAction('تحديث حالة المهمة')) {
+      return;
+    }
+
     try {
       setUpdatingTaskId(taskId);
       
@@ -227,9 +232,9 @@ const CaseTasks = ({ caseId }) => {
                   <div className="flex items-start gap-3 mb-3">
                     <button
                       onClick={() => handleToggleTask(task.task_id, task.is_completed)}
-                      disabled={updatingTaskId === task.task_id}
+                      disabled={updatingTaskId === task.task_id || isDisabled}
                       className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={task.is_completed ? 'إلغاء الإكمال' : 'تحديد كمكتملة'}
+                      title={isDisabled ? 'القضية معطلة' : (task.is_completed ? 'إلغاء الإكمال' : 'تحديد كمكتملة')}
                     >
                       {updatingTaskId === task.task_id ? (
                         <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400 animate-spin" />

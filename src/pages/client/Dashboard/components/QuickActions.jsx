@@ -31,12 +31,11 @@ const QuickActions = () => {
       path: '/client/search-lawyers'
     },
     {
-      title: 'حجز موعد',
-      description: 'احجز استشارة مع محامي',
+      title: 'مواعيدي',
+      description: 'عرض وإدارة مواعيدك',
       icon: Calendar,
       color: 'purple',
-      path: '/client/search-lawyers',
-      badge: 'سريع'
+      path: '/client/appointments'
     },
     {
       title: 'الرسائل',
@@ -50,15 +49,15 @@ const QuickActions = () => {
       description: 'احصل على استشارة فورية',
       icon: Bot,
       color: 'cyan',
-      path: '/client/ai-chatbot',
-      badge: 'جديد'
+      path: '/client/justice-ai',
+      badge: 'AI'
     },
     {
-      title: 'تحليل المستندات',
-      description: 'حلل عقودك ومستنداتك',
-      icon: FileCheck,
+      title: 'قضاياي',
+      description: 'عرض وإدارة قضاياك',
+      icon: FileText,
       color: 'indigo',
-      path: '/client/document-analyzer'
+      path: '/client/cases'
     }
   ];
 
@@ -136,17 +135,17 @@ const QuickActions = () => {
       {/* Additional Info */}
       <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-3 sm:space-x-reverse">
-          <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-100">
-              تحتاج مساعدة سريعة؟
+              تحتاج مساعدة قانونية فورية؟
             </p>
             <p className="text-[10px] sm:text-xs text-blue-700 dark:text-blue-300">
-              استخدم المساعد الذكي للحصول على إجابات فورية
+              استخدم مساعد Justice AI للحصول على إجابات فورية
             </p>
           </div>
           <button
-            onClick={() => navigate('/client/ai-chatbot')}
+            onClick={() => navigate('/client/justice-ai')}
             className="w-full sm:w-auto sm:ml-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 sm:py-1 rounded-full transition"
           >
             ابدأ الآن

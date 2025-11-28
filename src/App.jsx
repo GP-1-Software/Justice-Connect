@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import AdminVerification from './pages/AdminVerification';
 import PendingVerification from './pages/PendingVerification';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminCasesManagement from './pages/AdminCasesManagement';
 import DeletionRequests from './pages/admin/DeletionRequests';
 import SystemAI from './pages/admin/SystemAI';
 import Analytics from './pages/admin/Analytics';
@@ -35,9 +36,10 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/admin/verification" element={<AdminVerification />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/cases-management" element={<AdminCasesManagement />} />
+            <Route path="/admin/cases" element={<CasesManagement />} />
             <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
             <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/cases" element={<CasesManagement />} />
             <Route path="/admin/appointments" element={<AppointmentsManagement />} />
             <Route path="/admin/payments" element={<PaymentsManagement />} />
             <Route path="/admin/system-ai" element={<SystemAI />} />

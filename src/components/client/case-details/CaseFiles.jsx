@@ -3,7 +3,7 @@ import { FileText, Download, Eye, Upload, File, Image, FileVideo, FileArchive, C
 import { supabase } from '../../../supabaseClient';
 import { useClientAuth } from '../../../hooks/useClientAuth';
 
-const CaseFiles = ({ caseId }) => {
+const CaseFiles = ({ caseId, canPerformAction, isDisabled }) => {
   const { userProfile } = useClientAuth();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +96,11 @@ const CaseFiles = ({ caseId }) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
     if (!userProfile || !userProfile.user_id) {
       alert('يجب تسجيل الدخول أولاً');
+      return;
+    }
+
+    // التحقق من إمكانية رفع الملفات
+    if (!canPerformAction('رفع ملفات')) {
       return;
     }
 
@@ -245,12 +250,14 @@ const CaseFiles = ({ caseId }) => {
 
         {/* Compact Drag & Drop Area */}
         <div
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
+          onDragEnter={!isDisabled ? handleDrag : undefined}
+          onDragLeave={!isDisabled ? handleDrag : undefined}
+          onDragOver={!isDisabled ? handleDrag : undefined}
+          onDrop={!isDisabled ? handleDrop : undefined}
           className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-all ${
-            dragActive
+            isDisabled
+              ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700/50 opacity-50 cursor-not-allowed'
+              : dragActive
               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
           }`}
@@ -262,6 +269,7 @@ const CaseFiles = ({ caseId }) => {
             onChange={(e) => handleFileUpload(e.target.files)}
             className="hidden"
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip,.rar"
+            disabled={isDisabled}
           />
 
           {uploading ? (

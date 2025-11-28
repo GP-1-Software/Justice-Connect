@@ -10,6 +10,16 @@ export function buildPrompt(question, context, role, userId) {
 - لا تذكر قوانين من دول أخرى.
 - لا تخترع مواد قانونية أو أرقام مواد إن لم تكن متأكدًا.
 
+- يجب ان تبحث من خلال هذا المواقع: 
+https://maqam.najah.edu/legislation/ 
+او 
+https://mjr.ogb.gov.ps/
+او
+https://www.courts.gov.ps/
+ 
+ودائما اذكر المصدر
+________________________
+
 
 دور المستخدم: ${role}
 معرّف المستخدم (إن وجد): ${userId ?? "غير محدد"}

@@ -293,7 +293,7 @@ const AdminDashboard = () => {
         (payload) => {
           console.log('Support ticket changed:', payload);
           fetchSupportTickets();
-          
+
           // Update selected ticket if it's open
           if (selectedTicket && payload.new && payload.new.ticket_id === selectedTicket.ticket_id) {
             setSelectedTicket(payload.new);
@@ -532,12 +532,14 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              لوحة تحكم المسؤول
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              إدارة طلبات الانضمام والمستخدمين المقبولين
-            </p>
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                لوحة تحكم المسؤول
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                إدارة طلبات الانضمام والمستخدمين المقبولين
+              </p>
+            </div>
           </div>
 
           {/* Main Tabs */}
@@ -617,7 +619,7 @@ const AdminDashboard = () => {
                 className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-500 hover:text-white hover:shadow-lg"
               >
                 <FileText className="h-5 w-5" />
-                <span>القضايا</span>
+                <span>إدارة القضايا</span>
               </Link>
               <Link
                 to="/admin/appointments"
@@ -972,8 +974,8 @@ const AdminDashboard = () => {
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedTicket.subject}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {selectedTicket.submitter_type === 'client' 
-                    ? `${selectedTicket.users?.first_name} ${selectedTicket.users?.last_name}` 
+                  {selectedTicket.submitter_type === 'client'
+                    ? `${selectedTicket.users?.first_name} ${selectedTicket.users?.last_name}`
                     : `${selectedTicket.lawyers?.first_name} ${selectedTicket.lawyers?.last_name}`}
                 </p>
               </div>
@@ -995,8 +997,8 @@ const AdminDashboard = () => {
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-semibold text-gray-900 dark:text-white text-sm">
-                        {selectedTicket.submitter_type === 'client' 
-                          ? `${selectedTicket.users?.first_name} ${selectedTicket.users?.last_name}` 
+                        {selectedTicket.submitter_type === 'client'
+                          ? `${selectedTicket.users?.first_name} ${selectedTicket.users?.last_name}`
                           : `${selectedTicket.lawyers?.first_name} ${selectedTicket.lawyers?.last_name}`}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -1012,11 +1014,10 @@ const AdminDashboard = () => {
               {selectedTicket.replies && selectedTicket.replies.length > 0 && selectedTicket.replies.map((reply, index) => (
                 <div key={index} className={`flex gap-3 ${reply.sender_type === 'admin' ? 'flex-row-reverse' : ''}`}>
                   <div className="flex-shrink-0">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      reply.sender_type === 'admin' 
-                        ? 'bg-green-100 dark:bg-green-900/30' 
-                        : 'bg-blue-100 dark:bg-blue-900/30'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${reply.sender_type === 'admin'
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : 'bg-blue-100 dark:bg-blue-900/30'
+                      }`}>
                       {reply.sender_type === 'admin' ? (
                         <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
                       ) : (
@@ -1025,20 +1026,18 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <div className={`rounded-lg p-4 ${
-                      reply.sender_type === 'admin'
-                        ? 'bg-green-50 dark:bg-green-900/20'
-                        : 'bg-blue-50 dark:bg-blue-900/20'
-                    }`}>
+                    <div className={`rounded-lg p-4 ${reply.sender_type === 'admin'
+                      ? 'bg-green-50 dark:bg-green-900/20'
+                      : 'bg-blue-50 dark:bg-blue-900/20'
+                      }`}>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="font-semibold text-gray-900 dark:text-white text-sm">
                           {reply.sender_name}
                         </span>
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          reply.sender_type === 'admin' 
-                            ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' 
-                            : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400'
-                        }`}>
+                        <span className={`text-xs px-2 py-0.5 rounded ${reply.sender_type === 'admin'
+                          ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
+                          : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400'
+                          }`}>
                           {reply.sender_type === 'admin' ? 'إدارة' : reply.sender_type === 'client' ? 'عميل' : 'محامي'}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
