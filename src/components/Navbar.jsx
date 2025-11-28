@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Scale, Menu, X, User, LogIn, Search, ChevronDown, Moon, Sun, MessageSquare, LogOut, Settings, UserCircle, LayoutDashboard, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
+import { Scale, Menu, X, User, LogIn, Moon, Sun, MessageSquare, LogOut, Settings, UserCircle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [selectedSearchType, setSelectedSearchType] = useState('حسب الاسم');
-  const [showSearchBar, setShowSearchBar] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -43,14 +39,6 @@ const Navbar = () => {
     setUserData(null);
     setUserMenuOpen(false);
     navigate('/login');
-  };
-
-  const searchOptions = ['حسب الاسم', 'حسب الخبرة', 'حسب المدينة', 'حسب القسم'];
-
-  const handleSearchOptionClick = (option) => {
-    setSelectedSearchType(option);
-    setSearchOpen(false);
-    setShowSearchBar(true);
   };
 
   const handleScroll = (e, targetId) => {
@@ -101,35 +89,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8 space-x-reverse">
             <a href="#home" onClick={(e) => handleScroll(e, 'home')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">الرئيسية</a>
             <a href="#features" onClick={(e) => handleScroll(e, 'features')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">المزايا</a>
-
-            {/* Search Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="flex items-center space-x-2 space-x-reverse text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold"
-                aria-label="Open search"
-              >
-                <Search className="h-5 w-5" />
-                <span>بحث عن محامي</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${searchOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {searchOpen && (
-                <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
-                  {searchOptions.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => handleSearchOptionClick(option)}
-                      className={`w-full text-right px-4 py-2 hover:bg-blue-50 transition ${selectedSearchType === option ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'
-                        }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
+            <a href="#how-it-works" onClick={(e) => handleScroll(e, 'how-it-works')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">كيف يعمل</a>
             <a href="#contact" onClick={(e) => handleScroll(e, 'contact')} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold cursor-pointer">تواصل معنا</a>
           </div>
 
@@ -295,22 +255,7 @@ const Navbar = () => {
             <div className="flex flex-col space-y-3">
               <a href="#home" onClick={(e) => handleScroll(e, 'home')} className="text-gray-700 hover:text-blue-600 transition font-semibold">الرئيسية</a>
               <a href="#features" onClick={(e) => handleScroll(e, 'features')} className="text-gray-700 hover:text-blue-600 transition font-semibold">المزايا</a>
-
-              {/* Mobile Search Options */}
-              <div className="border-t border-b border-gray-200 py-2">
-                <p className="text-sm text-gray-500 px-2 mb-2">بحث عن محامي:</p>
-                {searchOptions.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => handleSearchOptionClick(option)}
-                    className={`w-full text-right px-4 py-2 hover:bg-blue-50 transition rounded ${selectedSearchType === option ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'
-                      }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-
+              <a href="#how-it-works" onClick={(e) => handleScroll(e, 'how-it-works')} className="text-gray-700 hover:text-blue-600 transition font-semibold">كيف يعمل</a>
               <a href="#contact" onClick={(e) => handleScroll(e, 'contact')} className="text-gray-700 hover:text-blue-600 transition font-semibold">تواصل معنا</a>
 
               {isLoggedIn ? (
@@ -431,31 +376,6 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* Search Bar - Appears when search option is selected */}
-        {showSearchBar && (
-          <div className="py-4 border-t border-gray-200 animate-slideDown">
-            <div className="flex items-center space-x-3 space-x-reverse bg-white rounded-xl shadow-lg p-3 max-w-3xl mx-auto">
-              <Search className="h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`ابحث ${selectedSearchType}...`}
-                className="flex-1 outline-none text-gray-700 px-2"
-                autoFocus
-              />
-              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                {selectedSearchType}
-              </span>
-              <button
-                onClick={() => setShowSearchBar(false)}
-                className="text-gray-400 hover:text-gray-600 transition"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );

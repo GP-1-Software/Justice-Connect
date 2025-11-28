@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '../../../hooks/useClientAuth';
 import { clientApi } from '../../../services/clientApi';
 import { getClientAppointments } from '../../../services/appointmentApi';
@@ -10,6 +11,7 @@ import { Calendar, Briefcase } from 'lucide-react';
 import { formatDate } from '../../../utils/dateUtils';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { userProfile } = useClientAuth();
   const [dashboardData, setDashboardData] = useState({
     summary: {
@@ -158,45 +160,29 @@ const Dashboard = () => {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               المواعيد القادمة
             </h2>
-            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition whitespace-nowrap">
+            <button 
+              onClick={() => navigate('/client/appointments')}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition whitespace-nowrap"
+            >
               عرض الكل
             </button>
           </div>
           
-          {dashboardData.summary?.upcomingAppointments > 0 ? (
-            <div className="space-y-3 sm:space-y-4">
-              {/* Sample upcoming appointment */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 sm:space-x-reverse p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                    استشارة مع المحامي أحمد محمد
-                  </h4>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                    غداً في 2:00 مساءً
-                  </p>
-                </div>
-                <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full whitespace-nowrap">
-                  أونلاين
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-6 sm:py-8">
-              <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
-              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
-                لا توجد مواعيد قادمة
-              </p>
-              <button 
-                onClick={() => window.location.href = '/client/book-appointment/1'}
-                className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                احجز موعد
-              </button>
-            </div>
-          )}
+          <div className="text-center py-6 sm:py-8">
+            <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+              {dashboardData.summary?.upcomingAppointments > 0 
+                ? `لديك ${dashboardData.summary.upcomingAppointments} موعد قادم`
+                : 'لا توجد مواعيد قادمة'
+              }
+            </p>
+            <button 
+              onClick={() => navigate('/client/search-lawyers')}
+              className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              ابحث عن محامي
+            </button>
+          </div>
         </div>
 
         {/* Active Cases */}
@@ -205,39 +191,29 @@ const Dashboard = () => {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               القضايا النشطة
             </h2>
-            <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition whitespace-nowrap">
+            <button 
+              onClick={() => navigate('/client/cases')}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition whitespace-nowrap"
+            >
               عرض الكل
             </button>
           </div>
           
-          {dashboardData.summary?.activeCases > 0 ? (
-            <div className="space-y-3 sm:space-y-4">
-              {/* Sample active case */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 sm:space-x-reverse p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
-                  <Briefcase className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                    قضية الطلاق
-                  </h4>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                    آخر تحديث: منذ يومين
-                  </p>
-                </div>
-                <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 px-2 py-1 rounded-full whitespace-nowrap">
-                  نشطة
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-6 sm:py-8">
-              <Briefcase className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
-              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                لا توجد قضايا نشطة
-              </p>
-            </div>
-          )}
+          <div className="text-center py-6 sm:py-8">
+            <Briefcase className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+              {dashboardData.summary?.activeCases > 0 
+                ? `لديك ${dashboardData.summary.activeCases} قضية نشطة`
+                : 'لا توجد قضايا نشطة'
+              }
+            </p>
+            <button 
+              onClick={() => navigate('/client/create-case')}
+              className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              إنشاء قضية جديدة
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { useCaseReport } from '../../hooks/useCaseReport';
-import { Loader2, AlertCircle, FileText, Clock, CheckSquare, FolderOpen, MessageSquare, Download } from 'lucide-react';
+import { useCaseAccess } from '../../hooks/useCaseAccess';
+import { Loader2, AlertCircle, FileText, Clock, CheckSquare, FolderOpen, MessageSquare, Download, Ban } from 'lucide-react';
 import CaseDetailsHeader from '../../components/client/case-details/CaseDetailsHeader';
 import CaseOverview from '../../components/client/case-details/CaseOverview';
 import CaseTimeline from '../../components/client/case-details/CaseTimeline';
@@ -17,6 +18,7 @@ const CaseDetails = () => {
   const { caseId } = useParams();
   const { userProfile } = useClientAuth();
   const { generateCaseReport, isGenerating, progress, error: reportError } = useCaseReport();
+  const { isDisabled, disabledReason, canPerformAction } = useCaseAccess(caseId);
   const [caseData, setCaseData] = useState(null);
   const [lawyer, setLawyer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -196,6 +198,30 @@ const CaseDetails = () => {
         {/* Header */}
         <CaseDetailsHeader caseData={caseData} />
 
+        {/* Disabled Case Warning Banner */}
+        {isDisabled && (
+          <div className="mt-4 bg-red-500 dark:bg-red-600 text-white rounded-xl shadow-lg p-4 sm:p-6">
+            <div className="flex items-start gap-3">
+              <Ban className="w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg sm:text-xl font-bold mb-2">⚠️ القضية معطلة مؤقتاً</h3>
+                <p className="text-sm sm:text-base mb-3">
+                  تم تعطيل هذه القضية من قبل إدارة المنصة. لا يمكنك إجراء أي تعديلات حتى يتم تفعيلها مرة أخرى.
+                </p>
+                {disabledReason && (
+                  <div className="bg-white/20 rounded-lg p-3">
+                    <p className="text-xs sm:text-sm font-semibold mb-1">السبب:</p>
+                    <p className="text-sm sm:text-base">{disabledReason}</p>
+                  </div>
+                )}
+                <p className="text-xs sm:text-sm mt-3 opacity-90">
+                  💡 للاستفسار عن سبب التعطيل أو طلب التفعيل، يرجى التواصل مع الدعم الفني.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* زر توليد التقرير */}
         <div className="mt-5">
           <button
@@ -287,9 +313,9 @@ const CaseDetails = () => {
         <div className="mt-5">
           {activeTab === 'overview' && <CaseOverview caseData={caseData} lawyer={lawyer} />}
           {activeTab === 'timeline' && <CaseTimeline caseId={caseId} />}
-          {activeTab === 'tasks' && <CaseTasks caseId={caseId} />}
-          {activeTab === 'files' && <CaseFiles caseId={caseId} />}
-          {activeTab === 'notes' && <CaseNotes caseId={caseId} caseStatus={caseData?.status} />}
+          {activeTab === 'tasks' && <CaseTasks caseId={caseId} canPerformAction={canPerformAction} isDisabled={isDisabled} />}
+          {activeTab === 'files' && <CaseFiles caseId={caseId} canPerformAction={canPerformAction} isDisabled={isDisabled} />}
+          {activeTab === 'notes' && <CaseNotes caseId={caseId} caseStatus={caseData?.status} canPerformAction={canPerformAction} isDisabled={isDisabled} />}
         </div>
       </div>
     </div>

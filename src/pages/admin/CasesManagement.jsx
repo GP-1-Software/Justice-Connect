@@ -77,7 +77,7 @@ const CasesManagement = () => {
         getCasesStatistics(),
         supabase.from('lawyers').select('lawyer_id, first_name, last_name').eq('account_status', 'approved')
       ]);
-      
+
       setCases(casesData);
       setFilteredCases(casesData);
       setStatistics(statsData);
@@ -146,7 +146,7 @@ const CasesManagement = () => {
           const fromDate = new Date(customDateFrom);
           const toDate = new Date(customDateTo);
           toDate.setHours(23, 59, 59, 999); // Include the entire end date
-          
+
           result = result.filter((c) => {
             const caseDate = new Date(c.created_at);
             return caseDate >= fromDate && caseDate <= toDate;
@@ -163,7 +163,7 @@ const CasesManagement = () => {
         // Predefined date ranges
         const now = new Date();
         const filterDate = new Date();
-        
+
         switch (selectedDateRange) {
           case 'today':
             filterDate.setHours(0, 0, 0, 0);
@@ -183,7 +183,7 @@ const CasesManagement = () => {
           default:
             break;
         }
-        
+
         result = result.filter((c) => new Date(c.created_at) >= filterDate);
       }
     }
@@ -267,14 +267,23 @@ const CasesManagement = () => {
                   عرض ومتابعة جميع القضايا في المنصة
                 </p>
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-sm sm:text-base w-full sm:w-auto"
-              >
-                <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${refreshing ? 'animate-spin' : ''}`} />
-                <span>تحديث</span>
-              </button>
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <Link
+                  to="/admin/cases-management"
+                  className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-lg hover:shadow-lg transition text-sm sm:text-base flex-1 sm:flex-initial"
+                >
+                  <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>تعطيل القضايا</span>
+                </Link>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-sm sm:text-base flex-1 sm:flex-initial"
+                >
+                  <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span>تحديث</span>
+                </button>
+              </div>
             </div>
           </div>
 

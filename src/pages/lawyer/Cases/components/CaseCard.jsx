@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, User, FileText, ArrowLeft, Trash2, Check, X, Building2 } from 'lucide-react';
+import { Calendar, User, FileText, ArrowLeft, Trash2, Check, X, Building2, Ban } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient';
 
 const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
@@ -201,9 +201,22 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
 
   return (
     <div 
-      className={`bg-white dark:bg-gray-800 rounded-2xl ${statusInfo.borderColor} border border-gray-200 dark:border-gray-700 hover:shadow-2xl hover:${statusInfo.glowColor} transition-all duration-300 cursor-pointer overflow-hidden group hover:scale-[1.02] transform`}
+      className={`bg-white dark:bg-gray-800 rounded-2xl ${caseData.is_disabled ? 'border-red-500 dark:border-red-600 opacity-75' : statusInfo.borderColor} border hover:shadow-2xl hover:${statusInfo.glowColor} transition-all duration-300 cursor-pointer overflow-hidden group hover:scale-[1.02] transform ${caseData.is_disabled ? '' : 'border-gray-200 dark:border-gray-700'}`}
       onClick={() => navigate(`/lawyer/cases/${caseData.case_id}`)}
     >
+      {/* Disabled Banner */}
+      {caseData.is_disabled && (
+        <div className="bg-red-500 dark:bg-red-600 text-white px-4 py-2.5 flex items-center gap-2.5">
+          <Ban className="w-5 h-5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold">تم تعطيل هذه القضية من قبل الإدارة</p>
+            {caseData.disabled_reason && (
+              <p className="text-xs opacity-90 mt-0.5">السبب: {caseData.disabled_reason}</p>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Status Bar at Top */}
       <div className={`h-1.5 ${statusInfo.statusBarBg}`}></div>
       

@@ -7,7 +7,8 @@ import {
   CheckCircle,
   XCircle,
   Scale,
-  ChevronLeft
+  ChevronLeft,
+  Ban
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -88,7 +89,24 @@ const CaseCard = ({ caseData }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-md sm:shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.02] sm:hover:scale-105">
+    <div className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-md sm:shadow-lg border hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.02] sm:hover:scale-105 ${
+      caseData.is_disabled 
+        ? 'border-red-500 dark:border-red-600 opacity-75' 
+        : 'border-gray-200 dark:border-gray-700'
+    }`}>
+      {/* Disabled Banner */}
+      {caseData.is_disabled && (
+        <div className="bg-red-500 dark:bg-red-600 text-white px-3 sm:px-4 py-2 flex items-center gap-2">
+          <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="flex-1">
+            <p className="text-xs sm:text-sm font-semibold">تم تعطيل هذه القضية من قبل الإدارة</p>
+            {caseData.disabled_reason && (
+              <p className="text-[10px] sm:text-xs opacity-90 mt-0.5">السبب: {caseData.disabled_reason}</p>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-start justify-between mb-3">
