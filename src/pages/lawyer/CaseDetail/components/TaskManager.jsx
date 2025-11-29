@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { CheckSquare, Plus, Trash2, Square } from 'lucide-react';
+import { notifyTaskCreated, notifyTaskCompleted } from '../../../../services/notificationService';
 
 const TaskManager = ({ caseId, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
@@ -72,6 +73,27 @@ const TaskManager = ({ caseId, onTimelineEventAdded }) => {
         onTimelineEventAdded(timelineEvent);
       }
 
+      // Send notification to client
+      try {
+        const { data: caseData } = await supabase
+          .from('cases')
+          .select('client_id, title')
+          .eq('case_id', caseId)
+          .single();
+
+        if (caseData && caseData.client_id) {
+          await notifyTaskCreated(
+            caseData.client_id,
+            'client',
+            caseData.title || 'بدون عنوان',
+            newTask.trim(),
+            caseId
+          );
+        }
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
+
       setTasks(prev => [taskData, ...prev]);
       setNewTask('');
     } catch (error) {
@@ -113,6 +135,27 @@ const TaskManager = ({ caseId, onTimelineEventAdded }) => {
         // Notify parent to add to timeline
         if (onTimelineEventAdded && timelineEvent) {
           onTimelineEventAdded(timelineEvent);
+        }
+
+        // Send notification to client
+        try {
+          const { data: caseData } = await supabase
+            .from('cases')
+            .select('client_id')
+            .eq('case_id', caseId)
+            .single();
+
+          if (caseData && caseData.client_id) {
+            await notifyTaskCompleted(
+              caseData.client_id,
+              'client',
+              caseData.title || 'بدون عنوان',
+              task.title,
+              caseId
+            );
+          }
+        } catch (notifError) {
+          console.error('Error sending notification:', notifError);
         }
       }
 
@@ -214,11 +257,10 @@ const TaskManager = ({ caseId, onTimelineEventAdded }) => {
                 )}
               </button>
               <span
-                className={`flex-1 text-sm ${
-                  task.is_completed
-                    ? 'line-through text-gray-500 dark:text-gray-400'
-                    : 'text-gray-900 dark:text-white'
-                }`}
+                className={`flex-1 text-sm ${task.is_completed
+                  ? 'line-through text-gray-500 dark:text-gray-400'
+                  : 'text-gray-900 dark:text-white'
+                  }`}
               >
                 {task.title}
               </span>

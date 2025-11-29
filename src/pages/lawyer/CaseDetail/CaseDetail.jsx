@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -14,11 +14,30 @@ import ClientInfo from './components/ClientInfo';
 
 const CaseDetail = () => {
   const { caseId } = useParams();
+  const location = useLocation();
   const { lawyer } = useLawyerAuth();
   const navigate = useNavigate();
   const [caseData, setCaseData] = useState(null);
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Handle URL hash for deep linking
+  useEffect(() => {
+    if (location.hash && !loading) {
+      const id = location.hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add highlight effect
+          element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+          }, 2000);
+        }, 500); // Delay to ensure rendering
+      }
+    }
+  }, [location.hash, loading]);
 
   const loadCaseDetails = async () => {
     if (!lawyer || !caseId) return;
@@ -38,7 +57,7 @@ const CaseDetail = () => {
         .from('timeline_events')
         .select('*')
         .eq('case_id', caseId)
-        .order('created_at', { ascending: false});
+        .order('created_at', { ascending: false });
 
       if (updatesError) console.warn('Updates load error:', updatesError.message);
 
@@ -189,20 +208,26 @@ const CaseDetail = () => {
             <ClientInfo caseData={caseData} lawyerId={lawyer?.lawyer_id} />
 
             {/* Meeting Manager */}
-            <MeetingManager 
-              caseId={caseId} 
-              caseData={caseData} 
-              onTimelineEventAdded={handleUpdateAdded} 
+            <MeetingManager
+              caseId={caseId}
+              caseData={caseData}
+              onTimelineEventAdded={handleUpdateAdded}
             />
 
             {/* Private Notes */}
-            <PrivateNotes caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+            <div id="notes" className="transition-all duration-300 rounded-2xl">
+              <PrivateNotes caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+            </div>
 
             {/* Evidence Uploader */}
-            <EvidenceUploader caseId={caseId} />
+            <div id="files" className="transition-all duration-300 rounded-2xl">
+              <EvidenceUploader caseId={caseId} />
+            </div>
 
             {/* Task Manager */}
-            <TaskManager caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+            <div id="tasks" className="transition-all duration-300 rounded-2xl">
+              <TaskManager caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+            </div>
           </div>
         </div>
       )}

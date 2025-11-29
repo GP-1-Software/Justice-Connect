@@ -1,18 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Scale, 
-  Menu, 
-  X, 
-  Bell, 
-  User, 
-  LogOut, 
+import {
+  Scale,
+  Menu,
+  X,
+  Bell,
+  User,
+  LogOut,
   Settings,
   Search,
   MessageSquare,
   Sun,
   Moon
 } from 'lucide-react';
+import NotificationBell from '../notifications/NotificationBell';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -22,19 +23,13 @@ const ClientNavbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const userMenuRef = useRef(null);
-  const notificationsRef = useRef(null);
 
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setUserMenuOpen(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
-        setNotificationsOpen(false);
       }
     };
 
@@ -45,14 +40,6 @@ const ClientNavbar = ({ onMenuClick }) => {
   const handleLogout = async () => {
     await signOut();
     setUserMenuOpen(false);
-  };
-
-  const handleNotificationClick = () => {
-    setNotificationsOpen(!notificationsOpen);
-    // Mark notifications as read
-    if (unreadCount > 0) {
-      setUnreadCount(0);
-    }
   };
 
   return (
@@ -121,49 +108,11 @@ const ClientNavbar = ({ onMenuClick }) => {
             </button>
 
             {/* Notifications */}
-            <div className="relative" ref={notificationsRef}>
-              <button
-                onClick={handleNotificationClick}
-                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Notifications Dropdown */}
-              {notificationsOpen && (
-                <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50 animate-slideDown">
-                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-bold text-gray-900 dark:text-white">الإشعارات</h3>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {/* Sample notification */}
-                    <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                      <p className="text-sm text-gray-900 dark:text-white">لديك موعد جديد غداً مع المحامي أحمد محمد</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">منذ ساعتين</p>
-                    </div>
-                    {/* Empty state */}
-                    <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                      <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>لا توجد إشعارات جديدة</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => navigate('/client/notifications')}
-                      className="w-full text-center text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 py-2 rounded-lg transition font-semibold"
-                    >
-                      عرض جميع الإشعارات
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationBell
+              key={userProfile?.user_id || 'guest'}
+              userId={userProfile?.user_id}
+              userType="client"
+            />
 
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>
@@ -225,8 +174,8 @@ const ClientNavbar = ({ onMenuClick }) => {
 
             {/* Mobile Menu Button */}
             <div className="md:hidden">
-              <button 
-                onClick={() => setIsOpen(!isOpen)} 
+              <button
+                onClick={() => setIsOpen(!isOpen)}
                 className="text-gray-700 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               >
                 {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

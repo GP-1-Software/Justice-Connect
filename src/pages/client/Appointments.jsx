@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Phone, 
-  Video, 
+import {
+  Calendar,
+  Clock,
+  User,
+  Phone,
+  Video,
   MapPin,
   FileText,
   AlertCircle,
@@ -31,6 +31,7 @@ import { supabase } from '../../supabaseClient';
 const Appointments = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { appointmentId } = useParams();
   const { userProfile } = useClientAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,18 @@ const Appointments = () => {
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [meetings, setMeetings] = useState({}); // Map of appointment_id -> meeting
   const [isFiltering, setIsFiltering] = useState(false);
+
+  // Track if we've already handled the appointmentId to prevent loops
+  const handledAppointmentId = useRef(null);
+
+  // Handle appointmentId from URL - just navigate to appointments list
+  useEffect(() => {
+    if (appointmentId && handledAppointmentId.current !== appointmentId) {
+      handledAppointmentId.current = appointmentId;
+      // Simply navigate to appointments list page
+      navigate('/client/appointments', { replace: true });
+    }
+  }, [appointmentId, navigate]);
 
   // Reset filters when switching tabs
   const handleTabChange = (tab) => {
@@ -68,12 +81,12 @@ const Appointments = () => {
       try {
         const data = await getClientAppointments(userProfile.user_id);
         setAppointments(data || []);
-        
+
         // Fetch meetings for confirmed appointments with video_call
         const confirmedVideoAppointments = (data || []).filter(
           apt => apt.status === 'confirmed' && apt.meeting_method === 'video_call'
         );
-        
+
         const meetingsMap = {};
         for (const apt of confirmedVideoAppointments) {
           try {
@@ -86,7 +99,7 @@ const Appointments = () => {
           }
         }
         setMeetings(meetingsMap);
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -101,9 +114,9 @@ const Appointments = () => {
       const appointmentsChannel = supabase
         .channel('client-appointments-changes')
         .on('postgres_changes',
-          { 
-            event: '*', 
-            schema: 'public', 
+          {
+            event: '*',
+            schema: 'public',
             table: 'appointments',
             filter: `client_id=eq.${userProfile.user_id}`
           },
@@ -130,9 +143,9 @@ const Appointments = () => {
       const meetingsChannel = supabase
         .channel('client-meetings-changes')
         .on('postgres_changes',
-          { 
-            event: '*', 
-            schema: 'public', 
+          {
+            event: '*',
+            schema: 'public',
             table: 'meetings'
           },
           async (payload) => {
@@ -145,7 +158,7 @@ const Appointments = () => {
                   .eq('id', payload.new.related_appointment_id)
                   .eq('client_id', userProfile.user_id)
                   .single();
-                
+
                 if (appointment) {
                   setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
                 }
@@ -161,7 +174,7 @@ const Appointments = () => {
                   .eq('id', payload.new.related_appointment_id)
                   .eq('client_id', userProfile.user_id)
                   .single();
-                
+
                 if (appointment) {
                   setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
                 }
@@ -238,16 +251,16 @@ const Appointments = () => {
     const filtered = appointments.filter(appointment => {
       const lawyerName = `${appointment.lawyers?.first_name || ''} ${appointment.lawyers?.last_name || ''}`.trim();
       const matchesSearch = lawyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           appointment.appointment_type?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+        appointment.appointment_type?.toLowerCase().includes(searchTerm.toLowerCase());
+
       // تحديد المواعيد النشطة: المواعيد بحالة pending أو confirmed
       const appointmentStatus = appointment.status?.toLowerCase();
       const isActiveAppointment = appointmentStatus === 'pending' || appointmentStatus === 'confirmed';
-      
+
       // تحديد المواعيد المنتهية: المواعيد بحالة completed أو cancelled
-      const isCompletedAppointment = appointmentStatus === 'completed' || 
-                                     appointmentStatus === 'cancelled';
-      
+      const isCompletedAppointment = appointmentStatus === 'completed' ||
+        appointmentStatus === 'cancelled';
+
       // تحديد التاب المناسب بناءً على الحالة
       let matchesTab = false;
       if (activeTab === 'upcoming') {
@@ -257,20 +270,20 @@ const Appointments = () => {
         // السجل الكامل: completed و cancelled
         matchesTab = isCompletedAppointment;
       }
-      
+
       // إذا لم يطابق التاب، لا نتابع
       if (!matchesTab) return false;
-      
-      const matchesAppointmentFilter = 
+
+      const matchesAppointmentFilter =
         appointmentFilter === 'all' ? true :
-        appointmentFilter === 'with_case' ? appointment.case_id !== null :
-        appointmentFilter === 'standalone' ? appointment.case_id === null : true;
-      
+          appointmentFilter === 'with_case' ? appointment.case_id !== null :
+            appointmentFilter === 'standalone' ? appointment.case_id === null : true;
+
       // فلتر الحالة
       const matchesStatus = selectedStatus === 'all' || appointmentStatus === selectedStatus.toLowerCase();
-      
+
       const matchesMethod = selectedMethod === 'all' || appointment.meeting_method === selectedMethod;
-      
+
       return matchesSearch && matchesAppointmentFilter && matchesStatus && matchesMethod;
     });
 
@@ -286,11 +299,11 @@ const Appointments = () => {
 
       const statusA = a.status?.toLowerCase();
       const statusB = b.status?.toLowerCase();
-      
+
       // Sort by status priority first
       const priorityDiff = (statusPriority[statusA] || 999) - (statusPriority[statusB] || 999);
       if (priorityDiff !== 0) return priorityDiff;
-      
+
       // Within same status, sort by last update time (most recent action first)
       // Use updated_at if available, otherwise fall back to created_at or appointment date
       const getLastActionTime = (apt) => {
@@ -298,10 +311,10 @@ const Appointments = () => {
         if (apt.created_at) return new Date(apt.created_at);
         return new Date(`${apt.appointment_date} ${apt.appointment_time}`);
       };
-      
+
       const lastActionA = getLastActionTime(a);
       const lastActionB = getLastActionTime(b);
-      
+
       // الأحدث في الـ action أولاً (descending)
       return lastActionB - lastActionA;
     });
@@ -337,7 +350,7 @@ const Appointments = () => {
 
   const handleCancelConfirm = async () => {
     if (!appointmentToCancel) return;
-    
+
     try {
       await cancelAppointment(appointmentToCancel.id);
       setAppointments(prev => prev.filter(apt => apt.id !== appointmentToCancel.id));
@@ -438,21 +451,19 @@ const Appointments = () => {
             <div className="flex space-x-1 sm:space-x-2 space-x-reverse bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl p-1 overflow-x-auto">
               <button
                 onClick={() => handleTabChange('upcoming')}
-                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  activeTab === 'upcoming'
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'upcoming'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 📅 المواعيد النشطة
               </button>
               <button
                 onClick={() => handleTabChange('past')}
-                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  activeTab === 'past'
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'past'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 📋 السجل الكامل
               </button>
@@ -471,11 +482,10 @@ const Appointments = () => {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all relative ${
-                  showFilters
+                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all relative ${showFilters
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
                     : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                  }`}
               >
                 <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-medium">فلتر</span>
@@ -525,11 +535,10 @@ const Appointments = () => {
             <select
               value={appointmentFilter}
               onChange={(e) => setAppointmentFilter(e.target.value)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${
-                appointmentFilter !== 'all' 
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 font-semibold' 
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${appointmentFilter !== 'all'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 font-semibold'
                   : 'border-gray-300 dark:border-gray-600'
-              }`}
+                }`}
             >
               <option value="all">جميع المواعيد</option>
               <option value="with_case">المرتبطة بقضية</option>
@@ -541,11 +550,10 @@ const Appointments = () => {
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${
-                    selectedStatus !== 'all' 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                  className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${selectedStatus !== 'all'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
                       : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                    }`}
                 >
                   <option value="all">جميع الحالات</option>
                   {activeTab === 'upcoming' ? (
@@ -564,11 +572,10 @@ const Appointments = () => {
                 <select
                   value={selectedMethod}
                   onChange={(e) => setSelectedMethod(e.target.value)}
-                  className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${
-                    selectedMethod !== 'all' 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                  className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${selectedMethod !== 'all'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
                       : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                    }`}
                 >
                   <option value="all">جميع الأنواع</option>
                   <option value="video_call">مكالمة فيديو</option>
@@ -598,12 +605,12 @@ const Appointments = () => {
                 لا توجد مواعيد
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {activeTab === 'upcoming' 
-                  ? 'لا توجد مواعيد نشطة حالياً' 
+                {activeTab === 'upcoming'
+                  ? 'لا توجد مواعيد نشطة حالياً'
                   : 'لا يوجد سجل لمواعيد سابقة'}
               </p>
               {activeTab === 'upcoming' && (
-                <button 
+                <button
                   onClick={() => navigate('/client/lawyers')}
                   className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl"
                 >
@@ -617,32 +624,32 @@ const Appointments = () => {
               const methodConfig = getMethodConfig(appointment.meeting_method);
               const StatusIcon = statusConfig.icon;
               const MethodIcon = methodConfig.icon;
-              
+
               // Fix: Compare dates without time component
               const appointmentDate = new Date(appointment.appointment_date);
               const today = new Date();
               today.setHours(0, 0, 0, 0); // Reset time to start of day
               appointmentDate.setHours(0, 0, 0, 0); // Reset time to start of day
               const isUpcoming = appointmentDate >= today;
-              
+
               const lawyerName = `${appointment.lawyers?.first_name || ''} ${appointment.lawyers?.last_name || ''}`.trim();
-              
+
               // Calculate time since last update
               const getTimeSinceUpdate = () => {
-                const lastUpdate = appointment.updated_at 
-                  ? new Date(appointment.updated_at) 
-                  : appointment.created_at 
+                const lastUpdate = appointment.updated_at
+                  ? new Date(appointment.updated_at)
+                  : appointment.created_at
                     ? new Date(appointment.created_at)
                     : null;
-                
+
                 if (!lastUpdate) return null;
-                
+
                 const now = new Date();
                 const diffMs = now - lastUpdate;
                 const diffMins = Math.floor(diffMs / 60000);
                 const diffHours = Math.floor(diffMs / 3600000);
                 const diffDays = Math.floor(diffMs / 86400000);
-                
+
                 if (diffMins < 1) return 'الآن';
                 if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
                 if (diffHours < 24) return `منذ ${diffHours} ساعة`;
@@ -650,9 +657,9 @@ const Appointments = () => {
                 if (diffDays < 7) return `منذ ${diffDays} أيام`;
                 return null;
               };
-              
+
               const timeSinceUpdate = getTimeSinceUpdate();
-              
+
               return (
                 <div
                   key={appointment.id}
@@ -699,7 +706,7 @@ const Appointments = () => {
                               </span>
                             )}
                           </div>
-                          
+
                           <p className="text-blue-600 dark:text-blue-400 font-medium mb-3">
                             {formatSpecialization(appointment.lawyers?.specialization)}
                           </p>
@@ -789,18 +796,18 @@ const Appointments = () => {
                           )}
 
                           {/* Meeting Card for Video Calls */}
-                          {appointment.status === 'confirmed' && 
-                           appointment.meeting_method === 'video_call' && 
-                           meetings[appointment.id] && (
-                            <div className="mt-4">
-                              <MeetingCard
-                                meeting={meetings[appointment.id]}
-                                appointment={appointment}
-                                userType="client"
-                                onJoinMeeting={handleJoinMeeting}
-                              />
-                            </div>
-                          )}
+                          {appointment.status === 'confirmed' &&
+                            appointment.meeting_method === 'video_call' &&
+                            meetings[appointment.id] && (
+                              <div className="mt-4">
+                                <MeetingCard
+                                  meeting={meetings[appointment.id]}
+                                  appointment={appointment}
+                                  userType="client"
+                                  onJoinMeeting={handleJoinMeeting}
+                                />
+                              </div>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -857,7 +864,7 @@ const Appointments = () => {
                 تأكيد إلغاء الموعد
               </h3>
             </div>
-            
+
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               هل أنت متأكد من إلغاء هذا الموعد؟ لن يتمكن المحامي من تأكيده بعد الآن.
             </p>

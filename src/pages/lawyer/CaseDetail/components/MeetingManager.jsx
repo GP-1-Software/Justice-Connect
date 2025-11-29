@@ -5,6 +5,7 @@ import { Video, Plus, Calendar, Clock, X, Trash2, AlertCircle, CheckCircle } fro
 import { createMeeting, getMeetingByCase, deleteMeeting, updateMeetingStatus, isMeetingEnded } from '../../../../services/meetingApi';
 import MeetingCard from '../../../../components/shared/MeetingCard';
 import { createTimelineEvent } from '../../../../services/caseApi';
+import { notifyMeetingCreated, notifyMeetingReminder } from '../../../../services/notificationService';
 
 const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
@@ -30,7 +31,7 @@ const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
       if (meetingData) {
         // Check if meeting has ended before setting it to state
         if (isMeetingEnded(meetingData)) {
-       //   console.log('🕐 Meeting loaded but already ended, not displaying');
+          //   console.log('🕐 Meeting loaded but already ended, not displaying');
           setMeeting(null);
         } else {
           setMeeting(meetingData);
@@ -41,6 +42,37 @@ const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
     } catch (error) {
       console.error('Error loading meeting:', error);
       setMeeting(null);
+    }
+  };
+
+  const scheduleMeetingReminder = (meetingDateTime, clientId, caseTitle, meetingTime) => {
+    const now = new Date();
+    const meetingTime5MinBefore = new Date(meetingDateTime.getTime() - 5 * 60 * 1000);
+    const timeUntilReminder = meetingTime5MinBefore.getTime() - now.getTime();
+
+    if (timeUntilReminder > 0) {
+      setTimeout(async () => {
+        try {
+          // Send reminder to client
+          await notifyMeetingReminder(
+            clientId,
+            'client',
+            caseTitle,
+            meetingTime,
+            caseId
+          );
+          // Send reminder to lawyer
+          await notifyMeetingReminder(
+            lawyer.lawyer_id,
+            'lawyer',
+            caseTitle,
+            meetingTime,
+            caseId
+          );
+        } catch (error) {
+          console.error('Error sending meeting reminder:', error);
+        }
+      }, timeUntilReminder);
     }
   };
 
@@ -64,6 +96,34 @@ const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
 
       setMeeting(newMeeting);
       setShowCreateForm(false);
+
+      // Get case data for notifications
+      const { data: caseInfo } = await supabase
+        .from('cases')
+        .select('client_id, title')
+        .eq('case_id', caseId)
+        .single();
+
+      // Send notification to client
+      if (caseInfo && caseInfo.client_id) {
+        try {
+          await notifyMeetingCreated(
+            caseInfo.client_id,
+            'client',
+            caseInfo.title || 'بدون عنوان',
+            meetingDate,
+            meetingTime,
+            caseId
+          );
+
+          // Schedule reminder (5 minutes before)
+          const meetingDateTime = new Date(`${meetingDate}T${meetingTime}`);
+          scheduleMeetingReminder(meetingDateTime, caseInfo.client_id, caseInfo.title || 'بدون عنوان', meetingTime);
+        } catch (notifError) {
+          console.error('Error sending notification:', notifError);
+        }
+      }
+
       setMeetingDate('');
       setMeetingTime('');
 
@@ -182,9 +242,9 @@ const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
     const channel = supabase
       .channel(`lawyer-case-meetings-${caseId}`)
       .on('postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'meetings',
           filter: `related_case_id=eq.${caseId}`
         },
@@ -355,7 +415,7 @@ const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
                 تأكيد إنهاء الاجتماع
               </h3>
             </div>
-            
+
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               هل أنت متأكد من إنهاء هذا الاجتماع؟ سيتم تحديث حالته إلى "مكتمل" وسيختفي من صفحة العميل.
             </p>
@@ -392,7 +452,7 @@ const MeetingManager = ({ caseId, caseData, onTimelineEventAdded }) => {
                 تأكيد حذف الاجتماع
               </h3>
             </div>
-            
+
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               هل أنت متأكد من حذف هذا الاجتماع؟ سيتم إخفاؤه من صفحة العميل أيضاً ولن يتمكن من الانضمام إليه.
             </p>

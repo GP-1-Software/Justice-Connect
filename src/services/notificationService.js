@@ -87,7 +87,7 @@ export const markAsRead = async (notificationId) => {
   try {
     const { data, error } = await supabase
       .from('notifications')
-      .update({ 
+      .update({
         is_read: true,
         read_at: new Date().toISOString()
       })
@@ -110,7 +110,7 @@ export const markAllAsRead = async (userId, userType) => {
   try {
     const { data, error } = await supabase
       .from('notifications')
-      .update({ 
+      .update({
         is_read: true,
         read_at: new Date().toISOString()
       })
@@ -259,16 +259,185 @@ export const notifyInvoiceCancelled = async (clientId, invoiceNumber, invoiceId)
   });
 };
 
+/**
+ * Create appointment confirmed notification
+ */
+export const notifyAppointmentConfirmed = async (clientId, appointmentDate, appointmentTime, lawyerName, appointmentId) => {
+  return createNotification({
+    user_id: clientId,
+    user_type: 'client',
+    title: 'تم تأكيد الموعد',
+    message: `تم تأكيد موعدك مع ${lawyerName} في ${appointmentDate} الساعة ${appointmentTime}`,
+    type: 'appointment_confirmed',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'appointment',
+    action_url: `/client/appointments/${appointmentId}`
+  });
+};
+
+/**
+ * Create appointment rejected notification
+ */
+export const notifyAppointmentRejected = async (clientId, appointmentDate, appointmentTime, lawyerName, rejectionReason, appointmentId) => {
+  const message = rejectionReason
+    ? `تم رفض موعدك مع ${lawyerName} في ${appointmentDate}. السبب: ${rejectionReason}`
+    : `تم رفض موعدك مع ${lawyerName} في ${appointmentDate}`;
+
+  return createNotification({
+    user_id: clientId,
+    user_type: 'client',
+    title: 'تم رفض الموعد',
+    message,
+    type: 'appointment_cancelled',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'appointment',
+    action_url: `/client/appointments/${appointmentId}`
+  });
+};
+
 // =====================================================
 // Real-time Subscriptions
 // =====================================================
 
 /**
+ * Create case update notification
+ */
+export const notifyCaseUpdated = async (receiverId, receiverType, caseTitle, updateType, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'تحديث في القضية',
+    message: `تم تحديث ${updateType} في قضية: ${caseTitle}`,
+    type: 'case_updated',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'case',
+    action_url: `/${receiverType}/cases/${caseId}`
+  });
+};
+
+/**
+ * Create task notification
+ */
+export const notifyTaskCreated = async (receiverId, receiverType, caseTitle, taskTitle, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'مهمة جديدة',
+    message: `تمت إضافة مهمة جديدة "${taskTitle}" في قضية: ${caseTitle}`,
+    type: 'case_updated',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'case',
+    action_url: `/${receiverType}/cases/${caseId}#tasks`
+  });
+};
+
+/**
+ * Create task completion notification
+ */
+export const notifyTaskCompleted = async (receiverId, receiverType, caseTitle, taskTitle, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'مهمة مكتملة',
+    message: `تم إكمال المهمة "${taskTitle}" في قضية: ${caseTitle}`,
+    type: 'case_updated',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'case',
+    action_url: `/${receiverType}/cases/${caseId}#tasks`
+  });
+};
+
+/**
+ * Create note notification
+ */
+export const notifyNoteAdded = async (receiverId, receiverType, caseTitle, caseId, noteContent = '') => {
+  const message = noteContent
+    ? `تمت مشاركة ملاحظة جديدة: ${noteContent.substring(0, 50)}${noteContent.length > 50 ? '...' : ''}`
+    : `تمت إضافة ملاحظة جديدة في قضية: ${caseTitle}`;
+
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'ملاحظة جديدة',
+    message,
+    type: 'case_updated',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'case',
+    action_url: `/${receiverType}/cases/${caseId}#notes`
+  });
+};
+
+/**
+ * Create file upload notification
+ */
+export const notifyFileUploaded = async (receiverId, receiverType, caseTitle, fileName, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'ملف جديد',
+    message: `تم رفع ملف جديد "${fileName}" في قضية: ${caseTitle}`,
+    type: 'case_updated',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'case',
+    action_url: `/${receiverType}/cases/${caseId}#files`
+  });
+}
+
+/**
+ * Create timeline update notification
+ */
+export const notifyTimelineUpdate = async (receiverId, receiverType, caseTitle, updateText, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'تحديث جديد في القضية',
+    message: `${updateText.substring(0, 100)}${updateText.length > 100 ? '...' : ''}`,
+    type: 'case_updated',
+    related_id: null, // UUID can't be stored in integer field
+    related_type: 'case',
+    action_url: `/${receiverType}/cases/${caseId}`
+  });
+};
+
+/**
+ * Create meeting created notification
+ */
+export const notifyMeetingCreated = async (receiverId, receiverType, caseTitle, meetingDate, meetingTime, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: 'تم إنشاء اجتماع جديد',
+    message: `تم جدولة اجتماع في قضية "${caseTitle}" بتاريخ ${meetingDate} الساعة ${meetingTime}`,
+    type: 'meeting_created',
+    related_id: null, // Meeting ID might be UUID
+    related_type: 'meeting',
+    action_url: `/${receiverType}/cases/${caseId}`
+  });
+};
+
+/**
+ * Create meeting reminder notification (5 minutes before)
+ */
+export const notifyMeetingReminder = async (receiverId, receiverType, caseTitle, meetingTime, caseId) => {
+  return createNotification({
+    user_id: receiverId,
+    user_type: receiverType,
+    title: '⏰ تذكير: اجتماع خلال 5 دقائق',
+    message: `اجتماعك في قضية "${caseTitle}" سيبدأ الساعة ${meetingTime}`,
+    type: 'meeting_reminder',
+    related_id: null,
+    related_type: 'meeting',
+    action_url: `/${receiverType}/cases/${caseId}`
+  });
+};
+
+/**
  * Subscribe to user notifications
  */
-export const subscribeToNotifications = (userId, userType, callback) => {
+export const subscribeToNotifications = (userId, userType, callback, uniqueId = '') => {
+  const channelName = `notifications-${userId}${uniqueId ? `-${uniqueId}` : ''}`;
   const subscription = supabase
-    .channel(`notifications-${userId}`)
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
@@ -287,9 +456,10 @@ export const subscribeToNotifications = (userId, userType, callback) => {
 /**
  * Subscribe to unread count changes
  */
-export const subscribeToUnreadCount = (userId, userType, callback) => {
+export const subscribeToUnreadCount = (userId, userType, callback, uniqueId = '') => {
+  const channelName = `unread-count-${userId}${uniqueId ? `-${uniqueId}` : ''}`;
   const subscription = supabase
-    .channel(`unread-count-${userId}`)
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
@@ -367,6 +537,30 @@ export const formatNotificationTime = (timestamp) => {
   if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
   if (diffHours < 24) return `منذ ${diffHours} ساعة`;
   if (diffDays < 7) return `منذ ${diffDays} يوم`;
-  
+
   return notifTime.toLocaleDateString('ar-SA');
+};
+
+/**
+ * Delete all notifications for a specific conversation
+ * Note: Since we can't store conversation_id (UUID) in related_id (integer),
+ * we delete all message notifications for this user when they open messages
+ */
+export const deleteConversationNotifications = async (userId, userType, conversationId) => {
+  try {
+    // Delete all new_message notifications for this user
+    // This is a simplified approach since we can't filter by conversation_id
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId)
+      .eq('user_type', userType)
+      .eq('type', 'new_message');
+
+    if (error) throw error;
+    return { data: null, error: null };
+  } catch (error) {
+    console.error('Error deleting conversation notifications:', error);
+    return { data: null, error };
+  }
 };

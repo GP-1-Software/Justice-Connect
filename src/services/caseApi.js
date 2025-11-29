@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { notifyFileUploaded, notifyCaseUpdated } from './notificationService';
 
 /**
  * Create a new case
@@ -9,7 +10,7 @@ export const createCase = async (caseData) => {
   try {
     // Generate case number
     const caseNumber = await generateCaseNumber();
-    
+
     const { data, error } = await supabase
       .from('cases')
       .insert([{
@@ -46,6 +47,57 @@ export const createCase = async (caseData) => {
       description: `تم إنشاء القضية: ${caseData.title}`,
       visibility: 'all'
     });
+
+    // Send notifications to both parties
+    try {
+      const notifications = [];
+
+      // Notification for client
+      if (caseData.client_id) {
+        notifications.push(
+          fetch('http://localhost:5000/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: caseData.client_id,
+              userType: 'client',
+              type: 'CASE_CREATED',
+              title: 'قضية جديدة',
+              message: `تم إنشاء قضية جديدة: ${caseData.title} - بانتظار التأكيد من المحامي`,
+              priority: 'high',
+              relatedId: data.case_id,
+              relatedType: 'case',
+              actionUrl: `/client/cases/${data.case_id}`
+            })
+          })
+        );
+      }
+
+      // Notification for lawyer
+      if (caseData.assigned_lawyer_id) {
+        notifications.push(
+          fetch('http://localhost:5000/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: caseData.assigned_lawyer_id,
+              userType: 'lawyer',
+              type: 'CASE_REQUEST',
+              title: 'قضية جديدة',
+              message: `قضية جديدة بانتظار التأكيد: ${caseData.title}`,
+              priority: 'high',
+              relatedId: data.case_id,
+              relatedType: 'case',
+              actionUrl: `/lawyer/cases/${data.case_id}`
+            })
+          })
+        );
+      }
+
+      await Promise.all(notifications);
+    } catch (notifError) {
+      console.error('Error sending notifications:', notifError);
+    }
 
     return data;
   } catch (error) {
@@ -125,6 +177,33 @@ export const uploadCaseFile = async (fileData) => {
       visibility: 'all',
       files: [{ file_id: data.file_id, file_name: file.name }]
     });
+
+    // Send notification to the other party
+    try {
+      const { data: caseData } = await supabase
+        .from('cases')
+        .select('client_id, assigned_lawyer_id, title')
+        .eq('case_id', case_id)
+        .single();
+
+      if (caseData) {
+        // Determine receiver based on uploader
+        const receiverId = uploader_type === 'lawyer' ? caseData.client_id : caseData.assigned_lawyer_id;
+        const receiverType = uploader_type === 'lawyer' ? 'client' : 'lawyer';
+
+        if (receiverId) {
+          await notifyFileUploaded(
+            receiverId,
+            receiverType,
+            caseData.title || 'بدون عنوان',
+            file.name,
+            case_id
+          );
+        }
+      }
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError);
+    }
 
     return data;
   } catch (error) {
@@ -241,13 +320,15 @@ export const getUserCases = async (userId, userType, filters = {}) => {
   }
 };
 
+
 /**
  * Update case
  * @param {number} caseId - Case ID
  * @param {Object} updates - Fields to update
+ * @param {Object} updaterInfo - Optional: { userId, userType } of the person updating
  * @returns {Promise<Object>} Updated case
  */
-export const updateCase = async (caseId, updates) => {
+export const updateCase = async (caseId, updates, updaterInfo = null) => {
   try {
     const { data, error } = await supabase
       .from('cases')
@@ -260,6 +341,53 @@ export const updateCase = async (caseId, updates) => {
       .single();
 
     if (error) throw error;
+
+    // Send notification if updaterInfo is provided
+    if (updaterInfo) {
+      try {
+        const { data: caseData } = await supabase
+          .from('cases')
+          .select('client_id, assigned_lawyer_id, title')
+          .eq('case_id', caseId)
+          .single();
+
+        if (caseData) {
+          const { userType } = updaterInfo;
+          // Determine receiver (the other party)
+          let receiverId = null;
+          let receiverType = null;
+
+          if (userType === 'lawyer') {
+            receiverId = caseData.client_id;
+            receiverType = 'client';
+          } else if (userType === 'client') {
+            receiverId = caseData.assigned_lawyer_id;
+            receiverType = 'lawyer';
+          }
+
+          if (receiverId) {
+            // Determine update type description
+            let updateDesc = 'التفاصيل';
+            if (updates.status) updateDesc = 'الحالة';
+            else if (updates.next_hearing_date) updateDesc = 'موعد الجلسة القادمة';
+            else if (updates.court_name) updateDesc = 'اسم المحكمة';
+            else if (updates.judge_name) updateDesc = 'اسم القاضي';
+            else if (updates.case_number) updateDesc = 'رقم القضية';
+
+            await notifyCaseUpdated(
+              receiverId,
+              receiverType,
+              caseData.title || 'بدون عنوان',
+              updateDesc,
+              caseId
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
+    }
+
     return data;
   } catch (error) {
     console.error('Error updating case:', error);
@@ -384,7 +512,7 @@ export const deleteCaseFile = async (fileId) => {
     const urlParts = fileData.file_url.split('/case-documents/');
     if (urlParts.length > 1) {
       const filePath = urlParts[1];
-      
+
       // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('case-documents')

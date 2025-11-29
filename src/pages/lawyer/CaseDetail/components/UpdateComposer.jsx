@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 import { Send, Loader2 } from 'lucide-react';
+import { notifyTimelineUpdate } from '../../../../services/notificationService';
 
 const UpdateComposer = ({ caseId, onUpdateAdded }) => {
   const { lawyer } = useLawyerAuth();
@@ -37,6 +38,27 @@ const UpdateComposer = ({ caseId, onUpdateAdded }) => {
         .from('cases')
         .update({ updated_at: new Date().toISOString() })
         .eq('case_id', caseId);
+
+      // Send notification to client
+      try {
+        const { data: caseData } = await supabase
+          .from('cases')
+          .select('client_id, title')
+          .eq('case_id', caseId)
+          .single();
+
+        if (caseData && caseData.client_id) {
+          await notifyTimelineUpdate(
+            caseData.client_id,
+            'client',
+            caseData.title || 'بدون عنوان',
+            updateText.trim(),
+            caseId
+          );
+        }
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
 
       setUpdateText('');
       if (onUpdateAdded) onUpdateAdded(data);

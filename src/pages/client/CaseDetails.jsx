@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { useCaseReport } from '../../hooks/useCaseReport';
@@ -16,6 +16,7 @@ import { getMeetingByCase } from '../../services/meetingApi';
 
 const CaseDetails = () => {
   const { caseId } = useParams();
+  const location = useLocation();
   const { userProfile } = useClientAuth();
   const { generateCaseReport, isGenerating, progress, error: reportError } = useCaseReport();
   const { isDisabled, disabledReason, canPerformAction } = useCaseAccess(caseId);
@@ -25,6 +26,16 @@ const CaseDetails = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [meeting, setMeeting] = useState(null);
+
+  // Handle URL hash for deep linking
+  useEffect(() => {
+    if (location.hash) {
+      const tab = location.hash.replace('#', '');
+      if (['overview', 'timeline', 'tasks', 'files', 'notes'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
+  }, [location.hash]);
 
   useEffect(() => {
     if (caseId && userProfile) {
@@ -36,9 +47,9 @@ const CaseDetails = () => {
       const meetingsChannel = supabase
         .channel(`case-meetings-${caseId}`)
         .on('postgres_changes',
-          { 
-            event: '*', 
-            schema: 'public', 
+          {
+            event: '*',
+            schema: 'public',
             table: 'meetings',
             filter: `related_case_id=eq.${caseId}`
           },
@@ -127,7 +138,7 @@ const CaseDetails = () => {
     }
 
     const result = await generateCaseReport(caseId, userProfile);
-    
+
     if (result.success) {
       alert('✅ تم توليد التقرير بنجاح وحفظه في النظام!');
     } else {
@@ -271,11 +282,10 @@ const CaseDetails = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                      activeTab === tab.id
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTab === tab.id
                         ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
+                      }`}
                   >
                     <TabIcon className="w-4 h-4" />
                     <span>{tab.label}</span>
@@ -294,11 +304,10 @@ const CaseDetails = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                      activeTab === tab.id
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                         ? 'bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white shadow-lg transform scale-105'
                         : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-                    }`}
+                      }`}
                   >
                     <TabIcon className="w-5 h-5" />
                     <span>{tab.label}</span>
