@@ -234,17 +234,58 @@ meeting_id,uuid,PK,,NOT NULL
 
 
 notifications:
-notification_id,integer,PK,,NOT NULL
-,user_id,integer,,,NOT NULL
-,user_type,character varying,,,NOT NULL
-,title,character varying,,,NOT NULL
-,message,text,,,NOT NULL
-,type,character varying,,,NOT NULL
-,related_id,integer,,,NULL
-,related_type,character varying,,,NULL
-,is_read,boolean,,,NULL
-,read_at,timestamp with time zone,,,NULL
-,created_at,timestamp with time zone,,,NULL
+column_name,data_type
+notification_id,integer
+user_id,integer
+user_type,character varying
+title,character varying
+message,text
+type,character varying
+related_id,integer
+related_type,character varying
+is_read,boolean
+read_at,timestamp with time zone
+created_at,timestamp with time zone
+priority,character varying
+action_url,text
+icon,character varying
+
+
+notification_schedules:
+column_name,data_type
+schedule_id,integer
+user_id,integer
+user_type,character varying
+notification_type,character varying
+title,character varying
+message,text
+related_id,integer
+related_type,character varying
+scheduled_time,timestamp with time zone
+is_sent,boolean
+sent_at,timestamp with time zone
+priority,character varying
+action_url,text
+created_at,timestamp with time zone
+
+
+notification_preferences:
+column_name,data_type
+preference_id,integer
+user_id,integer
+user_type,character varying
+enable_message_notifications,boolean
+enable_case_notifications,boolean
+enable_appointment_notifications,boolean
+enable_payment_notifications,boolean
+enable_reminder_notifications,boolean
+enable_sound,boolean
+quiet_hours_start,time without time zone
+quiet_hours_end,time without time zone
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
+
+
 
 messages and conversations in one sql sql_query:
 -- Create messages table
@@ -259,7 +300,9 @@ CREATE TABLE messages (
     is_read BOOLEAN DEFAULT FALSE,
     read_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    has_attachments boolean null default false,
+    deleted_for jsonb null default '[]'::jsonb
 );
 
 -- Create conversations table
@@ -287,7 +330,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
 ______________________________________
 
 
--- Deleted conversations (حذف ناعم للمحادثات)
+-- Deleted conversations 
 CREATE TABLE deleted_conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID NOT NULL REFERENCES conversations(conversation_id) ON DELETE CASCADE,
@@ -297,7 +340,7 @@ CREATE TABLE deleted_conversations (
     UNIQUE(conversation_id, deleted_by_user_id, deleted_by_user_type)
 );
 
--- Blocked users (حظر المستخدمين)
+-- Blocked users  
 CREATE TABLE blocked_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     blocker_id INTEGER NOT NULL,
@@ -309,7 +352,7 @@ CREATE TABLE blocked_users (
     UNIQUE(blocker_id, blocker_type, blocked_id, blocked_type)
 );
 
--- Message attachments (مرفقات الرسائل)
+-- Message attachments  
 CREATE TABLE message_attachments (
     attachment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     message_id UUID NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,

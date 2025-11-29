@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useInvoices, useInvoiceStats } from '../../hooks/useInvoices';
 import InvoiceCard from '../../components/invoices/InvoiceCard';
 import { useClientAuth } from '../../hooks/useClientAuth';
-import { 
-  Search, 
-  DollarSign, 
-  Clock, 
-  AlertCircle, 
+import {
+  Search,
+  DollarSign,
+  Clock,
+  AlertCircle,
   CheckCircle,
   FileText,
   CreditCard
@@ -21,12 +21,12 @@ import { formatCurrency } from '../../services/invoiceService';
 const ClientInvoices = () => {
   const navigate = useNavigate();
   const { userProfile } = useClientAuth();
-  
+
   // Get client ID from auth context
   const clientId = userProfile?.user_id;
-  
+
   console.log('🔍 ClientInvoices - client data:', { userProfile, clientId });
-  
+
   const [filters, setFilters] = useState({
     search: '',
     fromDate: '',
@@ -37,17 +37,17 @@ const ClientInvoices = () => {
 
   // Fetch invoices with real-time updates (only if clientId exists)
   const { invoices, loading, error, refetch } = useInvoices(clientId, 'client', filters);
-  
+
   // Fetch statistics
   const { stats, loading: statsLoading } = useInvoiceStats(clientId, 'client');
-  
+
   // Debug logging
-  console.log('📊 ClientInvoices state:', { 
-    invoices: invoices?.length, 
-    loading, 
-    error, 
+  console.log('📊 ClientInvoices state:', {
+    invoices: invoices?.length,
+    loading,
+    error,
     clientId,
-    filters 
+    filters
   });
 
   // Filter invoices based on active tab
@@ -142,13 +142,13 @@ const ClientInvoices = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6" dir="rtl">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">الفواتير</h1>
-            <p className="text-gray-600 mt-2">عرض ودفع جميع الفواتير الخاصة بك</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">الفواتير</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">عرض ودفع جميع الفواتير الخاصة بك</p>
           </div>
 
           {/* Statistics Cards */}
@@ -156,15 +156,15 @@ const ClientInvoices = () => {
             {statsCards.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className={`p-3 rounded-lg ${stat.bgColor}`}>
                     <stat.icon className={`w-6 h-6 ${stat.textColor}`} />
                   </div>
-                  <span className="text-sm text-gray-500">{stat.value} فاتورة</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{stat.value} فاتورة</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600 mb-1">{stat.title}</h3>
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{stat.title}</h3>
                 <p className={`text-xl font-bold ${stat.textColor}`}>{stat.amount}</p>
               </div>
             ))}
@@ -172,57 +172,56 @@ const ClientInvoices = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-              placeholder="بحث برقم الفاتورة أو اسم المحامي..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+                placeholder="بحث برقم الفاتورة أو اسم المحامي..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
 
-          {/* Date filters */}
-          <div className="flex gap-2 items-center">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">من تاريخ</label>
-              <input
-                type="date"
-                value={filters.fromDate}
-                onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">إلى تاريخ</label>
-              <input
-                type="date"
-                value={filters.toDate}
-                onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-            </div>
-          </div>          </div>
+            {/* Date filters */}
+            <div className="flex gap-2 items-center">
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">من تاريخ</label>
+                <input
+                  type="date"
+                  value={filters.fromDate}
+                  onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">إلى تاريخ</label>
+                <input
+                  type="date"
+                  value={filters.toDate}
+                  onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>          </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mt-4 border-b border-gray-200">
+          <div className="flex gap-2 mt-4 border-b border-gray-200 dark:border-gray-700">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 font-medium transition-colors relative ${
-                  activeTab === tab.id
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`px-4 py-2 font-medium transition-colors relative ${activeTab === tab.id
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
               >
                 {tab.label}
                 {tab.count > 0 && (
-                  <span className="mr-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+                  <span className="mr-2 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
                     {tab.count}
                   </span>
                 )}
@@ -237,21 +236,21 @@ const ClientInvoices = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-            <p className="text-red-800">حدث خطأ أثناء تحميل الفواتير</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-4" />
+            <p className="text-red-800 dark:text-red-300">حدث خطأ أثناء تحميل الفواتير</p>
             <button
               onClick={refetch}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              className="mt-4 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800"
             >
               إعادة المحاولة
             </button>
           </div>
         ) : filteredInvoices.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">لا توجد فواتير</h3>
-            <p className="text-gray-600">لم تستلم أي فواتير بعد</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+            <FileText className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">لا توجد فواتير</h3>
+            <p className="text-gray-600 dark:text-gray-400">لم تستلم أي فواتير بعد</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -269,7 +268,7 @@ const ClientInvoices = () => {
                   (invoice.status === 'pending' || invoice.status === 'overdue') ? (
                     <button
                       onClick={() => handlePay(invoice)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors font-medium"
                     >
                       <CreditCard className="w-4 h-4" />
                       <span>ادفع الآن</span>
