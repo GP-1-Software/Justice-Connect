@@ -15,12 +15,13 @@ export const clientApi = {
       if (casesError) throw casesError;
 
       // Get upcoming appointments count
+      const today = new Date().toISOString().split('T')[0];
       const { data: upcomingAppointments, error: appointmentsError } = await supabase
         .from('appointments')
-        .select('appointment_id')
+        .select('id')
         .eq('client_id', clientId)
-        .eq('status', 'pending')
-        .gte('datetime', new Date().toISOString());
+        .in('status', ['pending', 'confirmed'])
+        .gte('appointment_date', today);
 
       if (appointmentsError) throw appointmentsError;
 
@@ -76,20 +77,26 @@ export const clientApi = {
           title,
           description,
           created_at,
-          cases!inner(case_id, title as case_title)
+          case_id,
+          cases(case_id, title, client_id)
         `)
-        .eq('cases.client_id', clientId)
+        .not('case_id', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(50);
 
       if (!eventsError && caseEvents) {
-        caseEvents.forEach(event => {
+        // Filter events for this client's cases
+        const clientEvents = caseEvents.filter(event =>
+          event.cases && event.cases.client_id === clientId
+        );
+
+        clientEvents.slice(0, 5).forEach(event => {
           activities.push({
             id: event.event_id,
             type: 'case_update',
             title: event.title || event.event_type,
             description: event.description,
-            caseTitle: event.cases?.case_title,
+            caseTitle: event.cases?.title,
             timestamp: event.created_at,
             icon: 'file-text'
           });
@@ -100,24 +107,27 @@ export const clientApi = {
       const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
-          appointment_id,
-          datetime,
+          id,
+          appointment_date,
+          appointment_time,
           status,
-          description,
+          appointment_type,
           lawyers!inner(first_name, last_name)
         `)
         .eq('client_id', clientId)
-        .order('datetime', { ascending: false })
+        .order('appointment_date', { ascending: false })
+        .order('appointment_time', { ascending: false })
         .limit(5);
 
       if (!appointmentsError && appointments) {
         appointments.forEach(appointment => {
+          const timestamp = `${appointment.appointment_date}T${appointment.appointment_time}`;
           activities.push({
-            id: appointment.appointment_id,
+            id: appointment.id,
             type: 'appointment',
             title: `موعد مع ${appointment.lawyers?.first_name} ${appointment.lawyers?.last_name}`,
-            description: appointment.description,
-            timestamp: appointment.datetime,
+            description: appointment.appointment_type || 'موعد',
+            timestamp: timestamp,
             status: appointment.status,
             icon: 'calendar'
           });
@@ -131,7 +141,8 @@ export const clientApi = {
           message_id,
           content,
           created_at,
-          lawyers!inner(first_name, last_name)
+          sender_id,
+          sender_type
         `)
         .eq('receiver_id', clientId)
         .eq('receiver_type', 'client')
@@ -139,16 +150,31 @@ export const clientApi = {
         .limit(5);
 
       if (!messagesError && messages) {
-        messages.forEach(message => {
+        // Fetch sender details for each message
+        for (const message of messages) {
+          let senderName = 'Unknown';
+
+          if (message.sender_type === 'lawyer') {
+            const { data: lawyer } = await supabase
+              .from('lawyers')
+              .select('first_name, last_name')
+              .eq('lawyer_id', message.sender_id)
+              .single();
+
+            if (lawyer) {
+              senderName = `${lawyer.first_name} ${lawyer.last_name}`;
+            }
+          }
+
           activities.push({
             id: message.message_id,
             type: 'message',
-            title: `رسالة من ${message.lawyers?.first_name} ${message.lawyers?.last_name}`,
+            title: `رسالة من ${senderName}`,
             description: message.content,
             timestamp: message.created_at,
             icon: 'message-square'
           });
-        });
+        }
       }
 
       // Sort all activities by timestamp and return top 10
@@ -165,14 +191,16 @@ export const clientApi = {
   // Get upcoming appointments with details
   getUpcomingAppointments: async (clientId, limit = 5) => {
     try {
+      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('appointments')
         .select(`
-          appointment_id,
-          datetime,
-          type,
+          id,
+          appointment_date,
+          appointment_time,
+          appointment_type,
           status,
-          description,
+          duration_minutes,
           lawyers!inner(
             lawyer_id,
             first_name,
@@ -181,9 +209,10 @@ export const clientApi = {
           )
         `)
         .eq('client_id', clientId)
-        .eq('status', 'pending')
-        .gte('datetime', new Date().toISOString())
-        .order('datetime', { ascending: true })
+        .in('status', ['pending', 'confirmed'])
+        .gte('appointment_date', today)
+        .order('appointment_date', { ascending: true })
+        .order('appointment_time', { ascending: true })
         .limit(limit);
 
       if (error) throw error;

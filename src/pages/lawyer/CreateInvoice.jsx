@@ -4,13 +4,13 @@ import { useInvoiceOperations } from '../../hooks/useInvoices';
 import { calculateInvoiceTotals } from '../../services/invoiceService';
 import { supabase } from '../../supabaseClient';
 import { useLawyerAuth } from '../../hooks/useLawyerAuth';
-import { 
-  Plus, 
-  Trash2, 
-  Save, 
-  X, 
-  User, 
-  FileText, 
+import {
+  Plus,
+  Trash2,
+  Save,
+  X,
+  User,
+  FileText,
   Calendar,
   DollarSign,
   Percent,
@@ -46,7 +46,7 @@ const CreateInvoice = () => {
   // Search fields
   const [searchCaseNumber, setSearchCaseNumber] = useState('');
   const [searchAppointmentNumber, setSearchAppointmentNumber] = useState('');
-  
+
   // Track if valid data was found from search
   const [isValidSearch, setIsValidSearch] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
@@ -119,13 +119,13 @@ const CreateInvoice = () => {
     try {
       // Remove # if present
       const cleanCaseNumber = caseNumber.replace(/^#/, '').trim();
-      
+
       console.log('🔍 البحث عن قضية:', {
         originalInput: caseNumber,
         cleanedInput: cleanCaseNumber,
         lawyerId: lawyerId
       });
-      
+
       const { data: caseData, error } = await supabase
         .from('cases')
         .select('case_id, title, case_number, client_id')
@@ -182,13 +182,13 @@ const CreateInvoice = () => {
     try {
       // Remove # if present
       const cleanAppointmentNumber = appointmentNumber.replace(/^#/, '').trim();
-      
+
       console.log('🔍 البحث عن موعد:', {
         originalInput: appointmentNumber,
         cleanedInput: cleanAppointmentNumber,
         lawyerId: lawyerId
       });
-      
+
       const { data: appointmentData, error } = await supabase
         .from('appointments')
         .select('id, appointment_number, appointment_date, client_id, case_id, price')
@@ -218,7 +218,7 @@ const CreateInvoice = () => {
           client_id: appointmentData.client_id,
           case_id: appointmentData.case_id || ''
         }));
-        
+
         // Auto-add appointment price as first item if available
         if (appointmentData.price) {
           setItems([{
@@ -229,7 +229,7 @@ const CreateInvoice = () => {
             item_order: 0
           }]);
         }
-        
+
         // Clear case search if appointment is selected
         setSearchCaseNumber('');
         // Mark search as valid
@@ -278,12 +278,12 @@ const CreateInvoice = () => {
   const addItem = () => {
     setItems([
       ...items,
-      { 
-        description: '', 
-        quantity: 1, 
-        unit_price: 0, 
-        total_price: 0, 
-        item_order: items.length 
+      {
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        total_price: 0,
+        item_order: items.length
       }
     ]);
   };
@@ -357,25 +357,25 @@ const CreateInvoice = () => {
 
   if (loadingData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6" dir="rtl">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">إنشاء فاتورة جديدة</h1>
-              <p className="text-gray-600 mt-2">قم بإنشاء فاتورة جديدة لعملائك</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">إنشاء فاتورة جديدة</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">قم بإنشاء فاتورة جديدة لعملائك</p>
             </div>
             <button
               onClick={() => navigate('/lawyer/invoices')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <X className="w-5 h-5" />
               <span>إلغاء</span>
@@ -385,22 +385,22 @@ const CreateInvoice = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <User className="w-5 h-5" />
               معلومات أساسية
             </h2>
 
             {/* Quick Search Section */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
                 <Search className="w-4 h-4" />
                 بحث برقم القضية أو الموعد
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Search by Case Number */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     رقم القضية
                   </label>
                   <input
@@ -408,13 +408,13 @@ const CreateInvoice = () => {
                     value={searchCaseNumber}
                     onChange={(e) => handleCaseNumberSearch(e.target.value)}
                     placeholder="أدخل رقم القضية للبحث التلقائي"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 {/* Search by Appointment Number */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     رقم الموعد
                   </label>
                   <input
@@ -422,18 +422,17 @@ const CreateInvoice = () => {
                     value={searchAppointmentNumber}
                     onChange={(e) => handleAppointmentNumberSearch(e.target.value)}
                     placeholder="أدخل رقم الموعد للبحث التلقائي"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
-              
+
               {/* Search Status Indicator */}
               {searchPerformed && (
-                <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
-                  isValidSearch 
-                    ? 'bg-green-100 border border-green-300 text-green-800' 
-                    : 'bg-red-100 border border-red-300 text-red-800'
-                }`}>
+                <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${isValidSearch
+                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                    : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
+                  }`}>
                   {isValidSearch ? (
                     <>
                       <span className="text-2xl">✅</span>
@@ -459,14 +458,14 @@ const CreateInvoice = () => {
 
               {/* Currency */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   العملة
                 </label>
                 <select
                   name="currency"
                   value={formData.currency}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="ILS">شيكل (₪ ILS)</option>
                 </select>
@@ -474,7 +473,7 @@ const CreateInvoice = () => {
 
               {/* Issue Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   تاريخ الإصدار <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -483,13 +482,13 @@ const CreateInvoice = () => {
                   value={formData.issue_date}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               {/* Due Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   تاريخ الاستحقاق <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -499,16 +498,16 @@ const CreateInvoice = () => {
                   onChange={handleInputChange}
                   required
                   min={formData.issue_date}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
           </div>
 
           {/* Invoice Items */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 بنود الفاتورة
               </h2>
@@ -524,11 +523,11 @@ const CreateInvoice = () => {
 
             <div className="space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
+                <div key={index} className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Description */}
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         الوصف
                       </label>
                       <input
@@ -537,13 +536,13 @@ const CreateInvoice = () => {
                         onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                         placeholder="وصف الخدمة..."
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
                     {/* Quantity */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         الكمية
                       </label>
                       <input
@@ -553,13 +552,13 @@ const CreateInvoice = () => {
                         min="0.01"
                         step="0.01"
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
                     {/* Unit Price */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         السعر
                       </label>
                       <input
@@ -569,21 +568,21 @@ const CreateInvoice = () => {
                         min="0"
                         step="0.01"
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
 
                   {/* Total and Delete */}
                   <div className="flex flex-col items-end gap-2">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {item.total_price.toFixed(2)} {formData.currency}
                     </span>
                     {items.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeItem(index)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -595,8 +594,8 @@ const CreateInvoice = () => {
           </div>
 
           {/* Calculations */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
               الحسابات
             </h2>
@@ -604,7 +603,7 @@ const CreateInvoice = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Tax Percentage */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   نسبة الضريبة (%)
                 </label>
                 <input
@@ -615,13 +614,13 @@ const CreateInvoice = () => {
                   min="0"
                   max="100"
                   step="0.01"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Discount */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   الخصم ({formData.currency})
                 </label>
                 <input
@@ -631,30 +630,30 @@ const CreateInvoice = () => {
                   onChange={handleInputChange}
                   min="0"
                   step="0.01"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             {/* Totals Summary */}
-            <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-              <div className="flex justify-between text-gray-700">
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+              <div className="flex justify-between text-gray-700 dark:text-gray-300">
                 <span>المجموع الفرعي:</span>
                 <span className="font-medium">{totals.subtotal.toFixed(2)} {formData.currency}</span>
               </div>
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-gray-700 dark:text-gray-300">
                 <span>الضريبة ({formData.tax_percentage}%):</span>
                 <span className="font-medium">{totals.taxAmount.toFixed(2)} {formData.currency}</span>
               </div>
               {formData.discount_amount > 0 && (
-                <div className="flex justify-between text-gray-700">
+                <div className="flex justify-between text-gray-700 dark:text-gray-300">
                   <span>الخصم:</span>
-                  <span className="font-medium text-red-600">
+                  <span className="font-medium text-red-600 dark:text-red-400">
                     -{parseFloat(formData.discount_amount).toFixed(2)} {formData.currency}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold text-blue-600 pt-3 border-t border-gray-200">
+              <div className="flex justify-between text-xl font-bold text-blue-600 dark:text-blue-400 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <span>المجموع الإجمالي:</span>
                 <span>{totals.totalAmount.toFixed(2)} {formData.currency}</span>
               </div>
@@ -662,13 +661,13 @@ const CreateInvoice = () => {
           </div>
 
           {/* Notes and Terms */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">ملاحظات وشروط</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">ملاحظات وشروط</h2>
 
             <div className="space-y-4">
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   ملاحظات للعميل
                 </label>
                 <textarea
@@ -677,13 +676,13 @@ const CreateInvoice = () => {
                   onChange={handleInputChange}
                   rows="3"
                   placeholder="أي ملاحظات إضافية..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Terms and Conditions */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   الشروط والأحكام
                 </label>
                 <textarea
@@ -691,7 +690,7 @@ const CreateInvoice = () => {
                   value={formData.terms_conditions}
                   onChange={handleInputChange}
                   rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -721,7 +720,7 @@ const CreateInvoice = () => {
             <button
               type="button"
               onClick={() => navigate('/lawyer/invoices')}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium"
             >
               إلغاء
             </button>

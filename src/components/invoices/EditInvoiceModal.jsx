@@ -6,12 +6,12 @@ import { formatCurrency } from '../../services/invoiceService';
  * Edit Invoice Modal Component
  * Allows lawyers to edit invoice details in a popup
  */
-const EditInvoiceModal = ({ 
-  invoice, 
-  isOpen, 
-  onClose, 
+const EditInvoiceModal = ({
+  invoice,
+  isOpen,
+  onClose,
   onSave,
-  loading = false 
+  loading = false
 }) => {
   const [formData, setFormData] = useState({
     invoice_number: '',
@@ -45,7 +45,7 @@ const EditInvoiceModal = ({
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -62,14 +62,14 @@ const EditInvoiceModal = ({
       ...updatedItems[index],
       [field]: value
     };
-    
+
     // Recalculate total for this item
     if (field === 'quantity' || field === 'unit_price') {
       const quantity = parseFloat(updatedItems[index].quantity) || 0;
       const unitPrice = parseFloat(updatedItems[index].unit_price) || 0;
       updatedItems[index].total_price = quantity * unitPrice;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       items: updatedItems
@@ -105,11 +105,11 @@ const EditInvoiceModal = ({
     const subtotal = formData.items.reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
     const discountAmount = parseFloat(formData.discount_amount) || 0;
     const taxPercentage = parseFloat(formData.tax_percentage) || 0;
-    
+
     const afterDiscount = subtotal - discountAmount;
     const taxAmount = (afterDiscount * taxPercentage) / 100;
     const total = afterDiscount + taxAmount;
-    
+
     return Math.max(0, total); // Ensure total is not negative
   };
 
@@ -123,7 +123,7 @@ const EditInvoiceModal = ({
     const subtotal = calculateSubtotal();
     const discountAmount = parseFloat(formData.discount_amount) || 0;
     const taxPercentage = parseFloat(formData.tax_percentage) || 0;
-    
+
     const afterDiscount = subtotal - discountAmount;
     return (afterDiscount * taxPercentage) / 100;
   };
@@ -131,27 +131,27 @@ const EditInvoiceModal = ({
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.invoice_number.trim()) {
       newErrors.invoice_number = 'رقم الفاتورة مطلوب';
     }
-    
+
     if (!formData.issue_date) {
       newErrors.issue_date = 'تاريخ الإصدار مطلوب';
     }
-    
+
     if (!formData.due_date) {
       newErrors.due_date = 'تاريخ الاستحقاق مطلوب';
     }
-    
+
     if (formData.due_date && formData.issue_date && new Date(formData.due_date) < new Date(formData.issue_date)) {
       newErrors.due_date = 'تاريخ الاستحقاق يجب أن يكون بعد تاريخ الإصدار';
     }
-    
+
     if (formData.items.length === 0) {
       newErrors.items = 'يجب إضافة عنصر واحد على الأقل';
     }
-    
+
     formData.items.forEach((item, index) => {
       if (!item.description.trim()) {
         newErrors[`item_${index}_description`] = 'وصف العنصر مطلوب';
@@ -163,7 +163,7 @@ const EditInvoiceModal = ({
         newErrors[`item_${index}_unit_price`] = 'السعر يجب أن يكون أكبر من صفر';
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -171,18 +171,18 @@ const EditInvoiceModal = ({
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     const updatedInvoice = {
       ...invoice,
       ...formData,
       total_amount: calculateTotal(),
       updated_at: new Date().toISOString()
     };
-    
+
     onSave(updatedInvoice);
   };
 
@@ -199,26 +199,26 @@ const EditInvoiceModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <FileText className="w-6 h-6 text-blue-600" />
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+              <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">تعديل الفاتورة</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">تعديل الفاتورة</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {invoice?.invoice_number} - {invoice?.client?.first_name} {invoice?.client?.last_name}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="w-6 h-6 text-gray-600" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
 
@@ -228,7 +228,7 @@ const EditInvoiceModal = ({
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   رقم الفاتورة *
                 </label>
                 <input
@@ -236,30 +236,29 @@ const EditInvoiceModal = ({
                   name="invoice_number"
                   value={formData.invoice_number}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.invoice_number ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors.invoice_number ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   placeholder="INV-2025-0001"
                 />
                 {errors.invoice_number && (
-                  <p className="text-red-500 text-sm mt-1">{errors.invoice_number}</p>
+                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.invoice_number}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   العميل
                 </label>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-                  <User className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-700">
+                <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                  <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300">
                     {invoice?.client?.first_name} {invoice?.client?.last_name}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   تاريخ الإصدار *
                 </label>
                 <input
@@ -267,17 +266,16 @@ const EditInvoiceModal = ({
                   name="issue_date"
                   value={formData.issue_date}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.issue_date ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors.issue_date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                 />
                 {errors.issue_date && (
-                  <p className="text-red-500 text-sm mt-1">{errors.issue_date}</p>
+                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.issue_date}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   تاريخ الاستحقاق *
                 </label>
                 <input
@@ -285,12 +283,11 @@ const EditInvoiceModal = ({
                   name="due_date"
                   value={formData.due_date}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.due_date ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors.due_date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                 />
                 {errors.due_date && (
-                  <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>
+                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.due_date}</p>
                 )}
               </div>
             </div>
@@ -305,7 +302,7 @@ const EditInvoiceModal = ({
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="ملاحظات إضافية..."
               />
             </div>
@@ -313,23 +310,23 @@ const EditInvoiceModal = ({
             {/* Invoice Items */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">عناصر الفاتورة</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">عناصر الفاتورة</h3>
                 <button
                   type="button"
                   onClick={addItem}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm"
                 >
                   إضافة عنصر
                 </button>
               </div>
 
               {errors.items && (
-                <p className="text-red-500 text-sm mb-4">{errors.items}</p>
+                <p className="text-red-500 dark:text-red-400 text-sm mb-4">{errors.items}</p>
               )}
 
               <div className="space-y-4">
                 {formData.items.map((item, index) => (
-                  <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                  <div key={index} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-750">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -339,13 +336,12 @@ const EditInvoiceModal = ({
                           type="text"
                           value={item.description}
                           onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
-                            errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                           placeholder="وصف الخدمة أو المنتج"
                         />
                         {errors[`item_${index}_description`] && (
-                          <p className="text-red-500 text-xs mt-1">{errors[`item_${index}_description`]}</p>
+                          <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors[`item_${index}_description`]}</p>
                         )}
                       </div>
 
@@ -359,12 +355,11 @@ const EditInvoiceModal = ({
                           step="1"
                           value={item.quantity}
                           onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
-                            errors[`item_${index}_quantity`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors[`item_${index}_quantity`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                         />
                         {errors[`item_${index}_quantity`] && (
-                          <p className="text-red-500 text-xs mt-1">{errors[`item_${index}_quantity`]}</p>
+                          <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors[`item_${index}_quantity`]}</p>
                         )}
                       </div>
 
@@ -378,30 +373,29 @@ const EditInvoiceModal = ({
                           step="0.01"
                           value={item.unit_price}
                           onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
-                            errors[`item_${index}_unit_price`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors[`item_${index}_unit_price`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                         />
                         {errors[`item_${index}_unit_price`] && (
-                          <p className="text-red-500 text-xs mt-1">{errors[`item_${index}_unit_price`]}</p>
+                          <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors[`item_${index}_unit_price`]}</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">الإجمالي:</span>
-                        <span className="font-medium text-gray-900">
+                        <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">الإجمالي:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
                           {formatCurrency(item.total_price || 0, invoice?.currency)}
                         </span>
                       </div>
-                      
+
                       {formData.items.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-700 text-sm"
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm"
                         >
                           حذف
                         </button>
@@ -414,9 +408,9 @@ const EditInvoiceModal = ({
 
 
             {/* Calculations Section */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">الحسابات</h4>
-              
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">الحسابات</h4>
+
               {/* Discount and Tax Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -430,7 +424,7 @@ const EditInvoiceModal = ({
                     step="0.01"
                     value={formData.discount_amount}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0.00"
                   />
                 </div>
@@ -447,42 +441,42 @@ const EditInvoiceModal = ({
                     step="0.01"
                     value={formData.tax_percentage}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0.00"
                   />
                 </div>
               </div>
 
               {/* Calculation Summary */}
-              <div className="border-t border-gray-200 pt-3 space-y-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">المجموع الفرعي:</span>
-                  <span className="font-medium">
+                  <span className="text-gray-600 dark:text-gray-400">المجموع الفرعي:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
                     {formatCurrency(calculateSubtotal(), invoice?.currency)}
                   </span>
                 </div>
-                
+
                 {parseFloat(formData.discount_amount) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">الخصم:</span>
-                    <span className="font-medium text-red-600">
+                    <span className="text-gray-600 dark:text-gray-400">الخصم:</span>
+                    <span className="font-medium text-red-600 dark:text-red-400">
                       -{formatCurrency(parseFloat(formData.discount_amount) || 0, invoice?.currency)}
                     </span>
                   </div>
                 )}
-                
+
                 {parseFloat(formData.tax_percentage) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">الضريبة ({formData.tax_percentage}%):</span>
-                    <span className="font-medium">
+                    <span className="text-gray-600 dark:text-gray-400">الضريبة ({formData.tax_percentage}%):</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {formatCurrency(calculateTaxAmount(), invoice?.currency)}
                     </span>
                   </div>
                 )}
-                
-                <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
-                  <span className="text-gray-700">المبلغ الإجمالي:</span>
-                  <span className="text-blue-600">
+
+                <div className="flex justify-between text-lg font-bold border-t border-gray-300 dark:border-gray-600 pt-2">
+                  <span className="text-gray-700 dark:text-gray-300">المبلغ الإجمالي:</span>
+                  <span className="text-blue-600 dark:text-blue-400">
                     {formatCurrency(calculateTotal(), invoice?.currency)}
                   </span>
                 </div>
@@ -492,18 +486,18 @@ const EditInvoiceModal = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             إلغاء
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
               <>
