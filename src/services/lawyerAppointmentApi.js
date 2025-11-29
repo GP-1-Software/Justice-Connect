@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { createMeeting } from './meetingApi';
+import { notifyAppointmentConfirmed, notifyAppointmentRejected } from './notificationService';
 
 /**
  * Get all appointments for a lawyer with client info
@@ -123,6 +124,47 @@ export const updateLawyerAppointmentStatus = async (appointmentId, status, lawye
       }
     } else {
       data.cases = null;
+    }
+
+    // Get lawyer name for notification
+    const { data: lawyerData } = await supabase
+      .from('lawyers')
+      .select('first_name, last_name')
+      .eq('lawyer_id', lawyerId)
+      .single();
+
+    const lawyerName = lawyerData
+      ? `${lawyerData.first_name} ${lawyerData.last_name}`
+      : 'المحامي';
+
+    // Send notification to client based on status
+    if (status === 'confirmed' && data.clients?.user_id) {
+      try {
+        await notifyAppointmentConfirmed(
+          data.clients.user_id,
+          data.appointment_date,
+          data.appointment_time,
+          lawyerName,
+          appointmentId
+        );
+      } catch (notifError) {
+        console.error('Error sending confirmation notification:', notifError);
+        // Don't throw - appointment is still confirmed
+      }
+    } else if (status === 'cancelled' && data.clients?.user_id) {
+      try {
+        await notifyAppointmentRejected(
+          data.clients.user_id,
+          data.appointment_date,
+          data.appointment_time,
+          lawyerName,
+          rejectionReason,
+          appointmentId
+        );
+      } catch (notifError) {
+        console.error('Error sending rejection notification:', notifError);
+        // Don't throw - appointment is still cancelled
+      }
     }
 
     // If appointment is confirmed and meeting_method is video_call, create meeting automatically

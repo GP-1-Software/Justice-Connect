@@ -120,6 +120,53 @@ export const createAppointment = async (appointmentData) => {
       throw error;
     }
 
+    // Send notifications to both parties
+    try {
+      const notifications = [];
+
+      // Notification for client
+      notifications.push(
+        fetch('http://localhost:5000/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: appointmentData.client_id,
+            userType: 'client',
+            type: 'APPOINTMENT_CREATED',
+            title: 'موعد جديد',
+            message: `تم حجز موعد من طرفك، بانتظار التأكيد من قبل المحامي`,
+            priority: 'high',
+            relatedId: data.id,
+            relatedType: 'appointment',
+            actionUrl: `/client/appointments/${data.id}`
+          })
+        })
+      );
+
+      // Notification for lawyer
+      notifications.push(
+        fetch('http://localhost:5000/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: appointmentData.lawyer_id,
+            userType: 'lawyer',
+            type: 'APPOINTMENT_REQUEST',
+            title: 'موعد جديد',
+            message: `موعد جديد بانتظار التأكيد أو الرفض`,
+            priority: 'high',
+            relatedId: data.id,
+            relatedType: 'appointment',
+            actionUrl: `/lawyer/appointments/${data.id}`
+          })
+        })
+      );
+
+      await Promise.all(notifications);
+    } catch (notifError) {
+      console.error('Error sending notifications:', notifError);
+    }
+
     return data;
   } catch (error) {
     console.error('Error in createAppointment:', error);
@@ -149,6 +196,136 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
     if (error) {
       console.error('Error updating appointment status:', error);
       throw error;
+    }
+
+    // Send notifications based on status change
+    try {
+      const notifications = [];
+
+      if (status === 'confirmed') {
+        // Notify both parties about confirmation
+        notifications.push(
+          fetch('http://localhost:5000/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.client_id,
+              userType: 'client',
+              type: 'APPOINTMENT_CONFIRMED',
+              title: 'تم تأكيد الموعد',
+              message: `تم تأكيد موعدك بتاريخ ${data.appointment_date}`,
+              priority: 'high',
+              relatedId: appointmentId,
+              relatedType: 'appointment',
+              actionUrl: `/client/appointments/${appointmentId}`
+            })
+          })
+        );
+
+        notifications.push(
+          fetch('http://localhost:5000/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.lawyer_id,
+              userType: 'lawyer',
+              type: 'APPOINTMENT_CONFIRMED',
+              title: 'تم تأكيد الموعد',
+              message: `تم تأكيد الموعد مع العميل بتاريخ ${data.appointment_date}`,
+              priority: 'normal',
+              relatedId: appointmentId,
+              relatedType: 'appointment',
+              actionUrl: `/lawyer/appointments/${appointmentId}`
+            })
+          })
+        );
+
+        // Schedule reminder notifications for video/call appointments
+        if (data.meeting_method === 'video_call' || data.meeting_method === 'phone_call') {
+          const appointmentDateTime = new Date(`${data.appointment_date}T${data.appointment_time}`);
+          const fiveMinsBefore = new Date(appointmentDateTime.getTime() - 5 * 60000);
+
+          // Schedule 5-minute reminder for both
+          notifications.push(
+            fetch('http://localhost:5000/api/notifications/schedule', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.client_id,
+                userType: 'client',
+                title: 'تذكير بالموعد',
+                message: `سيبدأ موعدك خلال 5 دقائق`,
+                type: 'APPOINTMENT_REMINDER',
+                relatedId: appointmentId,
+                relatedType: 'appointment',
+                priority: 'urgent',
+                actionUrl: `/client/appointments/${appointmentId}`,
+                scheduledFor: fiveMinsBefore.toISOString()
+              })
+            })
+          );
+
+          notifications.push(
+            fetch('http://localhost:5000/api/notifications/schedule', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.lawyer_id,
+                userType: 'lawyer',
+                title: 'تذكير بالموعد',
+                message: `سيبدأ الموعد خلال 5 دقائق`,
+                type: 'APPOINTMENT_REMINDER',
+                relatedId: appointmentId,
+                relatedType: 'appointment',
+                priority: 'urgent',
+                actionUrl: `/lawyer/appointments/${appointmentId}`,
+                scheduledFor: fiveMinsBefore.toISOString()
+              })
+            })
+          );
+        }
+      } else if (status === 'cancelled') {
+        // Notify both parties about cancellation
+        notifications.push(
+          fetch('http://localhost:5000/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.client_id,
+              userType: 'client',
+              type: 'APPOINTMENT_CANCELLED',
+              title: 'تم إلغاء الموعد',
+              message: `تم إلغاء الموعد المحدد بتاريخ ${data.appointment_date}`,
+              priority: 'high',
+              relatedId: appointmentId,
+              relatedType: 'appointment',
+              actionUrl: `/client/appointments/${appointmentId}`
+            })
+          })
+        );
+
+        notifications.push(
+          fetch('http://localhost:5000/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.lawyer_id,
+              userType: 'lawyer',
+              type: 'APPOINTMENT_CANCELLED',
+              title: 'تم إلغاء الموعد',
+              message: `تم إلغاء الموعد المحدد بتاريخ ${data.appointment_date}`,
+              priority: 'normal',
+              relatedId: appointmentId,
+              relatedType: 'appointment',
+              actionUrl: `/lawyer/appointments/${appointmentId}`
+            })
+          })
+        );
+      }
+
+      await Promise.all(notifications);
+    } catch (notifError) {
+      console.error('Error sending notifications:', notifError);
     }
 
     // If appointment is confirmed and meeting_method is video_call, create meeting automatically
@@ -197,7 +374,7 @@ export const rescheduleAppointment = async (appointmentId, newDate, newTime) => 
   try {
     const { data, error } = await supabase
       .from('appointments')
-      .update({ 
+      .update({
         appointment_date: newDate,
         appointment_time: newTime,
         status: 'rescheduled',
@@ -252,18 +429,18 @@ export const getLawyerAvailableSlots = async (lawyerId, date) => {
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
+
         // Check if this slot is available
         const isAvailable = !existingAppointments.some(apt => {
           const aptTime = apt.appointment_time;
           const aptDuration = apt.duration_minutes || 30;
-          
+
           // Check if the new slot conflicts with existing appointment
           const newSlotStart = hour * 60 + minute;
           const newSlotEnd = newSlotStart + 30;
           const aptStart = parseInt(aptTime.split(':')[0]) * 60 + parseInt(aptTime.split(':')[1]);
           const aptEnd = aptStart + aptDuration;
-          
+
           return (newSlotStart < aptEnd && newSlotEnd > aptStart);
         });
 

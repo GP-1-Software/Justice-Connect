@@ -14,6 +14,7 @@ import CreateInvoice from '../pages/lawyer/CreateInvoice';
 import InvoiceDetails from '../pages/lawyer/InvoiceDetails';
 import SupportTickets from '../pages/SupportTickets';
 import LawyerMessages from '../pages/lawyer/LawyerMessages';
+import NotificationsPage from '../pages/NotificationsPage';
 
 const LawyerRoutes = () => {
   return (
@@ -21,10 +22,12 @@ const LawyerRoutes = () => {
       <Route path="/lawyer" element={<LawyerLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="cases" element={<CasesListPage />} />
         <Route path="cases/:caseId" element={<CaseDetailPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="appointments" element={<AppointmentsPage />} />
+        <Route path="appointments/:appointmentId" element={<AppointmentsPage />} />
         <Route path="invoices" element={<LawyerInvoices />} />
         <Route path="invoices/create" element={<CreateInvoice />} />
         <Route path="invoices/:invoiceId" element={<InvoiceDetails />} />

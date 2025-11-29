@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Filter, Loader2 } from 'lucide-react';
 import { supabase } from '../../../supabaseClient';
+import { notifyTaskCompleted } from '../../../services/notificationService';
 
 const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
   const [tasks, setTasks] = useState([]);
@@ -86,17 +87,17 @@ const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
 
     try {
       setUpdatingTaskId(taskId);
-      
+
       // Get task details first
       const { data: taskData } = await supabase
         .from('case_tasks')
         .select('title, case_id')
         .eq('task_id', taskId)
         .single();
-      
+
       const { error } = await supabase
         .from('case_tasks')
-        .update({ 
+        .update({
           is_completed: !currentStatus,
           completed_at: !currentStatus ? new Date().toISOString() : null
         })
@@ -117,6 +118,27 @@ const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
             description: `تم إكمال المهمة: ${taskData.title}`,
             visibility: 'all'
           });
+
+        // Send notification to lawyer
+        try {
+          const { data: caseInfo } = await supabase
+            .from('cases')
+            .select('assigned_lawyer_id, title')
+            .eq('case_id', taskData.case_id)
+            .single();
+
+          if (caseInfo && caseInfo.assigned_lawyer_id) {
+            await notifyTaskCompleted(
+              caseInfo.assigned_lawyer_id,
+              'lawyer',
+              caseInfo.title || 'بدون عنوان',
+              taskData.title,
+              taskData.case_id
+            );
+          }
+        } catch (notifError) {
+          console.error('Error sending notification:', notifError);
+        }
       }
 
       // Refresh tasks
@@ -173,31 +195,28 @@ const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              filter === 'all'
-                ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${filter === 'all'
+              ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
           >
             الكل ({totalTasks})
           </button>
           <button
             onClick={() => setFilter('pending')}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              filter === 'pending'
-                ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${filter === 'pending'
+              ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
           >
             قيد التنفيذ ({totalTasks - completedTasks})
           </button>
           <button
             onClick={() => setFilter('completed')}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              filter === 'completed'
-                ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${filter === 'completed'
+              ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
           >
             مكتملة ({completedTasks})
           </button>
@@ -219,13 +238,12 @@ const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
             return (
               <div
                 key={task.task_id}
-                className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md border-2 transition-all hover:shadow-lg ${
-                  task.is_completed
-                    ? 'border-green-200 dark:border-green-800 opacity-75'
-                    : overdue
+                className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md border-2 transition-all hover:shadow-lg ${task.is_completed
+                  ? 'border-green-200 dark:border-green-800 opacity-75'
+                  : overdue
                     ? 'border-red-200 dark:border-red-800'
                     : 'border-gray-200 dark:border-gray-700'
-                }`}
+                  }`}
               >
                 <div className="p-3 sm:p-4 lg:p-5">
                   {/* Header */}
@@ -245,11 +263,10 @@ const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm sm:text-base font-bold mb-2 ${
-                        task.is_completed
-                          ? 'text-gray-500 dark:text-gray-400 line-through'
-                          : 'text-gray-900 dark:text-white'
-                      }`}>
+                      <h4 className={`text-sm sm:text-base font-bold mb-2 ${task.is_completed
+                        ? 'text-gray-500 dark:text-gray-400 line-through'
+                        : 'text-gray-900 dark:text-white'
+                        }`}>
                         {task.title}
                       </h4>
                       {task.description && (
@@ -267,11 +284,10 @@ const CaseTasks = ({ caseId, canPerformAction, isDisabled }) => {
                     </span>
 
                     {task.due_date && (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
-                        overdue
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                      }`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${overdue
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}>
                         <Calendar className="w-3 h-3" />
                         {formatDate(task.due_date)}
                         {overdue && <AlertCircle className="w-3 h-3" />}

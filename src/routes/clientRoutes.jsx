@@ -21,6 +21,7 @@ import InvoiceDetails from '../pages/client/InvoiceDetails';
 import JusticeAIChat from "../pages/client/JusticeAI/JusticeAIChat.jsx";
 import SupportTickets from '../pages/SupportTickets';
 import ClientMessages from '../pages/client/ClientMessages';
+import NotificationsPage from '../pages/NotificationsPage';
 
 
 // import MyAppointments from '../pages/client/MyAppointments/MyAppointments';
@@ -50,8 +51,6 @@ const PlaceholderPage = ({ title }) => (
 const ClientRoutes = () => {
   const { userProfile, loading } = useClientAuth();
 
-  console.log('ClientRoutes - loading:', loading, 'userProfile:', userProfile);
-
   // Show loading while checking authentication
   if (loading) {
     return (
@@ -63,7 +62,6 @@ const ClientRoutes = () => {
 
   // Redirect to login if not authenticated or not a client
   if (!userProfile || userProfile.user_type !== 'client') {
-    console.log('Redirecting to login - userProfile:', userProfile);
     return <Navigate to="/login" replace />;
   }
 
@@ -80,6 +78,7 @@ const ClientRoutes = () => {
         {/* Appointments */}
         <Route path="book-appointment/:lawyerId" element={<BookAppointment />} />
         <Route path="appointments" element={<Appointments />} />
+        <Route path="appointments/:appointmentId" element={<Appointments />} />
 
         {/* Cases */}
         <Route path="create-case" element={<CreateCase />} />
@@ -106,12 +105,10 @@ const ClientRoutes = () => {
         {/* Payments and Profile */}
         <Route path="profile-settings" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="notifications" element={<NotificationsPage />} />
 
         {/* Redirect root client path to dashboard */}
         <Route path="" element={<Navigate to="dashboard" replace />} />
-
-        {/* Catch all route - redirect to dashboard */}
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>
     </ClientLayout>
   );

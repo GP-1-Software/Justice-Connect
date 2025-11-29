@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Calendar, User, FileText, Tag, Edit2, Save, X } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient';
+import { updateCase } from '../../../../services/caseApi';
+import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 
 const CaseHeader = ({ caseData, onCaseUpdated }) => {
+  const { lawyer } = useLawyerAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editedData, setEditedData] = useState(caseData);
@@ -76,41 +79,19 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Log for debugging
-      console.log('Original case data:', caseData);
-      console.log('Edited data:', editedData);
-      console.log('Case ID:', caseData.case_id);
-      console.log('Assigned Lawyer ID:', caseData.assigned_lawyer_id);
-
-      // First, verify the case exists and check current user
-      const { data: currentCase, error: checkError } = await supabase
-        .from('cases')
-        .select('*')
-        .eq('case_id', caseData.case_id)
-        .single();
-
-      console.log('Current case from DB:', currentCase);
-      console.log('Check error:', checkError);
-
-      if (checkError) {
-        throw new Error(`خطأ في التحقق من القضية: ${checkError.message}`);
-      }
-
       // Compare changes - only include editable fields
       const editableFields = ['title', 'case_type', 'description', 'status', 'priority', 'court_name', 'filing_date', 'next_hearing_date'];
       const changes = {};
-      
+
       editableFields.forEach(key => {
         const newValue = editedData[key];
         const oldValue = caseData[key];
-        
+
         // Handle different types properly
         if (newValue !== oldValue && newValue !== null && newValue !== undefined && newValue !== '') {
           changes[key] = newValue;
         }
       });
-
-      console.log('Changes to apply:', changes);
 
       if (Object.keys(changes).length === 0) {
         alert('لم يتم إجراء أي تغييرات');
@@ -119,59 +100,12 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
         return;
       }
 
-      // Try update with detailed logging
-      console.log('Attempting update with:', {
+      // Use updateCase service which handles notifications
+      const updatedCase = await updateCase(
+        caseData.case_id,
         changes,
-        case_id: caseData.case_id
-      });
-
-      // First attempt: Try direct update
-      const { error: updateError } = await supabase
-        .from('cases')
-        .update(changes)
-        .eq('case_id', caseData.case_id);
-
-      console.log('Update error:', updateError);
-
-      if (updateError) {
-        console.error('Update failed:', updateError);
-        throw updateError;
-      }
-
-      // If no error, the update succeeded (even if RLS limits the response)
-      console.log('Update completed without error');
-
-      // Wait a moment for the database to process
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Fetch the updated case data to confirm
-      const { data: updatedCase, error: fetchError } = await supabase
-        .from('cases')
-        .select('*')
-        .eq('case_id', caseData.case_id)
-        .single();
-
-      console.log('Fetched updated case:', updatedCase);
-      console.log('Expected changes were:', changes);
-      console.log('Verify update - Priority in DB:', updatedCase?.priority);
-
-      if (fetchError) {
-        console.error('Fetch error:', fetchError);
-        throw fetchError;
-      }
-
-      // Verify the update actually happened
-      let updateVerified = true;
-      for (const [key, value] of Object.entries(changes)) {
-        if (updatedCase[key] !== value) {
-          console.warn(`Field ${key} was not updated! Expected: ${value}, Got: ${updatedCase[key]}`);
-          updateVerified = false;
-        }
-      }
-
-      if (!updateVerified) {
-        throw new Error('فشل التحديث - القيم لم تتغير في قاعدة البيانات. قد تكون هناك مشكلة في الصلاحيات.');
-      }
+        lawyer ? { userId: lawyer.lawyer_id, userType: 'lawyer' } : null
+      );
 
       // Create timeline event for case update
       const changesList = Object.entries(changes).map(([key, value]) => {
@@ -185,7 +119,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
           next_hearing_date: 'تاريخ الجلسة القادمة',
           priority: 'الأولوية'
         };
-        
+
         // Translate values to Arabic
         let arabicValue = value;
         if (key === 'priority') {
@@ -218,7 +152,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
         } else if (key === 'filing_date' || key === 'next_hearing_date') {
           arabicValue = new Date(value).toLocaleDateString('ar-EG');
         }
-        
+
         return `${fieldNames[key] || key}: ${arabicValue}`;
       }).join('\n');
 

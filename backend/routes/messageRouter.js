@@ -35,7 +35,7 @@ router.post("/conversations/get-or-create", async (req, res) => {
                 .from("deleted_conversations")
                 .delete()
                 .eq("conversation_id", existingConversation.conversation_id);
-            
+
             return res.json({ conversation: existingConversation });
         }
 
@@ -193,7 +193,7 @@ router.post("/messages/send", async (req, res) => {
         }
 
         // Verify sender is part of the conversation
-        const isSenderParticipant = 
+        const isSenderParticipant =
             (conversation.participant1_id === parseInt(sender_id) && conversation.participant1_type === sender_type) ||
             (conversation.participant2_id === parseInt(sender_id) && conversation.participant2_type === sender_type);
 
@@ -226,6 +226,58 @@ router.post("/messages/send", async (req, res) => {
             .update({ last_message_at: new Date().toISOString() })
             .eq("conversation_id", conversation_id);
 
+        // Create notification for receiver
+        try {
+            console.log('📧 Creating notification for message...');
+            console.log('Receiver:', { receiver_id, receiver_type });
+
+            // Get sender name
+            const senderTable = sender_type === 'lawyer' ? 'lawyers' : 'users';
+            const senderIdColumn = sender_type === 'lawyer' ? 'lawyer_id' : 'user_id';
+
+            const { data: senderData, error: senderError } = await supabase
+                .from(senderTable)
+                .select('first_name, last_name')
+                .eq(senderIdColumn, sender_id)
+                .single();
+
+            if (senderError) {
+                console.error('Error fetching sender data:', senderError);
+            }
+
+            const senderName = senderData
+                ? `${senderData.first_name} ${senderData.last_name}`
+                : 'مستخدم';
+
+            console.log('Sender name:', senderName);
+
+            // Create notification
+            const { data: notifData, error: notifError } = await supabase
+                .from('notifications')
+                .insert({
+                    user_id: receiver_id,
+                    user_type: receiver_type,
+                    title: 'رسالة جديدة',
+                    message: `رسالة جديدة من ${senderName}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+                    type: 'new_message',
+                    related_id: null, // Conversation ID is UUID, not integer
+                    related_type: 'conversation',
+                    priority: 'normal',
+                    action_url: `/${receiver_type}/messages?conversation=${conversation_id}`
+                })
+                .select()
+                .single();
+
+            if (notifError) {
+                console.error('❌ Error creating notification:', notifError);
+            } else {
+                console.log('✅ Notification created successfully:', notifData);
+            }
+        } catch (notifError) {
+            console.error('❌ Error in notification creation:', notifError);
+            // Don't fail the message send if notification fails
+        }
+
         res.json({ message });
     } catch (error) {
         console.error("Error in send message:", error);
@@ -257,17 +309,17 @@ router.get("/messages/:conversationId", async (req, res) => {
             const userKey = `${userId}_${userType}`;
             filteredMessages = messages.filter(msg => {
                 if (!msg.deleted_for) return true;
-                
+
                 // Parse deleted_for array
                 let deletedFor = [];
                 try {
-                    deletedFor = typeof msg.deleted_for === 'string' 
-                        ? JSON.parse(msg.deleted_for) 
+                    deletedFor = typeof msg.deleted_for === 'string'
+                        ? JSON.parse(msg.deleted_for)
                         : msg.deleted_for;
                 } catch {
                     deletedFor = Array.isArray(msg.deleted_for) ? msg.deleted_for : [];
                 }
-                
+
                 // Return false if message is deleted for this user
                 return !deletedFor.includes(userKey);
             });
@@ -296,9 +348,9 @@ router.put("/messages/mark-read", async (req, res) => {
 
         const { data, error } = await supabase
             .from("messages")
-            .update({ 
-                is_read: true, 
-                read_at: new Date().toISOString() 
+            .update({
+                is_read: true,
+                read_at: new Date().toISOString()
             })
             .eq("conversation_id", conversation_id)
             .eq("receiver_id", user_id)
@@ -522,7 +574,7 @@ router.get("/check-blocked/:userId/:userType/:otherUserId/:otherUserType", async
         const blockedByMe = data && data.find(b => b.blocker_id === parseInt(userId) && b.blocker_type === userType);
         const blockedByThem = data && data.find(b => b.blocker_id === parseInt(otherUserId) && b.blocker_type === otherUserType);
 
-        const result = { 
+        const result = {
             isBlocked,
             blockedByMe: !!blockedByMe,
             blockedByThem: !!blockedByThem
@@ -565,8 +617,8 @@ router.post("/conversations/:conversationId/delete", async (req, res) => {
                 let deletedFor = [];
                 if (message.deleted_for) {
                     // If it's already an array, use it; otherwise parse JSON
-                    deletedFor = Array.isArray(message.deleted_for) 
-                        ? message.deleted_for 
+                    deletedFor = Array.isArray(message.deleted_for)
+                        ? message.deleted_for
                         : (typeof message.deleted_for === 'string' ? JSON.parse(message.deleted_for) : []);
                 }
 

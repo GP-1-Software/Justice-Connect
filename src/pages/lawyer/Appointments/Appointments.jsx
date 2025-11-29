@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Phone, 
-  Video, 
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Calendar,
+  Clock,
+  User,
+  Phone,
+  Video,
   MapPin,
   FileText,
   Search,
@@ -32,6 +32,7 @@ import { supabase } from '../../../supabaseClient';
 
 const Appointments = () => {
   const navigate = useNavigate();
+  const { appointmentId } = useParams();
   const { lawyer } = useLawyerAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,18 @@ const Appointments = () => {
   const [endingMeeting, setEndingMeeting] = useState(false);
   const [showClientInfoModal, setShowClientInfoModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+
+  // Track if we've already handled the appointmentId to prevent loops
+  const handledAppointmentId = useRef(null);
+
+  // Handle appointmentId from URL - just navigate to appointments list
+  useEffect(() => {
+    if (appointmentId && handledAppointmentId.current !== appointmentId) {
+      handledAppointmentId.current = appointmentId;
+      // Simply navigate to appointments list page without opening modal
+      navigate('/lawyer/appointments', { replace: true });
+    }
+  }, [appointmentId, navigate]);
 
   // Trigger filtering animation
   useEffect(() => {
@@ -104,12 +117,12 @@ const Appointments = () => {
     try {
       const data = await getLawyerAppointments(lawyer.lawyer_id);
       setAppointments(data || []);
-      
+
       // Fetch meetings for confirmed appointments with video_call
       const confirmedVideoAppointments = (data || []).filter(
         apt => apt.status === 'confirmed' && apt.meeting_method === 'video_call'
       );
-      
+
       const meetingsMap = {};
       for (const apt of confirmedVideoAppointments) {
         try {
@@ -122,7 +135,7 @@ const Appointments = () => {
         }
       }
       setMeetings(meetingsMap);
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -148,9 +161,9 @@ const Appointments = () => {
     const appointmentsChannel = supabase
       .channel('lawyer-appointments-changes')
       .on('postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'appointments',
           filter: `lawyer_id=eq.${lawyer.lawyer_id}`
         },
@@ -177,9 +190,9 @@ const Appointments = () => {
     const meetingsChannel = supabase
       .channel('lawyer-meetings-changes')
       .on('postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'meetings'
         },
         async (payload) => {
@@ -192,7 +205,7 @@ const Appointments = () => {
                 .eq('id', payload.new.related_appointment_id)
                 .eq('lawyer_id', lawyer.lawyer_id)
                 .single();
-              
+
               if (appointment) {
                 setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
               }
@@ -207,7 +220,7 @@ const Appointments = () => {
                 .eq('id', payload.new.related_appointment_id)
                 .eq('lawyer_id', lawyer.lawyer_id)
                 .single();
-              
+
               if (appointment) {
                 setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
               }
@@ -254,8 +267,8 @@ const Appointments = () => {
     setProcessing(appointmentToReject.id);
     try {
       await updateLawyerAppointmentStatus(
-        appointmentToReject.id, 
-        'cancelled', 
+        appointmentToReject.id,
+        'cancelled',
         lawyer.lawyer_id,
         rejectionReason
       );
@@ -318,7 +331,7 @@ const Appointments = () => {
 
       setShowEndMeetingModal(false);
       setMeetingToEnd(null);
-      
+
       // Optionally update appointment status to completed
       // await handleCompleteAppointment(meetingToEnd.related_appointment_id);
     } catch (error) {
@@ -386,8 +399,8 @@ const Appointments = () => {
     const filtered = appointments.filter(appointment => {
       const clientName = `${appointment.clients?.first_name || ''} ${appointment.clients?.last_name || ''}`.trim();
       const matchesSearch = clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           appointment.appointment_type?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+        appointment.appointment_type?.toLowerCase().includes(searchTerm.toLowerCase());
+
       // Tab filter
       let matchesTab = false;
       if (activeTab === 'pending') {
@@ -397,15 +410,15 @@ const Appointments = () => {
       } else {
         matchesTab = true; // all
       }
-      
+
       if (!matchesTab) return false;
-      
+
       // Status filter
       const matchesStatus = selectedStatus === 'all' || appointment.status === selectedStatus;
-      
+
       // Method filter
       const matchesMethod = selectedMethod === 'all' || appointment.meeting_method === selectedMethod;
-      
+
       return matchesSearch && matchesStatus && matchesMethod;
     });
 
@@ -421,21 +434,21 @@ const Appointments = () => {
 
       const statusA = a.status?.toLowerCase();
       const statusB = b.status?.toLowerCase();
-      
+
       // Sort by status priority first
       const priorityDiff = (statusPriority[statusA] || 999) - (statusPriority[statusB] || 999);
       if (priorityDiff !== 0) return priorityDiff;
-      
+
       // Within same status, sort by last update time (most recent action first)
       const getLastActionTime = (apt) => {
         if (apt.updated_at) return new Date(apt.updated_at);
         if (apt.created_at) return new Date(apt.created_at);
         return new Date(`${apt.appointment_date} ${apt.appointment_time}`);
       };
-      
+
       const lastActionA = getLastActionTime(a);
       const lastActionB = getLastActionTime(b);
-      
+
       // الأحدث في الـ action أولاً (descending)
       return lastActionB - lastActionA;
     });
@@ -539,33 +552,30 @@ const Appointments = () => {
 
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  activeTab === 'all'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'all'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
               >
                 📋 جميع المواعيد
               </button>
-              
+
               <button
                 onClick={() => setActiveTab('confirmed')}
-                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  activeTab === 'confirmed'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'confirmed'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
               >
                 ✅ مؤكدة ({stats.confirmed})
               </button>
 
               <button
                 onClick={() => setActiveTab('pending')}
-                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  activeTab === 'pending'
-                    ? 'bg-yellow-600 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'pending'
+                  ? 'bg-yellow-600 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
               >
                 ⏳ قيد الانتظار ({stats.pending})
               </button>
@@ -586,11 +596,10 @@ const Appointments = () => {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all relative ${
-                  showFilters
-                    ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
-                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all relative ${showFilters
+                  ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
+                  : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-medium">فلتر</span>
@@ -641,11 +650,10 @@ const Appointments = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${
-                  selectedStatus !== 'all' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
-                    : 'border-gray-300 dark:border-gray-600'
-                }`}
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${selectedStatus !== 'all'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
+                  : 'border-gray-300 dark:border-gray-600'
+                  }`}
               >
                 <option value="all">جميع الحالات</option>
                 <option value="pending">قيد الانتظار</option>
@@ -657,11 +665,10 @@ const Appointments = () => {
               <select
                 value={selectedMethod}
                 onChange={(e) => setSelectedMethod(e.target.value)}
-                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${
-                  selectedMethod !== 'all' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
-                    : 'border-gray-300 dark:border-gray-600'
-                }`}
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${selectedMethod !== 'all'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
+                  : 'border-gray-300 dark:border-gray-600'
+                  }`}
               >
                 <option value="all">جميع الأنواع</option>
                 <option value="video_call">مكالمة فيديو</option>
@@ -691,11 +698,11 @@ const Appointments = () => {
                 لا توجد مواعيد
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                {activeTab === 'pending' 
-                  ? 'لا توجد مواعيد قيد الانتظار' 
+                {activeTab === 'pending'
+                  ? 'لا توجد مواعيد قيد الانتظار'
                   : activeTab === 'confirmed'
-                  ? 'لا توجد مواعيد مؤكدة'
-                  : 'لا توجد مواعيد'}
+                    ? 'لا توجد مواعيد مؤكدة'
+                    : 'لا توجد مواعيد'}
               </p>
             </div>
           ) : (
@@ -705,23 +712,23 @@ const Appointments = () => {
               const StatusIcon = statusConfig.icon;
               const MethodIcon = methodConfig.icon;
               const clientName = `${appointment.clients?.first_name || ''} ${appointment.clients?.last_name || ''}`.trim();
-              
+
               // Calculate time since last update
               const getTimeSinceUpdate = () => {
-                const lastUpdate = appointment.updated_at 
-                  ? new Date(appointment.updated_at) 
-                  : appointment.created_at 
+                const lastUpdate = appointment.updated_at
+                  ? new Date(appointment.updated_at)
+                  : appointment.created_at
                     ? new Date(appointment.created_at)
                     : null;
-                
+
                 if (!lastUpdate) return null;
-                
+
                 const now = new Date();
                 const diffMs = now - lastUpdate;
                 const diffMins = Math.floor(diffMs / 60000);
                 const diffHours = Math.floor(diffMs / 3600000);
                 const diffDays = Math.floor(diffMs / 86400000);
-                
+
                 if (diffMins < 1) return 'الآن';
                 if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
                 if (diffHours < 24) return `منذ ${diffHours} ساعة`;
@@ -729,9 +736,9 @@ const Appointments = () => {
                 if (diffDays < 7) return `منذ ${diffDays} أيام`;
                 return null;
               };
-              
+
               const timeSinceUpdate = getTimeSinceUpdate();
-              
+
               return (
                 <div
                   key={appointment.id}
@@ -775,7 +782,7 @@ const Appointments = () => {
                               </span>
                             )}
                           </div>
-                          
+
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mb-3">
                             <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-400">
                               <Calendar className="h-4 w-4" />
@@ -857,34 +864,34 @@ const Appointments = () => {
                           )}
 
                           {/* Meeting Card for Video Calls */}
-                          {appointment.status === 'confirmed' && 
-                           appointment.meeting_method === 'video_call' && 
-                           meetings[appointment.id] && (
-                            <div className="mt-4 space-y-3">
-                              <MeetingCard
-                                meeting={meetings[appointment.id]}
-                                appointment={appointment}
-                                userType="lawyer"
-                                onJoinMeeting={handleJoinMeeting}
-                              />
-                              {/* End Meeting Button - Only show when meeting time is ready */}
-                              {meetings[appointment.id].meeting_status === 'confirmed' && 
-                               meetingsReady[appointment.id] && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setMeetingToEnd(meetings[appointment.id]);
-                                    setShowEndMeetingModal(true);
-                                  }}
-                                  disabled={endingMeeting}
-                                  className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium animate-fadeIn"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                  <span>إنهاء الاجتماع</span>
-                                </button>
-                              )}
-                            </div>
-                          )}
+                          {appointment.status === 'confirmed' &&
+                            appointment.meeting_method === 'video_call' &&
+                            meetings[appointment.id] && (
+                              <div className="mt-4 space-y-3">
+                                <MeetingCard
+                                  meeting={meetings[appointment.id]}
+                                  appointment={appointment}
+                                  userType="lawyer"
+                                  onJoinMeeting={handleJoinMeeting}
+                                />
+                                {/* End Meeting Button - Only show when meeting time is ready */}
+                                {meetings[appointment.id].meeting_status === 'confirmed' &&
+                                  meetingsReady[appointment.id] && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMeetingToEnd(meetings[appointment.id]);
+                                        setShowEndMeetingModal(true);
+                                      }}
+                                      disabled={endingMeeting}
+                                      className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium animate-fadeIn"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                      <span>إنهاء الاجتماع</span>
+                                    </button>
+                                  )}
+                              </div>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -968,7 +975,7 @@ const Appointments = () => {
                 رفض الموعد
               </h3>
             </div>
-            
+
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               يرجى إدخال سبب رفض هذا الموعد:
             </p>
@@ -1017,7 +1024,7 @@ const Appointments = () => {
                 تأكيد إنهاء الاجتماع
               </h3>
             </div>
-            
+
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               هل أنت متأكد من إنهاء هذا الاجتماع؟ سيتم تحديث حالته إلى "مكتمل" وسيختفي من صفحة العميل.
             </p>

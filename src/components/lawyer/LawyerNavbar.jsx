@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Scale, 
-  Bell, 
-  User, 
+import {
+  Scale,
+  Bell,
+  User,
   Menu,
   Home,
-  LogOut, 
+  LogOut,
   Settings,
   Sun,
   Moon
 } from 'lucide-react';
+import NotificationBell from '../notifications/NotificationBell';
 import { useLawyerAuth } from '../../hooks/useLawyerAuth';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -19,19 +20,13 @@ const LawyerNavbar = ({ onMenuClick }) => {
   const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const userMenuRef = useRef(null);
-  const notificationsRef = useRef(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setUserMenuOpen(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
-        setNotificationsOpen(false);
       }
     };
 
@@ -45,14 +40,6 @@ const LawyerNavbar = ({ onMenuClick }) => {
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-    }
-  };
-
-  const handleNotificationsClick = () => {
-    setNotificationsOpen(!notificationsOpen);
-    // Mark notifications as read
-    if (unreadCount > 0) {
-      setUnreadCount(0);
     }
   };
 
@@ -101,41 +88,11 @@ const LawyerNavbar = ({ onMenuClick }) => {
             </button>
 
             {/* Notifications */}
-            <div className="relative" ref={notificationsRef}>
-              <button
-                onClick={handleNotificationsClick}
-                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              >
-                <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-              </button>
-
-              {/* Notifications Dropdown */}
-              {notificationsOpen && (
-                <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">الإشعارات</h3>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                      <Bell className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                      <p>لا توجد إشعارات جديدة</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-                    <Link
-                      to="/lawyer/notifications"
-                      className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-semibold"
-                      onClick={() => setNotificationsOpen(false)}
-                    >
-                      عرض جميع الإشعارات
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationBell
+              key={lawyer?.lawyer_id || 'guest'}
+              userId={lawyer?.lawyer_id}
+              userType="lawyer"
+            />
 
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>
@@ -162,7 +119,7 @@ const LawyerNavbar = ({ onMenuClick }) => {
                       {lawyer?.email}
                     </p>
                   </div>
-                  
+
                   <Link
                     to="/lawyer/profile"
                     onClick={() => setUserMenuOpen(false)}
@@ -171,7 +128,7 @@ const LawyerNavbar = ({ onMenuClick }) => {
                     <User className="h-4 w-4" />
                     <span>الملف الشخصي</span>
                   </Link>
-                  
+
                   <Link
                     to="/lawyer/settings"
                     onClick={() => setUserMenuOpen(false)}
@@ -180,7 +137,7 @@ const LawyerNavbar = ({ onMenuClick }) => {
                     <Settings className="h-4 w-4" />
                     <span>الإعدادات</span>
                   </Link>
-                  
+
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center space-x-2 space-x-reverse px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
@@ -208,15 +165,13 @@ const LawyerNavbar = ({ onMenuClick }) => {
             </button>
 
             {/* Notifications Mobile */}
-            <button
-              onClick={() => navigate('/lawyer/notifications')}
-              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            >
-              <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              )}
-            </button>
+            <div className="lg:hidden">
+              <NotificationBell
+                key={`mobile-${lawyer?.lawyer_id || 'guest'}`}
+                userId={lawyer?.lawyer_id}
+                userType="lawyer"
+              />
+            </div>
 
             {/* User Avatar Mobile */}
             <button

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getUserNotifications,
   getUnreadCount,
@@ -19,8 +19,13 @@ export const useNotifications = (userId, userType, filters = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Generate a unique ID for this hook instance to prevent subscription conflicts
+  const hookId = useRef(Math.random().toString(36).substring(7)).current;
+
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
+    if (!userId) return; // Don't fetch if no user ID
+
     setLoading(true);
     setError(null);
 
@@ -38,6 +43,8 @@ export const useNotifications = (userId, userType, filters = {}) => {
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
+    if (!userId) return; // Don't fetch if no user ID
+
     try {
       const { data } = await getUnreadCount(userId, userType);
       setUnreadCount(data || 0);
@@ -48,13 +55,15 @@ export const useNotifications = (userId, userType, filters = {}) => {
 
   // Subscribe to real-time updates
   useEffect(() => {
+    if (!userId) return;
+
     fetchNotifications();
     fetchUnreadCount();
 
     // Subscribe to notifications
     const notifSubscription = subscribeToNotifications(userId, userType, (payload) => {
       console.log('Notification change:', payload);
-      
+
       if (payload.eventType === 'INSERT') {
         // Add new notification to the list
         setNotifications(prev => [payload.new, ...prev]);
@@ -75,25 +84,25 @@ export const useNotifications = (userId, userType, filters = {}) => {
         );
         fetchUnreadCount();
       }
-    });
+    }, hookId);
 
     // Subscribe to unread count changes
     const countSubscription = subscribeToUnreadCount(userId, userType, (count) => {
       setUnreadCount(count);
-    });
+    }, hookId);
 
     return () => {
       notifSubscription.unsubscribe();
       countSubscription.unsubscribe();
     };
-  }, [userId, userType, fetchNotifications, fetchUnreadCount]);
+  }, [userId, userType, fetchNotifications, fetchUnreadCount, hookId]);
 
   // Mark notification as read
   const markRead = async (notificationId) => {
     try {
       const { error } = await markAsRead(notificationId);
       if (error) throw error;
-      
+
       // Update local state
       setNotifications(prev =>
         prev.map(notif =>
@@ -113,7 +122,7 @@ export const useNotifications = (userId, userType, filters = {}) => {
     try {
       const { error } = await markAllAsRead(userId, userType);
       if (error) throw error;
-      
+
       // Update local state
       setNotifications(prev =>
         prev.map(notif => ({ ...notif, is_read: true, read_at: new Date().toISOString() }))
@@ -129,7 +138,7 @@ export const useNotifications = (userId, userType, filters = {}) => {
     try {
       const { error } = await deleteNotification(notificationId);
       if (error) throw error;
-      
+
       // Update local state
       setNotifications(prev =>
         prev.filter(notif => notif.notification_id !== notificationId)
@@ -144,11 +153,29 @@ export const useNotifications = (userId, userType, filters = {}) => {
     try {
       const { error } = await deleteAllRead(userId, userType);
       if (error) throw error;
-      
+
       // Update local state
       setNotifications(prev => prev.filter(notif => !notif.is_read));
     } catch (err) {
       console.error('Error deleting read notifications:', err);
+    }
+  };
+
+  // Delete all message notifications (Optimistic UI)
+  const removeMessageNotifications = async (conversationId) => {
+    try {
+      // Optimistically remove from UI immediately
+      setNotifications(prev => prev.filter(notif => notif.type !== 'new_message'));
+
+      // Then delete from DB
+      // We import this dynamically or assume it's imported at top
+      const { deleteConversationNotifications } = await import('../services/notificationService');
+      const { error } = await deleteConversationNotifications(userId, userType, conversationId);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error deleting conversation notifications:', err);
+      // Optionally revert state here if needed, but for notifications it's usually fine
     }
   };
 
@@ -161,6 +188,7 @@ export const useNotifications = (userId, userType, filters = {}) => {
     markAllRead,
     deleteNotif,
     deleteAllReadNotifs,
+    removeMessageNotifications,
     refetch: fetchNotifications
   };
 };
@@ -171,7 +199,12 @@ export const useNotifications = (userId, userType, filters = {}) => {
 export const useUnreadCount = (userId, userType) => {
   const [count, setCount] = useState(0);
 
+  // Generate a unique ID for this hook instance
+  const hookId = useRef(Math.random().toString(36).substring(7)).current;
+
   useEffect(() => {
+    if (!userId) return;
+
     // Initial fetch
     const fetchCount = async () => {
       const { data } = await getUnreadCount(userId, userType);
@@ -183,12 +216,12 @@ export const useUnreadCount = (userId, userType) => {
     // Subscribe to changes
     const subscription = subscribeToUnreadCount(userId, userType, (newCount) => {
       setCount(newCount);
-    });
+    }, hookId);
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [userId, userType]);
+  }, [userId, userType, hookId]);
 
   return count;
 };
