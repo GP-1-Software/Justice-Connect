@@ -36,26 +36,20 @@ const QuickActions = () => {
       bgColor: 'from-blue-500 to-cyan-500',
       onClick: () => navigate('/lawyer/cases')
     },
-    {
-      icon: Upload,
-      labelAr: 'الملف الاحتياطي',
-      labelEn: 'Backup Files',
-      bgColor: 'from-indigo-500 to-indigo-600',
-      onClick: () => alert('Backup feature coming soon')
-    },
+
     {
       icon: UserPlus,
       labelAr: 'إضافة استشارات',
       labelEn: 'Add Consultations',
       bgColor: 'from-purple-500 to-pink-500',
-      onClick: () => navigate('/lawyer/cases?action=consult')
+      onClick: () => navigate('/lawyer/profile?tab=services')
     },
     {
       icon: MessageSquare,
       labelAr: 'الرسائل',
       labelEn: 'Messages',
       bgColor: 'from-orange-500 to-orange-600',
-      onClick: () => alert('Messages feature coming soon')
+      onClick: () => navigate('/lawyer/messages')
     }
   ];
 
@@ -69,7 +63,7 @@ const QuickActions = () => {
           اختصارات للوصول السريع
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
         {actions.map((action, idx) => (
           <button
             key={idx}

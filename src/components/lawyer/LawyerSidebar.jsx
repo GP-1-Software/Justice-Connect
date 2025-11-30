@@ -49,7 +49,7 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       path: 'cases'
     },
     {
-      title: 'مواعيدي',
+      title: 'التقويم',
       icon: Calendar,
       path: 'calendar'
     },

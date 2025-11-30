@@ -17,7 +17,7 @@ const CasesAssigned = () => {
         // Try direct column first
         let query = supabase
           .from('cases')
-          .select('id, title, status, updated_at')
+          .select('case_id, case_number, status, updated_at')
           .eq('assigned_lawyer_id', lawyer.lawyer_id)
           .order('updated_at', { ascending: false })
           .limit(5);
@@ -27,7 +27,7 @@ const CasesAssigned = () => {
           // Fallback: many-to-many via lawyer_cases
           const { data: joinData, error: joinError } = await supabase
             .from('lawyer_cases')
-            .select('case_id, cases(id, title, status, updated_at)')
+            .select('case_id, cases(case_id, case_number, status, updated_at)')
             .eq('lawyer_id', lawyer.lawyer_id)
             .order('cases(updated_at)', { ascending: false })
             .limit(5);
@@ -56,12 +56,12 @@ const CasesAssigned = () => {
       ) : (
         <ul className="space-y-3">
           {items.map((c) => (
-            <li key={c.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-between">
+            <li key={c.case_id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-between">
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">{c.title || '—'}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{c.case_number || '—'}</p>
                 <p className="text-sm text-gray-500">{c.status || '—'}</p>
               </div>
-              <Link to={`/lawyer/cases/${c.id}`} className="text-blue-600 hover:underline text-sm">عرض</Link>
+              <Link to={`/lawyer/cases/${c.case_id}`} className="text-blue-600 hover:underline text-sm">عرض</Link>
             </li>
           ))}
         </ul>
