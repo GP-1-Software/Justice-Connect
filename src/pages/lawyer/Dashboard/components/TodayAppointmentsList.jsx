@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
 
-const startOfDay = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
-const endOfDay = (d) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
-
 const TodayAppointmentsList = () => {
   const { lawyer } = useLawyerAuth();
   const [items, setItems] = useState([]);
@@ -16,19 +13,22 @@ const TodayAppointmentsList = () => {
       if (!lawyer) return;
       setLoading(true);
       try {
-        const from = startOfDay(new Date()).toISOString();
-        const to = endOfDay(new Date()).toISOString();
+        // Use 'en-CA' to get YYYY-MM-DD in local time
+        const today = new Date().toLocaleDateString('en-CA');
+        console.log('Fetching appointments for:', today);
+
+        // Fetch * to match Calendar.jsx schema which works
         const { data, error } = await supabase
           .from('appointments')
-          .select('id, title, client_name, starts_at, mode')
+          .select('*')
           .eq('lawyer_id', lawyer.lawyer_id)
-          .gte('starts_at', from)
-          .lte('starts_at', to)
-          .order('starts_at', { ascending: true });
+          .eq('appointment_date', today)
+          .order('appointment_time', { ascending: true });
+
         if (error) throw error;
         if (mounted) setItems(data || []);
       } catch (e) {
-        console.warn('TodayAppointmentsList query skipped or missing table:', e.message);
+        console.warn('TodayAppointmentsList query error:', e.message);
         if (mounted) setItems([]);
       } finally {
         if (mounted) setLoading(false);
@@ -50,8 +50,12 @@ const TodayAppointmentsList = () => {
           {items.map((a) => (
             <li key={a.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">{a.title || a.client_name || '—'}</p>
-                <p className="text-sm text-gray-500">{new Date(a.starts_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })} • {a.mode || '—'}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  {a.client_name || '—'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {a.appointment_time ? a.appointment_time.substring(0, 5) : (a.starts_at ? new Date(a.starts_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '—')} • {a.meeting_type === 'online' ? 'أونلاين' : 'شخصي'}
+                </p>
               </div>
             </li>
           ))}
@@ -62,5 +66,3 @@ const TodayAppointmentsList = () => {
 };
 
 export default TodayAppointmentsList;
-
-

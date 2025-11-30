@@ -5,10 +5,7 @@ import { Briefcase, Calendar as CalendarIcon, FileText, Coins } from 'lucide-rea
 import WelcomeBanner from './components/WelcomeBanner';
 import StatsCard from './components/StatsCard';
 import QuickActions from './components/QuickActions';
-import CalendarPreview from './components/CalendarPreview';
 import TodayAppointmentsList from './components/TodayAppointmentsList';
-import CasesAssigned from './components/CasesAssigned';
-import QuickRevenue from './components/QuickRevenue';
 
 const Dashboard = () => {
   const { lawyer } = useLawyerAuth();
@@ -119,21 +116,8 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <QuickActions />
 
-      {/* Revenue and Calendar Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div className="lg:col-span-2">
-          <CalendarPreview />
-        </div>
-        <div className="lg:col-span-1">
-          <QuickRevenue />
-        </div>
-      </div>
-
-      {/* Today's Appointments and Cases */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <TodayAppointmentsList />
-        <CasesAssigned />
-      </div>
+      {/* Today's Appointments - Removed as requested */}
+      {/* <TodayAppointmentsList /> */}
     </div>
   );
 };

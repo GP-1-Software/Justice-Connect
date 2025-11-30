@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { User, Award, Briefcase, Clock } from 'lucide-react';
 import ProfileForm from './components/ProfileForm';
 import LicenseUploader from './components/LicenseUploader';
@@ -6,7 +7,12 @@ import ServicesManager from './components/ServicesManager';
 import WorkingHours from './components/WorkingHours';
 
 const Profile = () => {
-  const [activeTab, setActiveTab] = useState('personal');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'personal';
+
+  const setActiveTab = (tabId) => {
+    setSearchParams({ tab: tabId });
+  };
 
   const tabs = [
     { id: 'personal', label: 'المعلومات الشخصية', icon: User },
@@ -37,11 +43,10 @@ const Profile = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition ${
-                    activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition ${activeTab === tab.id
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   {tab.label}
