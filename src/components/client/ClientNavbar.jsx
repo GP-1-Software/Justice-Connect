@@ -16,6 +16,7 @@ import {
 import NotificationBell from '../notifications/NotificationBell';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { useTheme } from '../../context/ThemeContext';
+import RoleSwitcher from '../RoleSwitcher';
 
 const ClientNavbar = ({ onMenuClick }) => {
   const { userProfile, signOut } = useClientAuth();
@@ -94,6 +95,9 @@ const ClientNavbar = ({ onMenuClick }) => {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4 space-x-reverse">
+            {/* Role Switcher */}
+            <RoleSwitcher />
+
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}

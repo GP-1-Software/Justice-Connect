@@ -42,10 +42,10 @@ export const LawyerAuthProvider = ({ children }) => {
   const checkLocalStorageAuth = () => {
     try {
       const storedUser = localStorage.getItem('user');
-      
+
       if (storedUser) {
         const userData = JSON.parse(storedUser);
-        
+
         if (userData.user_type === 'lawyer') {
           setLawyer(userData);
           setUser({ id: userData.lawyer_id, email: userData.email });
@@ -61,14 +61,14 @@ export const LawyerAuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      
+
       // Clear localStorage
       localStorage.removeItem('user');
-      
+
       // Clear Supabase session if exists
       const { error } = await supabase.auth.signOut();
       if (error) console.warn('Supabase signOut error:', error);
-      
+
       setUser(null);
       setLawyer(null);
       navigate('/');
@@ -92,11 +92,11 @@ export const LawyerAuthProvider = ({ children }) => {
 
       // Update local state
       setLawyer({ ...lawyer, ...updates });
-      
+
       // Update localStorage
       const updatedLawyer = { ...lawyer, ...updates };
       localStorage.setItem('user', JSON.stringify(updatedLawyer));
-      
+
       return { success: true, message: 'تم تحديث الملف الشخصي بنجاح' };
     } catch (error) {
       console.error('Update profile error:', error);
@@ -111,7 +111,7 @@ export const LawyerAuthProvider = ({ children }) => {
   const refreshLawyer = async () => {
     try {
       if (!lawyer?.lawyer_id) return;
-      
+
       const { data, error } = await supabase
         .from('lawyers')
         .select('*')

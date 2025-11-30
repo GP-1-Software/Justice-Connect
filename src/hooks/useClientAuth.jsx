@@ -43,11 +43,11 @@ export const ClientAuthProvider = ({ children }) => {
     try {
       const storedUser = localStorage.getItem('user');
       console.log('Checking localStorage:', storedUser);
-      
+
       if (storedUser) {
         const userData = JSON.parse(storedUser);
         console.log('Parsed user data:', userData);
-        
+
         if (userData.user_type === 'client') {
           console.log('Setting client auth state');
           setUserProfile(userData);
@@ -67,7 +67,7 @@ export const ClientAuthProvider = ({ children }) => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
-      
+
       if (session?.user) {
         setUser(session.user);
         await fetchUserProfile(session.user.id);
@@ -203,14 +203,14 @@ export const ClientAuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      
+
       // Clear localStorage
       localStorage.removeItem('user');
-      
+
       // Clear Supabase session if exists
       const { error } = await supabase.auth.signOut();
       if (error) console.warn('Supabase signOut error:', error);
-      
+
       setUser(null);
       setUserProfile(null);
       navigate('/');
