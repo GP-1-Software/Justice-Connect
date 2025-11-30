@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar, UserPlus } from 'lucide-react';
 import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
 import { getAllTicketsForAdmin, updateTicketStatus, addReplyToTicket } from '../services/supportApi';
 import { toast } from 'react-hot-toast';
@@ -29,6 +29,42 @@ const AdminDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedTicketUser, setSelectedTicketUser] = useState(null);
   const [replyText, setReplyText] = useState('');
+
+  // Role Assignment State
+  const [showAssignRoleModal, setShowAssignRoleModal] = useState(false);
+  const [assignRoleData, setAssignRoleData] = useState({ idNumber: '', role: 'lawyer' });
+
+  const handleAssignRole = async (e) => {
+    e.preventDefault();
+    if (!assignRoleData.idNumber) {
+      toast.error('يرجى إدخال رقم الهوية');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/assign-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_id_number: assignRoleData.idNumber,
+          new_role: assignRoleData.role
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success('تم تعيين الدور بنجاح');
+        setShowAssignRoleModal(false);
+        setAssignRoleData({ idNumber: '', role: 'lawyer' });
+        fetchData();
+      } else {
+        toast.error(data.error || 'فشل تعيين الدور');
+      }
+    } catch (error) {
+      console.error('Error assigning role:', error);
+      toast.error('حدث خطأ أثناء تعيين الدور');
+    }
+  };
 
   // Check if user is admin
   useEffect(() => {
@@ -527,11 +563,61 @@ const AdminDashboard = () => {
 
   return (
     <>
+
+      {/* Assign Role Modal */}
+      {showAssignRoleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">تعيين دور جديد لمستخدم</h2>
+            <form onSubmit={handleAssignRole} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">رقم الهوية</label>
+                <input
+                  type="text"
+                  value={assignRoleData.idNumber}
+                  onChange={(e) => setAssignRoleData({ ...assignRoleData, idNumber: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="أدخل رقم الهوية"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">الدور الجديد</label>
+                <select
+                  value={assignRoleData.role}
+                  onChange={(e) => setAssignRoleData({ ...assignRoleData, role: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="lawyer">محامي</option>
+                  <option value="client">عميل</option>
+                  <option value="admin">مسؤول</option>
+                  {currentAdmin?.role === 'super_admin' && <option value="super_admin">مسؤول عام</option>}
+                </select>
+              </div>
+              <div className="flex space-x-3 space-x-reverse pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                >
+                  تعيين
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAssignRoleModal(false)}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-20 px-4 py-12 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 لوحة تحكم المسؤول
@@ -540,6 +626,13 @@ const AdminDashboard = () => {
                 إدارة طلبات الانضمام والمستخدمين المقبولين
               </p>
             </div>
+            <button
+              onClick={() => setShowAssignRoleModal(true)}
+              className="flex items-center justify-center space-x-2 space-x-reverse px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-bold"
+            >
+              <UserPlus className="h-5 w-5" />
+              <span>تعيين دور جديد</span>
+            </button>
           </div>
 
           {/* Main Tabs */}

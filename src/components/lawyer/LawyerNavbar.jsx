@@ -14,6 +14,7 @@ import {
 import NotificationBell from '../notifications/NotificationBell';
 import { useLawyerAuth } from '../../hooks/useLawyerAuth';
 import { useTheme } from '../../context/ThemeContext';
+import RoleSwitcher from '../RoleSwitcher';
 
 const LawyerNavbar = ({ onMenuClick }) => {
   const { lawyer, signOut } = useLawyerAuth();
@@ -73,6 +74,9 @@ const LawyerNavbar = ({ onMenuClick }) => {
               <Home className="h-5 w-5" />
               <span>الصفحة الرئيسية</span>
             </button>
+
+            {/* Role Switcher */}
+            <RoleSwitcher />
 
             {/* Theme Toggle */}
             <button

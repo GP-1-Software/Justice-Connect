@@ -8,6 +8,7 @@ import justiceChatRoute from "./routes/justiceChatRoute.js";
 import systemChatRouter from "./routes/systemChatRouter.js";
 import messageRouter from "./routes/messageRouter.js";
 import notificationRouter from "./routes/notificationRouter.js";
+import authRouter from "./routes/authRoutes.js";
 import { startNotificationScheduler } from "./services/notificationScheduler.js";
 
 
@@ -30,13 +31,16 @@ app.use("/api/messages", messageRouter);
 // Route for Notifications
 app.use("/api/notifications", notificationRouter);
 
+// Route for Auth
+app.use("/api/auth", authRouter);
+
 app.get("/", (req, res) => {
     res.send("Justice-Connect Backend is running ✅");
 });
 
 app.listen(PORT, () => {
     console.log(`Backend running on http://localhost:${PORT}`);
-    
+
     // Start notification scheduler
     startNotificationScheduler();
 });

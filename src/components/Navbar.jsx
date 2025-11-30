@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Scale, Menu, X, User, LogIn, Moon, Sun, MessageSquare, LogOut, Settings, UserCircle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import RoleSwitcher from './RoleSwitcher';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -95,6 +96,7 @@ const Navbar = () => {
 
           {/* CTA Buttons / User Menu */}
           <div className="hidden md:flex items-center space-x-4 space-x-reverse">
+            {isLoggedIn && <RoleSwitcher />}
             {isLoggedIn ? (
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -260,6 +262,9 @@ const Navbar = () => {
 
               {isLoggedIn ? (
                 <>
+                  <div className="px-4 py-2">
+                    <RoleSwitcher />
+                  </div>
                   <div className="border-t border-gray-200 my-2"></div>
                   <div className="px-4 py-2">
                     <p className="font-bold text-gray-900">{userData?.first_name} {userData?.last_name}</p>
