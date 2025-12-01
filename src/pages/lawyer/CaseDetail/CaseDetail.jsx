@@ -2,7 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Loader2,
+  FileText,
+  Clock,
+  CalendarDays,
+  MessageSquare,
+  FolderOpen,
+  CheckSquare,
+  AlertCircle
+} from 'lucide-react';
 import CaseHeader from './components/CaseHeader';
 import UpdateComposer from './components/UpdateComposer';
 import Timeline from './components/Timeline';
@@ -20,24 +30,81 @@ const CaseDetail = () => {
   const [caseData, setCaseData] = useState(null);
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  const tabs = [
+    { id: 'overview', label: 'نظرة عامة', icon: FileText },
+    { id: 'timeline', label: 'الجدول الزمني', icon: Clock },
+    { id: 'meetings', label: 'الاجتماعات', icon: CalendarDays },
+    { id: 'notes', label: 'الملاحظات', icon: MessageSquare },
+    { id: 'files', label: 'الملفات', icon: FolderOpen },
+    { id: 'tasks', label: 'المهام', icon: CheckSquare }
+  ];
+
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    navigate(`${location.pathname}#${tabId}`, { replace: true });
+  };
 
   // Handle URL hash for deep linking
   useEffect(() => {
     if (location.hash && !loading) {
       const id = location.hash.replace('#', '');
-      const element = document.getElementById(id);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Add highlight effect
-          element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
-          setTimeout(() => {
-            element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-          }, 2000);
-        }, 500); // Delay to ensure rendering
+      if (tabs.find(tab => tab.id === id)) {
+        setActiveTab(id);
       }
+    } else if (!location.hash && !loading) {
+      setActiveTab('overview');
     }
   }, [location.hash, loading]);
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div id="overview">
+            <ClientInfo caseData={caseData} lawyerId={lawyer?.lawyer_id} />
+          </div>
+        );
+      case 'timeline':
+        return (
+          <div id="timeline" className="space-y-6">
+            <UpdateComposer caseId={caseId} onUpdateAdded={handleUpdateAdded} />
+            <Timeline updates={updates} caseData={caseData} onEventDeleted={handleEventDeleted} />
+          </div>
+        );
+      case 'meetings':
+        return (
+          <div id="meetings" className="space-y-6">
+            <MeetingManager
+              caseId={caseId}
+              caseData={caseData}
+              onTimelineEventAdded={handleUpdateAdded}
+            />
+          </div>
+        );
+      case 'notes':
+        return (
+          <div id="notes" className="space-y-6">
+            <PrivateNotes caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+          </div>
+        );
+      case 'files':
+        return (
+          <div id="files" className="space-y-6">
+            <EvidenceUploader caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+          </div>
+        );
+      case 'tasks':
+        return (
+          <div id="tasks" className="space-y-6">
+            <TaskManager caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   const loadCaseDetails = async () => {
     if (!lawyer || !caseId) return;
@@ -137,100 +204,117 @@ const CaseDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="mr-3 text-gray-600 dark:text-gray-300">جاري التحميل...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 sm:h-16 sm:w-16 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300">جاري التحميل...</span>
+        </div>
       </div>
     );
   }
 
   if (!caseData) {
     return (
-      <div className="text-center py-20">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">القضية غير موجودة</p>
-        <button
-          onClick={() => navigate('/lawyer/cases')}
-          className="text-blue-600 hover:underline"
-        >
-          العودة للقضايا
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 max-w-md w-full text-center">
+          <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-600 dark:text-red-400 mx-auto mb-4" />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">القضية غير موجودة</h2>
+          <button
+            onClick={() => navigate('/lawyer/cases')}
+            className="mt-4 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-all transform hover:scale-105 font-medium"
+          >
+            العودة للقضايا
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-4 sm:py-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
       {/* Back Button */}
       <button
         onClick={() => navigate('/lawyer/cases')}
-        className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 transition"
+        className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition mb-4 sm:mb-6"
       >
-        <ArrowLeft className="h-5 w-5" />
-        العودة للقضايا
+        <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+        <span className="text-sm sm:text-base">العودة للقضايا</span>
       </button>
 
       {/* Case Header */}
-      <CaseHeader caseData={caseData} onCaseUpdated={handleCaseUpdated} />
+      <div id="case-header" className="mb-5">
+        <CaseHeader caseData={caseData} onCaseUpdated={handleCaseUpdated} />
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="mb-5">
+        {/* Mobile Tabs - Scrollable */}
+        <div className="sm:hidden bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => handleTabClick(id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                  activeTab === id
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 text-white shadow-lg'
+                    : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Tabs */}
+        <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-2">
+          <div className="flex gap-2">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => handleTabClick(id)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm font-medium transition-all ${
+                  activeTab === id
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 text-white shadow-lg transform scale-105'
+                    : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {caseData.status === 'rejected' ? (
         /* Rejected Case - Read Only View */
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 text-center">
           <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ArrowLeft className="h-8 w-8 text-red-600 rotate-45" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ArrowLeft className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 rotate-45" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
               قضية مرفوضة
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               هذه القضية تم رفضها ولا يمكن تعديلها أو إضافة محتوى جديد.
             </p>
             {/* Timeline for rejected cases - read only */}
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
               <Timeline updates={updates} caseData={caseData} onEventDeleted={null} />
             </div>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - Left Side */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Update Composer */}
-            <UpdateComposer caseId={caseId} onUpdateAdded={handleUpdateAdded} />
-
-            {/* Timeline */}
-            <Timeline updates={updates} caseData={caseData} onEventDeleted={handleEventDeleted} />
-          </div>
-
-          {/* Sidebar - Right Side */}
-          <div className="space-y-6">
-            {/* Client Info */}
-            <ClientInfo caseData={caseData} lawyerId={lawyer?.lawyer_id} />
-
-            {/* Meeting Manager */}
-            <MeetingManager
-              caseId={caseId}
-              caseData={caseData}
-              onTimelineEventAdded={handleUpdateAdded}
-            />
-
-            {/* Private Notes */}
-            <div id="notes" className="transition-all duration-300 rounded-2xl">
-              <PrivateNotes caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
-            </div>
-
-            {/* Evidence Uploader */}
-            <div id="files" className="transition-all duration-300 rounded-2xl">
-              <EvidenceUploader caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
-            </div>
-
-            {/* Task Manager */}
-            <div id="tasks" className="transition-all duration-300 rounded-2xl">
-              <TaskManager caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
-            </div>
-          </div>
+        <div>
+          {renderTabContent()}
         </div>
       )}
+      </div>
     </div>
   );
 };
