@@ -221,7 +221,7 @@ const CaseDetail = () => {
 
             {/* Evidence Uploader */}
             <div id="files" className="transition-all duration-300 rounded-2xl">
-              <EvidenceUploader caseId={caseId} />
+              <EvidenceUploader caseId={caseId} onTimelineEventAdded={handleUpdateAdded} />
             </div>
 
             {/* Task Manager */}
