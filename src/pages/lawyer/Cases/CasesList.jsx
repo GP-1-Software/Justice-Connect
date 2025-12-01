@@ -59,7 +59,7 @@ const CasesList = () => {
     // Realtime subscription
     const channel = supabase
       .channel('cases-changes')
-      .on('postgres_changes', 
+      .on('postgres_changes',
         { event: '*', schema: 'public', table: 'cases', filter: `assigned_lawyer_id=eq.${lawyer?.lawyer_id}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -91,7 +91,7 @@ const CasesList = () => {
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(c => 
+      filtered = filtered.filter(c =>
         c.title?.toLowerCase().includes(query) ||
         c.case_number?.toLowerCase().includes(query) ||
         c.client_name?.toLowerCase().includes(query)
@@ -111,7 +111,7 @@ const CasesList = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-6">
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -126,7 +126,7 @@ const CasesList = () => {
               إدارة جميع قضاياك المعينة بسهولة وبأسلوب منظم.
             </p>
           </div>
-          <button 
+          <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#2563eb] to-[#7c3aed] hover:from-[#1e40af] hover:to-[#6d28d9] text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
           >
@@ -136,7 +136,7 @@ const CasesList = () => {
         </div>
 
         {/* Stats Counter */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
@@ -174,9 +174,9 @@ const CasesList = () => {
                 className="w-full pr-12 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm transition-all"
               />
             </div>
-            <CaseFilters 
-              statusFilter={statusFilter} 
-              onStatusChange={setStatusFilter} 
+            <CaseFilters
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
             />
             <button
               onClick={handleRefresh}
@@ -196,11 +196,11 @@ const CasesList = () => {
           <p className="text-gray-500 dark:text-gray-400 animate-pulse">جاري تحميل القضايا...</p>
         </div>
       ) : filteredCases.length === 0 ? (
-        <EmptyState 
-          hasSearch={searchQuery.trim() !== '' || statusFilter !== 'all'} 
+        <EmptyState
+          hasSearch={searchQuery.trim() !== '' || statusFilter !== 'all'}
         />
       ) : (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -213,7 +213,7 @@ const CasesList = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
             >
-              <CaseCard 
+              <CaseCard
                 caseData={caseItem}
                 onCaseDeleted={(caseId) => {
                   setCases(prev => prev.filter(c => c.case_id !== caseId));
@@ -229,7 +229,7 @@ const CasesList = () => {
 
       {/* Footer */}
       {!loading && filteredCases.length > 0 && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -244,7 +244,7 @@ const CasesList = () => {
       )}
 
       {/* Add Case Modal */}
-      <AddCaseModal 
+      <AddCaseModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onCaseAdded={(newCase) => {

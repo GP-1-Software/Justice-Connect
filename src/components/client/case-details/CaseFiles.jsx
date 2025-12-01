@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileText, Download, Eye, Upload, File, Image, FileVideo, FileArchive, Calendar, User, HardDrive, X, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '../../../supabaseClient';
+import { notifyFileUploaded } from '../../../services/notificationService';
 import { useClientAuth } from '../../../hooks/useClientAuth';
 
 const CaseFiles = ({ caseId, canPerformAction, isDisabled }) => {
@@ -156,6 +157,29 @@ const CaseFiles = ({ caseId, canPerformAction, isDisabled }) => {
             description: `تم رفع الملف: ${file.name}`,
             visibility: 'all'
           });
+
+        // Notify assigned lawyer about the new file
+        try {
+          const { data: caseInfo, error: caseInfoError } = await supabase
+            .from('cases')
+            .select('assigned_lawyer_id, title')
+            .eq('case_id', caseId)
+            .single();
+
+          if (caseInfoError) throw caseInfoError;
+
+          if (caseInfo?.assigned_lawyer_id) {
+            await notifyFileUploaded(
+              caseInfo.assigned_lawyer_id,
+              'lawyer',
+              caseInfo.title || 'بدون عنوان',
+              file.name,
+              caseId
+            );
+          }
+        } catch (notificationError) {
+          console.warn('File upload notification error:', notificationError.message);
+        }
 
         // Update progress
         setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
