@@ -15,6 +15,7 @@ import CasesManagement from './pages/admin/CasesManagement';
 import AppointmentsManagement from './pages/admin/AppointmentsManagement';
 import PaymentsManagement from './pages/admin/PaymentsManagement';
 import SupportTickets from './pages/SupportTickets';
+import LegislationPage from './pages/LegislationPage';
 import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
 import { LawyerAuthProvider } from './hooks/useLawyerAuth.jsx';
@@ -45,6 +46,7 @@ function App() {
             <Route path="/admin/system-ai" element={<SystemAI />} />
             <Route path="/pending-verification" element={<PendingVerification />} />
             <Route path="/support" element={<SupportTickets />} />
+            <Route path="/legislation" element={<LegislationPage />} />
             {/* Client protected area */}
             <Route path="/client/*" element={<ClientRoutes />} />
             {/* Lawyer protected area */}

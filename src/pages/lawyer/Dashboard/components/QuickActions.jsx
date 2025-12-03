@@ -9,6 +9,7 @@ import {
   Upload,
   UserPlus,
   Settings,
+  BookOpen,
   Scale,
   Loader2,
   X,
@@ -105,11 +106,11 @@ const QuickActions = () => {
       onClick: () => navigate('/lawyer/messages')
     },
     {
-      icon: Newspaper,
+      icon: BookOpen,
       labelAr: 'التشريعات',
       labelEn: 'Legislations',
-      bgColor: 'from-indigo-500 to-indigo-600',
-      onClick: handleNewsClick
+      bgColor: 'from-green-500 to-emerald-600',
+      onClick: () => navigate('/legislation', { state: { from: 'lawyer-dashboard' } })
     }
   ];
 
