@@ -9,6 +9,8 @@ import systemChatRouter from "./routes/systemChatRouter.js";
 import messageRouter from "./routes/messageRouter.js";
 import notificationRouter from "./routes/notificationRouter.js";
 import authRouter from "./routes/authRoutes.js";
+import legislationRouter from "./routes/legislationRoute.js";
+import newsRouter from "./routes/newsRoute.js";
 import { startNotificationScheduler } from "./services/notificationScheduler.js";
 
 
@@ -33,6 +35,12 @@ app.use("/api/notifications", notificationRouter);
 
 // Route for Auth
 app.use("/api/auth", authRouter);
+
+// Route for Legislation
+app.use("/api/law", legislationRouter);
+
+// Route for News
+app.use("/api/news", newsRouter);
 
 app.get("/", (req, res) => {
     res.send("Justice-Connect Backend is running ✅");
