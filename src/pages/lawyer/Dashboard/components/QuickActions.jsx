@@ -9,7 +9,11 @@ import {
   Upload,
   UserPlus,
   Settings,
-  BookOpen
+  BookOpen,
+  Scale,
+  Loader2,
+  X,
+  Newspaper
 } from 'lucide-react';
 
 const QuickActions = () => {
