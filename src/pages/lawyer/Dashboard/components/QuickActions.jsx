@@ -8,7 +8,8 @@ import {
   Briefcase,
   Upload,
   UserPlus,
-  Settings
+  Settings,
+  BookOpen
 } from 'lucide-react';
 
 const QuickActions = () => {
@@ -50,6 +51,13 @@ const QuickActions = () => {
       labelEn: 'Messages',
       bgColor: 'from-orange-500 to-orange-600',
       onClick: () => navigate('/lawyer/messages')
+    },
+    {
+      icon: BookOpen,
+      labelAr: 'التشريعات',
+      labelEn: 'Legislations',
+      bgColor: 'from-green-500 to-emerald-600',
+      onClick: () => navigate('/legislation', { state: { from: 'lawyer-dashboard' } })
     }
   ];
 
@@ -63,7 +71,7 @@ const QuickActions = () => {
           اختصارات للوصول السريع
         </span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {actions.map((action, idx) => (
           <button
             key={idx}

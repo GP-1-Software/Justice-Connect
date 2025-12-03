@@ -8,7 +8,8 @@ import {
   Calendar,
   Bot,
   FileCheck,
-  CreditCard
+  CreditCard,
+  BookOpen
 } from 'lucide-react';
 
 const QuickActions = () => {
@@ -58,6 +59,13 @@ const QuickActions = () => {
       icon: FileText,
       color: 'indigo',
       path: '/client/cases'
+    },
+    {
+      title: 'التشريعات',
+      description: 'تصفح القوانين الفلسطينية',
+      icon: BookOpen,
+      color: 'emerald',
+      path: '/legislation'
     }
   ];
 
@@ -68,7 +76,8 @@ const QuickActions = () => {
       purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
       orange: 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
       cyan: 'from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700',
-      indigo: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700'
+      indigo: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
+      emerald: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
     };
     return colors[color] || colors.blue;
   };
@@ -92,7 +101,7 @@ const QuickActions = () => {
           return (
             <button
               key={index}
-              onClick={() => navigate(action.path)}
+              onClick={() => navigate(action.path, action.path === '/legislation' ? { state: { from: 'client-dashboard' } } : {})}
               className={`group relative p-3 sm:p-4 rounded-xl bg-gradient-to-r ${colorClasses} text-white hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 text-right ${
                 action.highlight ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
               }`}
