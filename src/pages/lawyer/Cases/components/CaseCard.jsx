@@ -11,7 +11,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
 
   const handleDelete = async (e) => {
     e.stopPropagation();
-    
+
     if (!confirm(`هل أنت متأكد من حذف القضية "${caseData.title}"؟`)) {
       return;
     }
@@ -30,7 +30,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
       }
 
       alert('تم حذف القضية بنجاح');
-      
+
       if (onCaseDeleted) {
         onCaseDeleted(caseData.case_id);
       }
@@ -51,7 +51,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
     try {
       const { data, error } = await supabase
         .from('cases')
-        .update({ 
+        .update({
           status: 'active',
           updated_at: new Date().toISOString()
         })
@@ -62,7 +62,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
       if (error) throw error;
 
       alert('تم قبول القضية بنجاح');
-      
+
       if (onCaseUpdated) {
         onCaseUpdated(data);
       }
@@ -89,7 +89,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
     try {
       const { data, error } = await supabase
         .from('cases')
-        .update({ 
+        .update({
           status: 'rejected',
           rejection_reason: rejectionReason,
           updated_at: new Date().toISOString()
@@ -102,7 +102,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
 
       alert('تم رفض القضية');
       setShowRejectModal(false);
-      
+
       if (onCaseUpdated) {
         onCaseUpdated(data);
       }
@@ -116,48 +116,48 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'pending': { 
-        label: 'قيد المراجعة', 
+      'pending': {
+        label: 'قيد المراجعة',
         bgColor: 'bg-orange-50 dark:bg-orange-900/20',
         textColor: 'text-orange-700 dark:text-orange-400',
         borderColor: 'border-t-4 border-t-orange-500',
         statusBarBg: 'bg-gradient-to-r from-orange-400 to-orange-600',
         glowColor: 'shadow-orange-500/20'
       },
-      'active': { 
-        label: 'نشطة', 
+      'active': {
+        label: 'نشطة',
         bgColor: 'bg-green-50 dark:bg-green-900/20',
         textColor: 'text-green-700 dark:text-green-400',
         borderColor: 'border-t-4 border-t-green-500',
         statusBarBg: 'bg-gradient-to-r from-green-400 to-green-600',
         glowColor: 'shadow-green-500/20'
       },
-      'in_progress': { 
-        label: 'قيد التنفيذ', 
+      'in_progress': {
+        label: 'قيد التنفيذ',
         bgColor: 'bg-blue-50 dark:bg-blue-900/20',
         textColor: 'text-blue-700 dark:text-blue-400',
         borderColor: 'border-t-4 border-t-blue-500',
         statusBarBg: 'bg-gradient-to-r from-blue-400 to-blue-600',
         glowColor: 'shadow-blue-500/20'
       },
-      'completed': { 
-        label: 'مكتملة', 
+      'completed': {
+        label: 'مكتملة',
         bgColor: 'bg-gray-50 dark:bg-gray-900/20',
         textColor: 'text-gray-700 dark:text-gray-400',
         borderColor: 'border-t-4 border-t-gray-500',
         statusBarBg: 'bg-gradient-to-r from-gray-400 to-gray-600',
         glowColor: 'shadow-gray-500/20'
       },
-      'closed': { 
-        label: 'مغلقة', 
+      'closed': {
+        label: 'مغلقة',
         bgColor: 'bg-red-50 dark:bg-red-900/20',
         textColor: 'text-red-700 dark:text-red-400',
         borderColor: 'border-t-4 border-t-red-500',
         statusBarBg: 'bg-gradient-to-r from-red-400 to-red-600',
         glowColor: 'shadow-red-500/20'
       },
-      'rejected': { 
-        label: 'مرفوضة', 
+      'rejected': {
+        label: 'مرفوضة',
         bgColor: 'bg-gray-50 dark:bg-gray-900/20',
         textColor: 'text-gray-700 dark:text-gray-400',
         borderColor: 'border-t-4 border-t-gray-500',
@@ -200,7 +200,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
   };
 
   return (
-    <div 
+    <div
       className={`bg-white dark:bg-gray-800 rounded-2xl ${caseData.is_disabled ? 'border-red-500 dark:border-red-600 opacity-75' : statusInfo.borderColor} border hover:shadow-2xl hover:${statusInfo.glowColor} transition-all duration-300 cursor-pointer overflow-hidden group hover:scale-[1.02] transform ${caseData.is_disabled ? '' : 'border-gray-200 dark:border-gray-700'}`}
       onClick={() => navigate(`/lawyer/cases/${caseData.case_id}`)}
     >
@@ -216,10 +216,10 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
           </div>
         </div>
       )}
-      
+
       {/* Status Bar at Top */}
       <div className={`h-1.5 ${statusInfo.statusBarBg}`}></div>
-      
+
       <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -239,7 +239,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
         <h3 className="text-xl font-bold text-[#0A3D91] dark:text-white mb-2 line-clamp-2 leading-tight">
           {caseData.title || 'قضية بدون عنوان'}
         </h3>
-        
+
         {/* Case Number if exists */}
         {caseData.case_number && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-mono">
@@ -257,7 +257,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
               <span className="font-medium">{caseData.client_name}</span>
             </div>
           )}
-          
+
           {caseData.case_type && (
             <div className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
               <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -273,7 +273,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
             </div>
             <span>آخر تحديث: {formatDate(caseData.updated_at)}</span>
           </div>
-          
+
           {caseData.court_name && (
             <div className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
               <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
@@ -326,14 +326,14 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             e.stopPropagation();
             setShowRejectModal(false);
           }}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >

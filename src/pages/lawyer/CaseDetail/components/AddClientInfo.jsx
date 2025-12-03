@@ -133,155 +133,163 @@ const AddClientInfo = ({ clientIdNumber, caseNumber, lawyerId, onClientAdded }) 
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl lg:rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-5 lg:p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">تعديل معلومات العميل</h3>
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 lg:p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">تعديل معلومات العميل</h3>
+          </div>
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ID Number */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <CreditCard className="w-4 h-4" />
-            رقم الهوية
-          </label>
-          <input
-            type="text"
-            name="id_number"
-            value={formData.id_number}
-            onChange={handleChange}
-            onBlur={handleIdBlur}
-            maxLength="9"
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${
-              clientIdNumber 
-                ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600' 
-                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-            } ${
-              idError ? 'border-red-500 focus:ring-red-500' : ''
-            } text-gray-900 dark:text-white`}
-            placeholder="123456789"
-            readOnly={!!clientIdNumber}
-            dir="ltr"
-          />
-          {idError && (
-            <div className="flex items-center gap-1 mt-1 text-red-600 dark:text-red-400 text-xs">
-              <AlertCircle className="w-3 h-3" />
-              <span>{idError}</span>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* ID Number */}
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <CreditCard className="w-4 h-4" />
+                رقم الهوية
+              </label>
+              <input
+                type="text"
+                name="id_number"
+                value={formData.id_number}
+                onChange={handleChange}
+                onBlur={handleIdBlur}
+                maxLength="9"
+                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 border rounded-lg sm:rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  clientIdNumber 
+                    ? 'bg-gray-100 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600 cursor-not-allowed' 
+                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                } ${
+                  idError ? 'border-red-500 focus:ring-red-500' : ''
+                } text-gray-900 dark:text-white shadow-sm`}
+                placeholder="123456789"
+                readOnly={!!clientIdNumber}
+                dir="ltr"
+              />
+              {idError && (
+                <div className="flex items-center gap-1 mt-2 text-red-600 dark:text-red-400 text-xs sm:text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{idError}</span>
+                </div>
+              )}
+              {!clientIdNumber && (
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5">
+                  9 أرقام للهوية الفلسطينية
+                </p>
+              )}
             </div>
-          )}
-          {!clientIdNumber && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              9 أرقام للهوية الفلسطينية
-            </p>
-          )}
-        </div>
 
-        {/* First Name */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <User className="w-4 h-4" />
-            الاسم الأول
-          </label>
-          <input
-            type="text"
-            name="first_name"
-            value={formData.first_name}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            placeholder="أدخل الاسم الأول"
-          />
-        </div>
+            {/* First Name */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <User className="w-4 h-4" />
+                الاسم الأول
+              </label>
+              <input
+                type="text"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="أدخل الاسم الأول"
+              />
+            </div>
 
-        {/* Last Name */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <User className="w-4 h-4" />
-            الاسم الأخير
-          </label>
-          <input
-            type="text"
-            name="last_name"
-            value={formData.last_name}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            placeholder="أدخل الاسم الأخير"
-          />
-        </div>
+            {/* Last Name */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <User className="w-4 h-4" />
+                الاسم الأخير
+              </label>
+              <input
+                type="text"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="أدخل الاسم الأخير"
+              />
+            </div>
 
-        {/* Email */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Mail className="w-4 h-4" />
-            البريد الإلكتروني
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            placeholder="example@email.com"
-          />
-        </div>
+            {/* Email */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Mail className="w-4 h-4" />
+                البريد الإلكتروني
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="example@email.com"
+                dir="ltr"
+              />
+            </div>
 
-        {/* Phone Number */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Phone className="w-4 h-4" />
-            رقم الهاتف
-          </label>
-          <input
-            type="tel"
-            name="phone_number"
-            value={formData.phone_number}
-            onChange={handleChange}
-            pattern="[0-9+\-\s()]+"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            placeholder="+970599123456"
-            dir="ltr"
-          />
-        </div>
+            {/* Phone Number */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Phone className="w-4 h-4" />
+                رقم الهاتف
+              </label>
+              <input
+                type="tel"
+                name="phone_number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                pattern="[0-9+\-\s()]+"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="+970599123456"
+                dir="ltr"
+              />
+            </div>
 
-        {/* City */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <MapPin className="w-4 h-4" />
-            المدينة
-          </label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-            placeholder="أدخل المدينة"
-          />
-        </div>
+            {/* City */}
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <MapPin className="w-4 h-4" />
+                المدينة
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="أدخل المدينة"
+              />
+            </div>
+          </div>
 
-        {/* Buttons */}
-        <div className="flex gap-2 pt-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          >
-            <Save className="w-4 h-4" />
-            {loading ? 'جاري الحفظ...' : 'حفظ'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsEditing(false)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-medium"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
+          {/* Buttons */}
+          <div className="flex gap-3 pt-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 dark:from-blue-500 dark:to-cyan-500 dark:hover:from-blue-600 dark:hover:to-cyan-600 text-white rounded-lg sm:rounded-xl transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base font-medium shadow-lg hover:shadow-xl"
+            >
+              <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+              {loading ? 'جاري الحفظ...' : 'حفظ'}
+            </button>
+            {onClientAdded && (
+              <button
+                type="button"
+                onClick={() => onClientAdded && onClientAdded()}
+                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl transition-all text-sm sm:text-base font-medium shadow-md hover:shadow-lg"
+              >
+                إلغاء
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
 
 export default AddClientInfo;
+

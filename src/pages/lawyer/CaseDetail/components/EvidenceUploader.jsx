@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../../hooks/useLawyerAuth';
 import { supabase } from '../../../../supabaseClient';
+import { notifyFileUploaded } from '../../../../services/notificationService';
 import { Upload, File, Download, Trash2, Loader2 } from 'lucide-react';
 
-const EvidenceUploader = ({ caseId }) => {
+const EvidenceUploader = ({ caseId, onTimelineEventAdded }) => {
   const { lawyer } = useLawyerAuth();
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -42,17 +43,18 @@ const EvidenceUploader = ({ caseId }) => {
     try {
       // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${caseId}/${Date.now()}.${fileExt}`;
+      const uniqueName = `${Date.now()}.${fileExt}`;
+      const filePath = `case-files/${caseId}/${uniqueName}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('case-files')
-        .upload(fileName, file);
+        .from('case-documents')
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from('case-documents')
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
       // Save document record
       const { data, error } = await supabase
@@ -74,6 +76,52 @@ const EvidenceUploader = ({ caseId }) => {
 
       if (error) throw error;
       setDocuments(prev => [data, ...prev]);
+
+      // Add timeline event so the update shows in the case timeline
+      const { data: timelineEvent, error: timelineError } = await supabase
+        .from('timeline_events')
+        .insert([
+          {
+            case_id: caseId,
+            event_type: 'file_upload',
+            author_id: lawyer.lawyer_id,
+            author_type: 'lawyer',
+            title: 'تم رفع ملف جديد',
+            description: `تم رفع الملف: ${file.name}`,
+            visibility: 'all'
+          }
+        ])
+        .select()
+        .single();
+
+      if (timelineError) throw timelineError;
+
+      if (onTimelineEventAdded && timelineEvent) {
+        onTimelineEventAdded(timelineEvent);
+      }
+
+      // Notify client about the new file
+      try {
+        const { data: caseInfo, error: caseInfoError } = await supabase
+          .from('cases')
+          .select('client_id, title')
+          .eq('case_id', caseId)
+          .single();
+
+        if (caseInfoError) throw caseInfoError;
+
+        if (caseInfo?.client_id) {
+          await notifyFileUploaded(
+            caseInfo.client_id,
+            'client',
+            caseInfo.title || 'بدون عنوان',
+            file.name,
+            caseId
+          );
+        }
+      } catch (notificationError) {
+        console.warn('File upload notification error:', notificationError.message);
+      }
     } catch (error) {
       console.error('Upload error:', error.message);
       alert('حدث خطأ أثناء رفع الملف');
@@ -86,12 +134,16 @@ const EvidenceUploader = ({ caseId }) => {
   const handleDelete = async (doc) => {
     if (!confirm('هل أنت متأكد من حذف هذا الملف؟')) return;
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('case-documents')
-        .remove([doc.file_path]);
+      const filePath = doc.file_path || doc.file_url?.split('/case-documents/')[1];
 
-      if (storageError) console.warn('Storage delete warning:', storageError.message);
+      // Delete from storage
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from('case-documents')
+          .remove([filePath]);
+
+        if (storageError) console.warn('Storage delete warning:', storageError.message);
+      }
 
       // Delete record
       const { error } = await supabase
