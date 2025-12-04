@@ -16,6 +16,18 @@
   }
 }
 
+/* PDF Side Panel Slide Animation */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Basic RTL helper: toggle by document.dir = 'rtl' */
 html[dir='rtl'] body {
   direction: rtl;
