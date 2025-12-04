@@ -146,6 +146,12 @@ export const useInvoiceStats = (userId, userType, period = 'month') => {
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
+    // Wait until we have a valid userId to avoid invalid input errors in Supabase filters
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -166,6 +172,11 @@ export const useInvoiceStats = (userId, userType, period = 'month') => {
 
   // Subscribe to real-time updates
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
     fetchStats();
 
     const subscription = userType === 'lawyer'
