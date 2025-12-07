@@ -11,7 +11,8 @@ import {
   MessageSquare,
   FolderOpen,
   CheckSquare,
-  AlertCircle
+  AlertCircle,
+  Scale
 } from 'lucide-react';
 import CaseHeader from './components/CaseHeader';
 import UpdateComposer from './components/UpdateComposer';
@@ -21,6 +22,7 @@ import EvidenceUploader from './components/EvidenceUploader';
 import TaskManager from './components/TaskManager';
 import MeetingManager from './components/MeetingManager';
 import ClientInfo from './components/ClientInfo';
+import CourtFilingTracker from './components/CourtFilingTracker';
 
 const CaseDetail = () => {
   const { caseId } = useParams();
@@ -34,6 +36,7 @@ const CaseDetail = () => {
 
   const tabs = [
     { id: 'overview', label: 'نظرة عامة', icon: FileText },
+    { id: 'court', label: 'المحكمة', icon: Scale },
     { id: 'timeline', label: 'الجدول الزمني', icon: Clock },
     { id: 'meetings', label: 'الاجتماعات', icon: CalendarDays },
     { id: 'notes', label: 'الملاحظات', icon: MessageSquare },
@@ -64,6 +67,12 @@ const CaseDetail = () => {
         return (
           <div id="overview">
             <ClientInfo caseData={caseData} lawyerId={lawyer?.lawyer_id} />
+          </div>
+        );
+      case 'court':
+        return (
+          <div id="court" className="space-y-6">
+            <CourtFilingTracker caseId={caseId} caseData={caseData} />
           </div>
         );
       case 'timeline':

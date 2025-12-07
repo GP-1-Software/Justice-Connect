@@ -36,7 +36,32 @@ export const NOTIFICATION_TYPES = {
     ACCOUNT_VERIFIED: 'account_verified',
     
     // Support
-    SUPPORT_TICKET_REPLY: 'support_ticket_reply'
+    SUPPORT_TICKET_REPLY: 'support_ticket_reply',
+    
+    // Court Clerk System
+    FILING_RECEIVED: 'filing_received',
+    FILING_UNDER_REVIEW: 'filing_under_review',
+    FILING_ACCEPTED: 'filing_accepted',
+    FILING_REJECTED: 'filing_rejected',
+    FILING_UPDATE_REQUESTED: 'filing_update_requested',
+    CASE_REGISTERED: 'case_registered',
+    SERVICE_SCHEDULED: 'service_scheduled',
+    SERVICE_COMPLETED: 'service_completed',
+    HEARING_SCHEDULED: 'hearing_scheduled',
+    HEARING_UPDATED: 'hearing_updated',
+    HEARING_REMINDER_24H: 'hearing_reminder_24h',
+    HEARING_REMINDER_1H: 'hearing_reminder_1h',
+    DECISION_ISSUED: 'decision_issued',
+    
+    // New Stage System (14 Stages)
+    CASE_STAGE_UPDATE: 'case_stage_update',
+    EXECUTION_UPDATE: 'execution_update',
+    APPEAL_SUBMITTED: 'appeal_submitted',
+    APPEAL_DEADLINE_WARNING: 'appeal_deadline_warning',
+    FIRST_HEARING_SCHEDULED: 'first_hearing_scheduled',
+    JUDGMENT_ISSUED: 'judgment_issued',
+    CASE_FULLY_EXECUTED: 'case_fully_executed',
+    RESPONSE_DEADLINE_WARNING: 'response_deadline_warning'
 };
 
 // Priority Levels
@@ -67,7 +92,22 @@ const NOTIFICATION_ICONS = {
     [NOTIFICATION_TYPES.INVOICE_CREATED]: 'file-invoice',
     [NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT]: 'megaphone',
     [NOTIFICATION_TYPES.ACCOUNT_VERIFIED]: 'check-circle',
-    [NOTIFICATION_TYPES.SUPPORT_TICKET_REPLY]: 'help-circle'
+    [NOTIFICATION_TYPES.SUPPORT_TICKET_REPLY]: 'help-circle',
+    
+    // Court Clerk Icons
+    [NOTIFICATION_TYPES.FILING_RECEIVED]: 'inbox',
+    [NOTIFICATION_TYPES.FILING_UNDER_REVIEW]: 'eye',
+    [NOTIFICATION_TYPES.FILING_ACCEPTED]: 'check-circle',
+    [NOTIFICATION_TYPES.FILING_REJECTED]: 'x-circle',
+    [NOTIFICATION_TYPES.FILING_UPDATE_REQUESTED]: 'alert-circle',
+    [NOTIFICATION_TYPES.CASE_REGISTERED]: 'file-check',
+    [NOTIFICATION_TYPES.SERVICE_SCHEDULED]: 'truck',
+    [NOTIFICATION_TYPES.SERVICE_COMPLETED]: 'check-square',
+    [NOTIFICATION_TYPES.HEARING_SCHEDULED]: 'calendar',
+    [NOTIFICATION_TYPES.HEARING_UPDATED]: 'calendar-edit',
+    [NOTIFICATION_TYPES.HEARING_REMINDER_24H]: 'bell',
+    [NOTIFICATION_TYPES.HEARING_REMINDER_1H]: 'clock',
+    [NOTIFICATION_TYPES.DECISION_ISSUED]: 'gavel'
 };
 
 /**

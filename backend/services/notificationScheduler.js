@@ -95,9 +95,9 @@ export const scheduleAppointmentReminders = async (appointment) => {
                 user_type: appointment.client_id ? 'client' : 'lawyer',
                 notification_type: NOTIFICATION_TYPES.APPOINTMENT_REMINDER_24H,
                 title: 'تذكير بالموعد - غداً',
-                message: `لديك موعد غداً في ${appointmentTime.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`,
+                message: `لديك موعد غداً في ${appointmentTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`,
                 scheduled_time: reminder24h.toISOString(),
-                related_id: appointment.appointment_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'appointment',
                 priority: NOTIFICATION_PRIORITY.NORMAL,
                 action_url: `/appointments/${appointment.appointment_id}`
@@ -109,9 +109,9 @@ export const scheduleAppointmentReminders = async (appointment) => {
                 user_type: appointment.client_id ? 'lawyer' : 'client',
                 notification_type: NOTIFICATION_TYPES.APPOINTMENT_REMINDER_24H,
                 title: 'تذكير بالموعد - غداً',
-                message: `لديك موعد غداً في ${appointmentTime.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`,
+                message: `لديك موعد غداً في ${appointmentTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`,
                 scheduled_time: reminder24h.toISOString(),
-                related_id: appointment.appointment_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'appointment',
                 priority: NOTIFICATION_PRIORITY.NORMAL,
                 action_url: `/appointments/${appointment.appointment_id}`
@@ -125,9 +125,9 @@ export const scheduleAppointmentReminders = async (appointment) => {
                 user_type: appointment.client_id ? 'client' : 'lawyer',
                 notification_type: NOTIFICATION_TYPES.APPOINTMENT_REMINDER_1H,
                 title: 'تذكير بالموعد - قريباً',
-                message: `موعدك بعد ساعة واحدة في ${appointmentTime.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`,
+                message: `موعدك بعد ساعة واحدة في ${appointmentTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`,
                 scheduled_time: reminder1h.toISOString(),
-                related_id: appointment.appointment_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'appointment',
                 priority: NOTIFICATION_PRIORITY.HIGH,
                 action_url: `/appointments/${appointment.appointment_id}`
@@ -139,9 +139,9 @@ export const scheduleAppointmentReminders = async (appointment) => {
                 user_type: appointment.client_id ? 'lawyer' : 'client',
                 notification_type: NOTIFICATION_TYPES.APPOINTMENT_REMINDER_1H,
                 title: 'تذكير بالموعد - قريباً',
-                message: `موعدك بعد ساعة واحدة في ${appointmentTime.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`,
+                message: `موعدك بعد ساعة واحدة في ${appointmentTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`,
                 scheduled_time: reminder1h.toISOString(),
-                related_id: appointment.appointment_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'appointment',
                 priority: NOTIFICATION_PRIORITY.HIGH,
                 action_url: `/appointments/${appointment.appointment_id}`
@@ -157,7 +157,7 @@ export const scheduleAppointmentReminders = async (appointment) => {
                 title: 'حان موعد اللقاء!',
                 message: `موعدك الآن!`,
                 scheduled_time: appointmentTime.toISOString(),
-                related_id: appointment.appointment_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'appointment',
                 priority: NOTIFICATION_PRIORITY.URGENT,
                 action_url: `/appointments/${appointment.appointment_id}`
@@ -171,7 +171,7 @@ export const scheduleAppointmentReminders = async (appointment) => {
                 title: 'حان موعد اللقاء!',
                 message: `موعدك الآن!`,
                 scheduled_time: appointmentTime.toISOString(),
-                related_id: appointment.appointment_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'appointment',
                 priority: NOTIFICATION_PRIORITY.URGENT,
                 action_url: `/appointments/${appointment.appointment_id}`
@@ -220,7 +220,7 @@ export const scheduleMeetingReminders = async (meeting, clientId, lawyerId) => {
                 title: 'الاجتماع قريباً',
                 message: `الاجتماع سيبدأ بعد 5 دقائق`,
                 scheduled_time: reminder5min.toISOString(),
-                related_id: meeting.meeting_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'meeting',
                 priority: 'high',
                 action_url: meeting.meeting_type === 'case' ? '/client/cases' : '/client/appointments'
@@ -234,7 +234,7 @@ export const scheduleMeetingReminders = async (meeting, clientId, lawyerId) => {
                 title: 'الاجتماع قريباً',
                 message: `الاجتماع سيبدأ بعد 5 دقائق`,
                 scheduled_time: reminder5min.toISOString(),
-                related_id: meeting.meeting_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'meeting',
                 priority: 'high',
                 action_url: meeting.meeting_type === 'case' ? '/lawyer/cases' : '/lawyer/appointments'
@@ -251,7 +251,7 @@ export const scheduleMeetingReminders = async (meeting, clientId, lawyerId) => {
                 title: 'الاجتماع جاهز الآن',
                 message: `يمكنك الانضمام للاجتماع الآن`,
                 scheduled_time: meetingTime.toISOString(),
-                related_id: meeting.meeting_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'meeting',
                 priority: 'urgent',
                 action_url: meeting.meeting_type === 'case' ? '/client/cases' : '/client/appointments'
@@ -265,7 +265,7 @@ export const scheduleMeetingReminders = async (meeting, clientId, lawyerId) => {
                 title: 'الاجتماع جاهز الآن',
                 message: `يمكنك الانضمام للاجتماع الآن`,
                 scheduled_time: meetingTime.toISOString(),
-                related_id: meeting.meeting_id,
+                related_id: null, // UUID - stored in action_url instead
                 related_type: 'meeting',
                 priority: 'urgent',
                 action_url: meeting.meeting_type === 'case' ? '/lawyer/cases' : '/lawyer/appointments'

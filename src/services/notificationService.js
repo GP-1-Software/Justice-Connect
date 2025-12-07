@@ -538,7 +538,7 @@ export const formatNotificationTime = (timestamp) => {
   if (diffHours < 24) return `منذ ${diffHours} ساعة`;
   if (diffDays < 7) return `منذ ${diffDays} يوم`;
 
-  return notifTime.toLocaleDateString('ar-SA');
+  return notifTime.toLocaleDateString('ar-EG');
 };
 
 /**

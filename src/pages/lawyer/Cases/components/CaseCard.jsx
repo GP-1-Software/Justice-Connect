@@ -114,10 +114,50 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
     }
   };
 
+  // Court Stage configuration (14 stages from court clerk system)
+  const COURT_STAGES = {
+    'submitted': { label: 'تم التقديم', color: 'gray' },
+    'under_review': { label: 'قيد المراجعة', color: 'orange' },
+    'update_required': { label: 'مطلوب تعديل', color: 'red' },
+    'ready_for_registration': { label: 'جاهزة للتسجيل', color: 'blue' },
+    'registered': { label: 'مسجلة رسمياً', color: 'teal' },
+    'service_in_progress': { label: 'جاري التبليغ', color: 'purple' },
+    'service_completed': { label: 'تم التبليغ', color: 'indigo' },
+    'awaiting_response': { label: 'بانتظار الرد', color: 'yellow' },
+    'first_hearing_scheduled': { label: 'جلسة أولى محددة', color: 'cyan' },
+    'hearings_ongoing': { label: 'جلسات جارية', color: 'blue' },
+    'judgment_issued': { label: 'صدر الحكم', color: 'amber' },
+    'appeal_period': { label: 'فترة استئناف', color: 'orange' },
+    'in_execution': { label: 'قيد التنفيذ', color: 'violet' },
+    'fully_executed': { label: 'تم التنفيذ', color: 'green' }
+  };
+
+  const getCourtStageBadge = (stage) => {
+    const stageInfo = COURT_STAGES[stage];
+    if (!stageInfo) return null;
+    
+    const colorMap = {
+      'gray': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', border: 'border-gray-500' },
+      'orange': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-500' },
+      'red': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-500' },
+      'blue': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-500' },
+      'teal': { bg: 'bg-teal-100 dark:bg-teal-900/30', text: 'text-teal-700 dark:text-teal-400', border: 'border-teal-500' },
+      'purple': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', border: 'border-purple-500' },
+      'indigo': { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-500' },
+      'yellow': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-500' },
+      'cyan': { bg: 'bg-cyan-100 dark:bg-cyan-900/30', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-500' },
+      'amber': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-500' },
+      'violet': { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-500' },
+      'green': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', border: 'border-green-500' }
+    };
+    
+    return { ...stageInfo, ...colorMap[stageInfo.color] };
+  };
+
   const getStatusBadge = (status) => {
     const statusMap = {
       'pending': {
-        label: 'قيد المراجعة',
+        label: 'معلقة',
         bgColor: 'bg-orange-50 dark:bg-orange-900/20',
         textColor: 'text-orange-700 dark:text-orange-400',
         borderColor: 'border-t-4 border-t-orange-500',
@@ -167,6 +207,12 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
     };
     return statusMap[status] || statusMap['pending'];
   };
+
+  // Check if case needs accept/reject buttons
+  // Only show if: status is pending AND case was assigned by someone else (has client_id but no case_stage means client created it)
+  const showAcceptRejectButtons = caseData.status === 'pending' && !caseData.case_stage && caseData.client_id;
+  
+  const courtStageBadge = getCourtStageBadge(caseData.case_stage);
 
   const getCaseTypeLabel = (caseType) => {
     const typeMap = {
@@ -223,9 +269,16 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
       <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.textColor} border border-current/20`}>
-            {statusInfo.label}
-          </span>
+          {/* Show Court Stage if exists, otherwise show status */}
+          {courtStageBadge ? (
+            <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold ${courtStageBadge.bg} ${courtStageBadge.text} border border-current/20`}>
+              {courtStageBadge.label}
+            </span>
+          ) : (
+            <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold ${statusInfo.bgColor} ${statusInfo.textColor} border border-current/20`}>
+              {statusInfo.label}
+            </span>
+          )}
           <button
             onClick={handleDelete}
             className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
@@ -291,8 +344,8 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
           </p>
         )}
 
-        {/* Actions for Pending Cases */}
-        {caseData.status === 'pending' && (
+        {/* Actions for Pending Cases - Only show if case was assigned by client, not created by lawyer */}
+        {showAcceptRejectButtons && (
           <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handleAccept}
@@ -313,8 +366,8 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
           </div>
         )}
 
-        {/* View Button for Non-Pending Cases */}
-        {caseData.status !== 'pending' && (
+        {/* View Button - Always show except when accept/reject buttons are shown */}
+        {!showAcceptRejectButtons && (
           <div className="flex items-center justify-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
             <span className="text-sm text-[#0A3D91] dark:text-blue-400 font-bold">
               عرض التفاصيل

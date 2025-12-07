@@ -280,11 +280,11 @@ const Messages = ({ userId, userType }) => {
         yesterday.setDate(yesterday.getDate() - 1);
 
         if (messageDate.toDateString() === today.toDateString()) {
-            return messageDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            return messageDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         } else if (messageDate.toDateString() === yesterday.toDateString()) {
             return 'أمس';
         } else {
-            return messageDate.toLocaleDateString('ar-SA');
+            return messageDate.toLocaleDateString('ar-EG');
         }
     };
 

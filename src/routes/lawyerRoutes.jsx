@@ -15,6 +15,7 @@ import InvoiceDetails from '../pages/lawyer/InvoiceDetails';
 import SupportTickets from '../pages/SupportTickets';
 import LawyerMessages from '../pages/lawyer/LawyerMessages';
 import NotificationsPage from '../pages/NotificationsPage';
+import FileCaseLawyer from '../pages/lawyer/FileCaseLawyer';
 
 const LawyerRoutes = () => {
   return (
@@ -25,6 +26,7 @@ const LawyerRoutes = () => {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="cases" element={<CasesListPage />} />
         <Route path="cases/:caseId" element={<CaseDetailPage />} />
+        <Route path="file-case" element={<FileCaseLawyer />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="appointments" element={<AppointmentsPage />} />
         <Route path="appointments/:appointmentId" element={<AppointmentsPage />} />

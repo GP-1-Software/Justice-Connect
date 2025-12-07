@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Scale,
   CheckSquare,
-  FileText
+  FileText,
+  FilePlus
 } from 'lucide-react';
 
 const LawyerSidebar = ({ isOpen, onClose }) => {
@@ -47,6 +48,12 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
       title: 'قضاياي',
       icon: Briefcase,
       path: 'cases'
+    },
+    {
+      title: 'تقديم دعوى جديدة',
+      icon: FilePlus,
+      path: 'file-case',
+      highlight: true
     },
     {
       title: 'التقويم',

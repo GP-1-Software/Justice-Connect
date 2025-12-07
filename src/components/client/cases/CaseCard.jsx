@@ -15,7 +15,35 @@ import { useNavigate } from 'react-router-dom';
 const CaseCard = ({ caseData }) => {
   const navigate = useNavigate();
 
-  // Status configurations
+  // Court Stage configuration (14 stages from court clerk system)
+  const COURT_STAGES = {
+    'submitted': { label: 'تم التقديم', color: 'bg-gray-100 text-gray-800 border-gray-200', icon: Clock },
+    'under_review': { label: 'قيد المراجعة', color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock },
+    'update_required': { label: 'قيد المراجعة', color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock }, // Hide from client
+    'ready_for_registration': { label: 'جاهزة للتسجيل', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircle },
+    'registered': { label: 'مسجلة رسمياً', color: 'bg-teal-100 text-teal-800 border-teal-200', icon: CheckCircle },
+    'service_in_progress': { label: 'جاري التبليغ', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Clock },
+    'service_completed': { label: 'تم التبليغ', color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: CheckCircle },
+    'awaiting_response': { label: 'بانتظار الرد', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: AlertCircle },
+    'first_hearing_scheduled': { label: 'جلسة أولى محددة', color: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: Scale },
+    'hearings_ongoing': { label: 'جلسات جارية', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Scale },
+    'judgment_issued': { label: 'صدر الحكم', color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Scale },
+    'appeal_period': { label: 'فترة استئناف', color: 'bg-orange-100 text-orange-800 border-orange-200', icon: AlertCircle },
+    'in_execution': { label: 'قيد التنفيذ', color: 'bg-violet-100 text-violet-800 border-violet-200', icon: Clock },
+    'fully_executed': { label: 'تم التنفيذ', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle }
+  };
+
+  // Get court stage info if exists
+  const getCourtStage = () => {
+    if (caseData.case_stage && COURT_STAGES[caseData.case_stage]) {
+      return COURT_STAGES[caseData.case_stage];
+    }
+    return null;
+  };
+
+  const courtStage = getCourtStage();
+
+  // Status configurations (fallback when no court stage)
   const statusConfig = {
     pending: {
       label: 'قيد المراجعة',
@@ -128,10 +156,18 @@ const CaseCard = ({ caseData }) => {
 
         {/* Status and Priority Badges */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mt-2 sm:mt-3">
-          <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border ${status.color}`}>
-            <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            {status.label}
-          </span>
+          {/* Show Court Stage if exists, otherwise show regular status */}
+          {courtStage ? (
+            <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border ${courtStage.color}`}>
+              <courtStage.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {courtStage.label}
+            </span>
+          ) : (
+            <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border ${status.color}`}>
+              <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {status.label}
+            </span>
+          )}
           <span className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${priority.color}`}>
             {priority.label}
           </span>

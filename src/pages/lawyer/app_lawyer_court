@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقديم دعوى إلكترونية - فلسطين 2025</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin:0; padding:20px; background:#f5f7fa; }
+        .container { max-width:1000px; margin:auto; background:white; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.1); overflow:hidden; }
+        header { background:#1e3d73; color:white; padding:20px; text-align:center; font-size:24px; }
+        header small { font-size:14px; opacity:0.9; }
+        .form-section { padding:25px; border-bottom:1px solid #eee; }
+        h3 { color:#1e3d73; border-bottom:2px solid #4a90e2; padding-bottom:8px; margin-top:0; }
+        label { display:block; margin:12px 0 6px; font-weight:bold; color:#333; font-size:14px; }
+        input, select, textarea { width:100%; padding:10px; border:2px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box; }
+        input:focus, select:focus, textarea:focus { border-color:#4a90e2; outline:none; }
+        .row { display:flex; gap:15px; flex-wrap:wrap; }
+        .col { flex:1 1 0; min-width:220px; }
+        .file-upload { background:#f0f8ff; padding:12px; text-align:center; border:2px dashed #4a90e2; border-radius:10px; cursor:pointer; margin-top:8px; }
+        .file-upload:hover { background:#e3f2fd; }
+        .required { color:red; }
+        button { background:#1e3d73; color:white; padding:12px 30px; font-size:16px; border:none; border-radius:10px; cursor:pointer; margin:20px 10px 30px; }
+        button:hover { background:#0d2b56; }
+        .btn-row { text-align:center; }
+        .final-court { background:#f0f0f0; padding:15px; border-radius:8px; font-size:15px; text-align:center; font-weight:bold; color:#2e7d32; margin:15px 0 0; }
+        .hint { font-size:12px; color:#777; margin-top:4px; }
+        .tag { display:inline-block; padding:3px 8px; background:#e3f2fd; color:#1e3d73; border-radius:999px; font-size:11px; margin-left:4px; }
+        .checkbox-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+        .checkbox-row input { width:auto; }
+        .error { color:#d32f2f; font-size:12px; margin-top:4px; display:none; }
+        /* Preview Modal */
+        .modal-backdrop {
+            position:fixed; inset:0; background:rgba(0,0,0,0.4);
+            display:none; align-items:center; justify-content:center; z-index:999;
+        }
+        .modal {
+            background:#fff; border-radius:12px; max-width:800px; width:95%;
+            max-height:80vh; overflow:auto; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.25);
+        }
+        .modal h2 { margin-top:0; color:#1e3d73; }
+        .modal-close { float:left; cursor:pointer; color:#444; }
+        .preview-block { border:1px solid #eee; border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:14px; }
+        .preview-block strong { color:#1e3d73; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        تقديم دعوى إلكترونية جديدة<br>
+        <small>المحاكم النظامية في الضفة الغربية – 2025</small>
+    </header>
+
+    <!-- 1. بيانات المحكمة -->
+    <div class="form-section">
+        <h3>1. بيانات المحكمة المختصة</h3>
+        <div class="row">
+            <div class="col">
+                <label>المحافظة / المدينة <span class="required">*</span></label>
+                <select id="city" onchange="filterCourts()" required>
+                    <option value="">-- اختر المدينة --</option>
+                    <option>رام الله والبيرة</option>
+                    <option>نابلس</option>
+                    <option>الخليل</option>
+                    <option>بيت لحم</option>
+                    <option>جنين</option>
+                    <option>طولكرم</option>
+                    <option>قلقيلية</option>
+                    <option>سلفيت</option>
+                    <option>طوباس والأغوار الشمالية</option>
+                    <option>أريحا والأغوار</option>
+                    <option>القدس (الشرقية)</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>نوع المحكمة <span class="required">*</span></label>
+                <select id="courtType" onchange="filterCourts()" required>
+                    <option value="">-- اختر نوع المحكمة --</option>
+                    <option value="صلح">محكمة صلح</option>
+                    <option value="بداية">محكمة بداية</option>
+                    <option value="تجارية">المحكمة التجارية</option>
+                    <option value="عمل">محكمة العمل</option>
+                    <option value="إدارية">محكمة العدل العليا (إدارية)</option>
+                    <option value="مستعجلة">محكمة الأمور المستعجلة</option>
+                    <option value="استئناف">محكمة استئناف</option>
+                    <option value="نقض">المحكمة العليا (نقض)</option>
+                </select>
+            </div>
+        </div>
+        <div class="final-court" id="selectedCourt">
+            ← اختر المدينة ونوع المحكمة لتظهر المحكمة المختصة هنا
+        </div>
+        <div id="courtHint" class="hint"></div>
+    </div>
+
+    <!-- 2. نوع اللائحة وبيانات الدعوى -->
+    <div class="form-section">
+        <h3>2. نوع اللائحة وبيانات الدعوى</h3>
+        <div class="row">
+            <div class="col">
+                <label>نوع اللائحة القانونية <span class="required">*</span></label>
+                <select id="filingType" required>
+                    <option value="">-- اختر نوع اللائحة --</option>
+                    <option value="statement_of_claim">لائحة دعوى أصلية</option>
+                    <option value="defence">لائحة جوابية</option>
+                    <option value="urgent_request">طلب مستعجل</option>
+                    <option value="procedural_request">استدعاء / طلب أثناء المحاكمة</option>
+                    <option value="appeal">لائحة استئناف</option>
+                    <option value="cassation">لائحة نقض</option>
+                    <option value="execution_request">طلب تنفيذ حكم</option>
+                    <option value="other">أخرى</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>نوع الدعوى <span class="required">*</span></label>
+                <select id="caseType" required>
+                    <option value="">-- اختر نوع الدعوى --</option>
+                    <option>مدني عام</option>
+                    <option>تجاري</option>
+                    <option>إيجارات</option>
+                    <option>تعويضات</option>
+                    <option>تنفيذ شيك/سند</option>
+                    <option>ملكية عقارية</option>
+                    <option>دعوى مستعجلة</option>
+                    <option>عمل</option>
+                    <option>أخرى</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>قيمة الدعوى بالشيكل (اتركه فارغًا إذا غير مقدّرة)</label>
+                <input type="number" id="claimValue" placeholder="مثلاً: 75000" min="0" oninput="updateFeeHint()">
+                <div id="feeHint" class="hint"></div>
+            </div>
+            <div class="col">
+                <label>طبيعة العلاقة بين الأطراف</label>
+                <input type="text" id="relationship" placeholder="مثلاً: مالك / مستأجر – دائن / مدين">
+            </div>
+        </div>
+
+        <label>موضوع الدعوى باختصار <span class="required">*</span></label>
+        <textarea id="caseSubject" rows="3" placeholder="مثلاً: فسخ عقد بيع + تعويض مادي..." required></textarea>
+
+        <label>الطلبات القانونية (ما هي طلباتك من المحكمة؟) <span class="required">*</span></label>
+        <textarea id="legalRequests" rows="4" placeholder="1) إلزام المدعى عليه بدفع مبلغ ... 2) الرسوم والمصاريف وأتعاب المحاماة..." required></textarea>
+    </div>
+
+    <!-- 3. بيانات المدعي -->
+    <div class="form-section">
+        <h3>3. بيانات المدعي (الموكل)</h3>
+        <div class="row">
+            <div class="col">
+                <label>الاسم الرباعي <span class="required">*</span></label>
+                <input type="text" id="plaintiffName" required>
+            </div>
+            <div class="col">
+                <label>رقم الهوية</label>
+                <input type="text" id="plaintiffId" maxlength="9" placeholder="مثلاً: 123456789">
+            </div>
+            <div class="col">
+                <label>الجنسية</label>
+                <input type="text" id="plaintiffNationality" placeholder="مثلاً: فلسطينية">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>الصفة القانونية للمدعي</label>
+                <select id="plaintiffCapacity">
+                    <option value="">-- اختر الصفة (اختياري) --</option>
+                    <option value="personal">بصفته الشخصية</option>
+                    <option value="guardian">ولي / وصي عن قاصر</option>
+                    <option value="company_rep">ممثل عن شركة / مؤسسة</option>
+                    <option value="heir">وارث / وريث شرعي</option>
+                    <option value="other">أخرى</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>اسم الممثل القانوني (إن وجد)</label>
+                <input type="text" id="plaintiffRepresentative" placeholder="مثلاً: بصفته وكيلاً عن شركة ....">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>عنوان المدعي</label>
+                <input type="text" id="plaintiffAddress" placeholder="مدينة - حي - شارع - رقم البيت">
+            </div>
+            <div class="col">
+                <label>رقم الجوال <span class="required">*</span></label>
+                <input type="text" id="plaintiffPhone" required placeholder="0599123456">
+            </div>
+            <div class="col">
+                <label>البريد الإلكتروني</label>
+                <input type="email" id="plaintiffEmail">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="emailNotifications">
+                    <label for="emailNotifications" style="font-weight:normal;">أوافق على استلام إشعارات إلكترونية على هذا البريد</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. بيانات المدعى عليه -->
+    <div class="form-section">
+        <h3>4. بيانات المدعى عليه</h3>
+        <div class="row">
+            <div class="col">
+                <label>نوع الشخص المدعى عليه <span class="required">*</span></label>
+                <select id="defendantType" required>
+                    <option value="">-- اختر نوع الشخص --</option>
+                    <option value="individual">فرد (شخص طبيعي)</option>
+                    <option value="company">شركة / مؤسسة (شخص اعتباري)</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>الاسم الرباعي أو اسم الشركة <span class="required">*</span></label>
+                <input type="text" id="defendantName" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>رقم الهوية / الجوال / السجل التجاري</label>
+                <input type="text" id="defendantIdOrReg">
+            </div>
+            <div class="col">
+                <label>عنوان المدعى عليه (للتبليغ) <span class="required">*</span></label>
+                <input type="text" id="defendantAddress" placeholder="مدينة - حي - شارع - رقم البيت" required>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 5. المرفقات -->
+    <div class="form-section">
+        <h3>5. رفع المرفقات</h3>
+
+        <label>المرفقات المطلوبة (PDF / صور / Word / أي مستند)</label>
+
+        <div class="file-upload" onclick="document.getElementById('allFiles').click()">
+            اضغط لاختيار الملفات أو اسحبها هنا
+        </div>
+
+        <input
+                type="file"
+                id="allFiles"
+                multiple
+                style="display:none"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt"
+        />
+
+        <div id="allFilesList" class="hint" style="margin-top:10px;"></div>
+
+        <div class="hint" style="margin-top:8px;">
+            يمكنك رفع أي نوع من المستندات المتعلقة بالدعوى (صحيفة الدعوى، وكالة المحامي، بينات، مستندات إضافية...).
+        </div>
+    </div>
+
+    <script>
+        // عرض أسماء جميع الملفات المرفوعة
+        document.getElementById("allFiles").addEventListener("change", function (e) {
+            const list = document.getElementById("allFilesList");
+            list.innerHTML = "";
+            Array.from(e.target.files).forEach(file => {
+                const div = document.createElement("div");
+                div.textContent = "✓ " + file.name;
+                div.style.padding = "4px 0";
+                list.appendChild(div);
+            });
+        });
+    </script>
+
+
+
+    <!-- 6. الإقرار القانوني -->
+    <div class="form-section">
+        <h3>6. الإقرار والموافقة</h3>
+        <div class="checkbox-row">
+            <input type="checkbox" id="declaration">
+            <label for="declaration" style="font-weight:normal;">
+                أقر بأن جميع البيانات الواردة أعلاه صحيحة، وأن المرفقات مطابقة للأصول، وأتحمل المسؤولية القانونية عن أي بيانات غير صحيحة.
+            </label>
+        </div>
+        <div id="declarationError" class="error">يجب الموافقة على الإقرار قبل الإرسال.</div>
+    </div>
+
+    <!-- أزرار الإرسال -->
+    <div class="btn-row">
+<!--        <button type="button" onclick="showPreview()">معاينة قبل الإرسال</button>-->
+        <button type="button" onclick="submitForm('draft')">حفظ كمسودة</button>
+        <button type="button" onclick="submitForm('submit')">تقديم الدعوى إلكترونيًا إلى قلم المحكمة</button>
+    </div>
+</div>
+
+<!-- معاينة -->
+<div class="modal-backdrop" id="previewModal">
+    <div class="modal">
+        <span class="modal-close" onclick="closePreview()">✖ إغلاق</span>
+        <h2>معاينة مختصرة لبيانات الدعوى</h2>
+        <div id="previewContent"></div>
+        <div style="text-align:center; margin-top:15px;">
+            <button type="button" onclick="closePreview()">إغلاق المعاينة</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // تعريف المحاكم المتاحة
+    const availableCourts = {
+        "صلح": {
+            "رام الله والبيرة": "محكمة صلح رام الله", "نابلس": "محكمة صلح نابلس", "الخليل": "محكمة صلح الخليل",
+            "بيت لحم": "محكمة صلح بيت لحم", "جنين": "محكمة صلح جنين", "طولكرم": "محكمة صلح طولكرم",
+            "قلقيلية": "محكمة صلح قلقيلية", "سلفيت": "محكمة صلح سلفيت", "طوباس والأغوار الشمالية": "محكمة صلح طوباس",
+            "أريحا والأغوار": "محكمة صلح أريحا"
+        },
+        "بداية": {
+            "رام الله والبيرة": "محكمة بداية رام الله", "نابلس": "محكمة بداية نابلس", "الخليل": "محكمة بداية الخليل",
+            "بيت لحم": "محكمة بداية بيت لحم", "جنين": "محكمة بداية جنين", "طولكرم": "محكمة بداية طولكرم",
+            "قلقيلية": "محكمة بداية قلقيلية", "أريحا والأغوار": "محكمة بداية أريحا", "القدس (الشرقية)": "محكمة بداية القدس"
+        },
+        "تجارية": { "رام الله والبيرة": "المحكمة التجارية – رام الله" },
+        "عمل": { "نابلس": "محكمة العمل – نابلس" },
+        "إدارية": { "رام الله والبيرة": "محكمة العدل العليا (إدارية) – رام الله" },
+        "مستعجلة": { "رام الله والبيرة": "محكمة الأمور المستعجلة – رام الله" },
+        "استئناف": { "رام الله والبيرة": "محكمة استئناف رام الله" },
+        "نقض": { "رام الله والبيرة": "المحكمة العليا (محكمة النقض) – رام الله" }
+    };
+
+    function filterCourts() {
+        const city = document.getElementById("city").value;
+        const type = document.getElementById("courtType").value;
+        const box = document.getElementById("selectedCourt");
+        const hint = document.getElementById("courtHint");
+
+        if (city && type && availableCourts[type]?.[city]) {
+            box.innerHTML = `<strong>المحكمة المختارة:</strong> ${availableCourts[type][city]}`;
+            box.style.background = "#e8f5e8";
+            hint.textContent = "";
+        } else if (city && type) {
+            box.innerHTML = `تحذير: لا توجد محكمة ${type} في ${city} في هذا النموذج. يمكن اختيار رام الله كبَديل.`;
+            box.style.background = "#fff3e0";
+            hint.textContent = "⚠ هذه الرسالة إرشادية فقط، ولا تُعتبر استشارة قانونية رسمية.";
+        } else {
+            box.innerHTML = "← اختر المدينة ونوع المحكمة لتظهر المحكمة المختصة هنا";
+            box.style.background = "#f0f0f0";
+            hint.textContent = "";
+        }
+    }
+
+    function updateFeeHint() {
+        const value = parseFloat(document.getElementById("claimValue").value || "0");
+        const feeHint = document.getElementById("feeHint");
+        if (!value) {
+            feeHint.textContent = "";
+            return;
+        }
+        if (value <= 10000) {
+            feeHint.textContent = "ملاحظة تقديرية: قد تكون الدعوى ضمن اختصاص محكمة الصلح، ويُحتسب الرسم وفقًا للتشريعات النافذة.";
+        } else {
+            feeHint.textContent = "ملاحظة تقديرية: قد تكون الدعوى ضمن اختصاص محكمة البداية، ويُحتسب الرسم وفقًا لقيمة الدعوى.";
+        }
+    }
+
+    // عرض أسماء الملفات
+    function setupFileInput(idInput, idLabel) {
+        const input = document.getElementById(idInput);
+        const label = document.getElementById(idLabel);
+        if (!input) return;
+        input.addEventListener("change", function(e) {
+            if (!e.target.files.length) {
+                label.textContent = "";
+                return;
+            }
+            if (e.target.multiple) {
+                label.innerHTML = "";
+                Array.from(e.target.files).forEach((file) => {
+                    const div = document.createElement("div");
+                    div.textContent = "تم اختيار: " + file.name;
+                    label.appendChild(div);
+                });
+            } else {
+                label.textContent = "تم اختيار: " + e.target.files[0].name;
+            }
+        });
+    }
+
+    setupFileInput("petitionFile", "petitionFileName");
+    setupFileInput("powerOfAttorneyFile", "powerOfAttorneyFileName");
+    setupFileInput("evidenceFiles", "evidenceList");
+    setupFileInput("otherFiles", "otherList");
+
+    function validateBasicRequired() {
+        const requiredIds = [
+            "city", "courtType", "filingType", "caseType",
+            "caseSubject", "legalRequests",
+            "plaintiffName", "plaintiffPhone",
+            "defendantType", "defendantName", "defendantAddress"
+        ];
+        let ok = true;
+        requiredIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.value) {
+                el.style.borderColor = "#d32f2f";
+                ok = false;
+            } else if (el) {
+                el.style.borderColor = "#ddd";
+            }
+        });
+        return ok;
+    }
+
+    function showPreview() {
+        if (!validateBasicRequired()) {
+            alert("يرجى تعبئة الحقول الإلزامية (الحقول المعلمة بنجمة *) قبل المعاينة.");
+            return;
+        }
+        const preview = document.getElementById("previewContent");
+        preview.innerHTML = "";
+
+        const addBlock = (title, value) => {
+            if (!value) return;
+            const div = document.createElement("div");
+            div.className = "preview-block";
+            div.innerHTML = `<strong>${title}:</strong> ${value}`;
+            preview.appendChild(div);
+        };
+
+        addBlock("المحكمة المختارة", document.getElementById("selectedCourt").innerText);
+        addBlock("نوع اللائحة", document.getElementById("filingType").selectedOptions[0]?.text);
+        addBlock("نوع الدعوى", document.getElementById("caseType").value);
+        addBlock("قيمة الدعوى", document.getElementById("claimValue").value);
+        addBlock("طبيعة العلاقة", document.getElementById("relationship").value);
+        addBlock("موضوع الدعوى", document.getElementById("caseSubject").value);
+        addBlock("الطلبات القانونية", document.getElementById("legalRequests").value);
+        addBlock("المدعي", document.getElementById("plaintiffName").value);
+        addBlock("المدعى عليه", document.getElementById("defendantName").value);
+
+        document.getElementById("previewModal").style.display = "flex";
+    }
+
+    function closePreview() {
+        document.getElementById("previewModal").style.display = "none";
+    }
+
+    function submitForm(mode) {
+        // mode: 'draft' or 'submit'
+        if (!validateBasicRequired()) {
+            alert("يرجى تعبئة جميع الحقول الإلزامية قبل المتابعة.");
+            return;
+        }
+
+        if (mode === "submit") {
+            const declaration = document.getElementById("declaration");
+            if (!declaration.checked) {
+                document.getElementById("declarationError").style.display = "block";
+                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                return;
+            } else {
+                document.getElementById("declarationError").style.display = "none";
+            }
+        }
+
+        if (mode === "draft") {
+            alert("تم حفظ الدعوى كمسودة (من ناحية UI فقط، اربطها لاحقًا مع الـ Backend).");
+        } else {
+            alert("تم إرسال الدعوى إلكترونيًا إلى قلم المحكمة (من ناحية UI فقط، اربطها مع الـ API لاحقًا).");
+        }
+    }
+</script>
+
+</body>
+</html>

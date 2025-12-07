@@ -41,6 +41,9 @@ const Login = () => {
     } else if (role === 'admin' || role === 'super_admin') {
       toast.success('تم تسجيل الدخول كمسؤول بنجاح!');
       navigate('/admin/dashboard');
+    } else if (role === 'court_clerk') {
+      toast.success('تم تسجيل الدخول كموظف قلم محكمة بنجاح!');
+      navigate('/court-clerk/dashboard');
     } else {
       toast.success('تم تسجيل الدخول بنجاح!');
       navigate('/');

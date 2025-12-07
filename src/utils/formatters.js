@@ -95,10 +95,10 @@ export const formatPhoneNumber = (phone) => {
 /**
  * Format date to Arabic or English based on locale
  * @param {string|Date} date - The date to format
- * @param {string} locale - The locale (default: 'ar-SA')
- * @returns {string} - Formatted date string
+ * @param {string} locale - The locale (default: 'ar-EG')
+ * @returns {string} The formatted date string
  */
-export const formatDate = (date, locale = 'ar-SA') => {
+export const formatDate = (date, locale = 'ar-EG') => {
   if (!date) return '';
   
   const dateObj = typeof date === 'string' ? new Date(date) : date;

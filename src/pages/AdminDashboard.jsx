@@ -907,7 +907,7 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-700 dark:text-gray-300">
-                          <span>تاريخ الطلب: {new Date(request.requested_at).toLocaleDateString('ar-SA')}</span>
+                          <span>تاريخ الطلب: {new Date(request.requested_at).toLocaleDateString('ar-EG')}</span>
                           <span>•</span>
                           <span>نوع المستخدم: {request.user_type === 'client' ? 'عميل' : 'محامي'}</span>
                         </div>

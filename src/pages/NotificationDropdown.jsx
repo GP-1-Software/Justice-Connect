@@ -102,7 +102,7 @@ const NotificationDropdown = ({ userId, userType }) => {
         if (diffHours < 24) return `منذ ${diffHours} ساعة`;
         if (diffDays < 7) return `منذ ${diffDays} يوم`;
 
-        return notifTime.toLocaleDateString('ar-SA', {
+        return notifTime.toLocaleDateString('ar-EG', {
             month: 'short',
             day: 'numeric'
         });

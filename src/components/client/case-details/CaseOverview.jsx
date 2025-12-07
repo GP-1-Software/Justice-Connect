@@ -1,6 +1,5 @@
 import { FileText, User, Scale, Calendar, AlertCircle, Info, Mail, Phone, MapPin, Award, Briefcase } from 'lucide-react';
 import { formatSpecialization } from '../../../utils/formatters';
-import ClientDetailsBox from './ClientDetailsBox';
 
 const CaseOverview = ({ caseData, lawyer }) => {
   const caseTypeLabels = {
@@ -96,12 +95,8 @@ const CaseOverview = ({ caseData, lawyer }) => {
           </div>
         </div>
 
-        {/* Client Details Box (if client_id_number exists) */}
-        {caseData?.client_id_number ? (
-          <ClientDetailsBox clientIdNumber={caseData.client_id_number} />
-        ) : (
-          /* Lawyer Information */
-          lawyer && (
+        {/* Lawyer Information */}
+        {lawyer && (
             <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl lg:rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-5 lg:p-6">
               <div className="flex items-center gap-2 mb-5">
                 <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
@@ -198,8 +193,7 @@ const CaseOverview = ({ caseData, lawyer }) => {
                 </div>
               )}
             </div>
-          )
-        )}
+          )}
       </div>
 
       {/* Rejection Reason (if any) */}

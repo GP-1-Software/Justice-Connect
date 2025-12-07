@@ -15,9 +15,37 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
     setEditedData(caseData);
   }, [caseData]);
 
+  // Court Stage configuration (14 stages from court clerk system)
+  const COURT_STAGES = {
+    'submitted': { label: 'تم التقديم', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
+    'under_review': { label: 'قيد المراجعة', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' },
+    'update_required': { label: 'مطلوب تعديل', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+    'ready_for_registration': { label: 'جاهزة للتسجيل', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
+    'registered': { label: 'مسجلة رسمياً', color: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400' },
+    'service_in_progress': { label: 'جاري التبليغ', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' },
+    'service_completed': { label: 'تم التبليغ', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' },
+    'awaiting_response': { label: 'بانتظار الرد', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
+    'first_hearing_scheduled': { label: 'جلسة أولى محددة', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400' },
+    'hearings_ongoing': { label: 'جلسات جارية', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
+    'judgment_issued': { label: 'صدر الحكم', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
+    'appeal_period': { label: 'فترة استئناف', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' },
+    'in_execution': { label: 'قيد التنفيذ', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400' },
+    'fully_executed': { label: 'تم التنفيذ', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' }
+  };
+
+  // Get court stage info
+  const getCourtStageBadge = () => {
+    if (caseData?.case_stage && COURT_STAGES[caseData.case_stage]) {
+      return COURT_STAGES[caseData.case_stage];
+    }
+    return null;
+  };
+
+  const courtStageInfo = getCourtStageBadge();
+
   const getStatusBadge = (status) => {
     const statusMap = {
-      'pending': { label: 'قيد الانتظار', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
+      'pending': { label: 'معلقة', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
       'active': { label: 'نشط', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
       'in_progress': { label: 'قيد التنفيذ', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
       'completed': { label: 'مكتمل', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
@@ -307,6 +335,16 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
             </span>
           )}
         </div>
+
+        {/* Court Stage - مرحلة المحكمة */}
+        {courtStageInfo && (
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">مرحلة المحكمة</label>
+            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${courtStageInfo.color}`}>
+              {courtStageInfo.label}
+            </span>
+          </div>
+        )}
 
         {/* Priority */}
         <div>
