@@ -1,7 +1,7 @@
 // Court Clerk - Hearings Management
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, Clock } from 'lucide-react';
+import { Calendar, Plus, Clock, AlertCircle, CheckCircle, XCircle, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAuthHeaders } from '../../utils/authHelpers';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
@@ -11,8 +11,10 @@ const HearingsManagement = () => {
     const [cases, setCases] = useState([]);
     const [selectedCase, setSelectedCase] = useState(null);
     const [hearings, setHearings] = useState([]);
+    const [postponeRequests, setPostponeRequests] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('hearings'); // 'hearings' or 'postpone_requests'
 
     const [formData, setFormData] = useState({
         hearing_type: 'first_hearing',
@@ -24,6 +26,7 @@ const HearingsManagement = () => {
 
     useEffect(() => {
         fetchCases();
+        fetchPostponeRequests();
     }, []);
 
     const fetchCases = async () => {
@@ -39,6 +42,20 @@ const HearingsManagement = () => {
             toast.error('فشل في تحميل القضايا');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPostponeRequests = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/court-clerk/postpone-requests', {
+                headers: getAuthHeaders()
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setPostponeRequests(data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching postpone requests:', error);
         }
     };
 
@@ -89,6 +106,110 @@ const HearingsManagement = () => {
                 backPath="/court-clerk/dashboard"
             />
             
+            {/* Tabs */}
+            <div className="max-w-7xl mx-auto px-4 pt-4 sm:px-6 lg:px-8">
+                <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700 mb-4">
+                    <button
+                        onClick={() => setActiveTab('hearings')}
+                        className={`pb-3 px-4 font-medium transition ${
+                            activeTab === 'hearings' 
+                                ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                    >
+                        <Calendar className="inline-block w-5 h-5 ml-2" />
+                        الجلسات
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('postpone_requests')}
+                        className={`pb-3 px-4 font-medium transition relative ${
+                            activeTab === 'postpone_requests' 
+                                ? 'border-b-2 border-orange-500 text-orange-600 dark:text-orange-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                    >
+                        <Clock className="inline-block w-5 h-5 ml-2" />
+                        طلبات التأجيل
+                        {postponeRequests.length > 0 && (
+                            <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {postponeRequests.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Postpone Requests Tab */}
+            {activeTab === 'postpone_requests' && (
+                <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <AlertCircle className="text-orange-500" />
+                            طلبات التأجيل من المحامين
+                        </h2>
+                        {postponeRequests.length === 0 ? (
+                            <div className="text-center py-12">
+                                <CheckCircle size={48} className="mx-auto text-green-400 mb-4" />
+                                <p className="text-gray-500 dark:text-gray-400">لا توجد طلبات تأجيل معلقة</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {postponeRequests.map(request => (
+                                    <div key={request.event_id} className="p-4 border border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                    <Clock className="w-4 h-4 text-orange-500" />
+                                                    {request.title}
+                                                </h3>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                    القضية: {request.case?.case_number || request.case?.title || 'غير محدد'}
+                                                </p>
+                                            </div>
+                                            <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded-full text-xs">
+                                                معلق
+                                            </span>
+                                        </div>
+                                        <p className="text-gray-700 dark:text-gray-300 mb-3 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                            {request.description}
+                                        </p>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-500 dark:text-gray-400">
+                                                تاريخ الطلب: {new Date(request.created_at).toLocaleDateString('ar-EG', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    if (request.case?.case_id) {
+                                                        setActiveTab('hearings');
+                                                        const caseItem = cases.find(c => c.case_id === request.case.case_id);
+                                                        if (caseItem) {
+                                                            setSelectedCase(caseItem);
+                                                            fetchHearings(caseItem.case_id);
+                                                        }
+                                                    }
+                                                }}
+                                                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                                            >
+                                                عرض جلسات القضية
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Hearings Tab */}
+            {activeTab === 'hearings' && (
+                <>
             {/* Action Button */}
             {selectedCase && (
                 <div className="max-w-7xl mx-auto px-4 pt-4 sm:px-6 lg:px-8">
@@ -173,6 +294,8 @@ const HearingsManagement = () => {
                     </div>
                 </div>
             </div>
+            </>
+            )}
 
             {/* Schedule Modal */}
             {showModal && (

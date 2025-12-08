@@ -215,10 +215,8 @@ const DecisionsManagement = () => {
                                         className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg p-2"
                                         required
                                     >
-                                        <option value="preliminary">تمهيدي</option>
-                                        <option value="interlocutory">قرار بالاستمرار</option>
+                                        <option value="preliminary">قرار تمهيدي</option>
                                         <option value="final_judgment">حكم نهائي</option>
-                                        <option value="court_order">أمر محكمة</option>
                                     </select>
                                 </div>
                                 <div>

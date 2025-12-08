@@ -291,6 +291,43 @@ const FilingReview = () => {
                             )}
                         </div>
 
+                        {/* Lawyer Events (Notes & Documents) */}
+                        {filing.lawyerEvents && filing.lawyerEvents.length > 0 && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg shadow-md p-6">
+                                <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center gap-2">
+                                    <FileText size={20} className="text-blue-600" />
+                                    أنشطة المحامي وملاحظاته
+                                </h2>
+                                <div className="space-y-3">
+                                    {filing.lawyerEvents.map(event => (
+                                        <div key={event.event_id} className={`p-4 rounded-lg ${
+                                            event.event_type === 'postpone' 
+                                                ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700' 
+                                                : 'bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700'
+                                        }`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                                    event.event_type === 'postpone'
+                                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-800 dark:text-orange-300'
+                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300'
+                                                }`}>
+                                                    {event.event_type === 'document' && 'مستند / مذكرة'}
+                                                    {event.event_type === 'postpone' && 'طلب تأجيل'}
+                                                </span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {new Date(event.created_at).toLocaleString('ar-EG')}
+                                                </span>
+                                            </div>
+                                            <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">{event.title}</h4>
+                                            {event.description && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">{event.description}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Reviews History */}
                         {filing.reviews && filing.reviews.length > 0 && (
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">

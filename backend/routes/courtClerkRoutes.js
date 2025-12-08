@@ -559,11 +559,28 @@ router.get("/filings/:filing_id", verifyCourtClerk, async (req, res) => {
 
         if (attachError) throw attachError;
 
+        // Get lawyer timeline events (documents, memos, notes)
+        let lawyerEvents = [];
+        if (filing?.case_id) {
+            const { data: events, error: eventsError } = await supabase
+                .from("timeline_events")
+                .select("*")
+                .eq("case_id", filing.case_id)
+                .eq("author_type", "lawyer")
+                .in("event_type", ["document", "postpone"])
+                .order("created_at", { ascending: false });
+
+            if (!eventsError && events) {
+                lawyerEvents = events;
+            }
+        }
+
         res.json({
             success: true,
             data: {
                 ...filing,
-                attachments
+                attachments,
+                lawyerEvents
             }
         });
 
@@ -1330,7 +1347,7 @@ router.get("/cases/:case_id/decisions", verifyCourtClerk, async (req, res) => {
  */
 router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, async (req, res) => {
     try {
-        const { case_id } = req.params;
+        const case_id = parseInt(req.params.case_id);
         const {
             decision_type,
             decision_title,
@@ -1344,6 +1361,22 @@ router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, asy
         } = req.body;
         const clerkId = req.clerk.user_id;
 
+        console.log(`📜 Issuing decision for case ${case_id}, type: ${decision_type}`);
+
+        // First verify the case exists
+        const { data: caseCheck, error: caseError } = await supabase
+            .from("cases")
+            .select("case_id, case_stage")
+            .eq("case_id", case_id)
+            .single();
+
+        if (caseError || !caseCheck) {
+            console.error("❌ Case not found:", case_id, caseError);
+            return res.status(404).json({ error: "Case not found", details: caseError?.message });
+        }
+
+        console.log(`📋 Current case stage: ${caseCheck.case_stage}`);
+
         const { data: decision, error } = await supabase
             .from("court_decisions")
             .insert({
@@ -1354,7 +1387,7 @@ router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, asy
                 decision_file_url: decision_file_url || null,
                 ruling: ruling || null,
                 in_favor_of: in_favor_of || null,
-                is_appealable: is_appealable || false,
+                is_appealable: is_appealable !== undefined ? is_appealable : true,
                 appeal_deadline: appeal_deadline || null,
                 decision_date,
                 created_by: clerkId
@@ -1362,14 +1395,22 @@ router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, asy
             .select()
             .single();
 
-        if (error) throw error;
-
-        // Update case stage
-        let newStage = 'decision_issued';
-        if (decision_type === 'final_judgment') {
-            newStage = is_appealable ? 'appeal_window' : 'closed';
+        if (error) {
+            console.error("❌ Decision insert error:", error);
+            throw error;
         }
-        await updateCaseStage(case_id, newStage, clerkId, `${decision_type} issued`);
+
+        console.log(`✅ Decision created: ${decision.decision_id}`);
+
+        // Update case stage based on decision type
+        let newStage = 'judgment_issued';
+        if (decision_type === 'final_judgment') {
+            newStage = is_appealable ? 'appeal_period' : 'in_execution';
+        }
+        
+        console.log(`🔄 Updating case stage to: ${newStage}`);
+        const stageResult = await updateCaseStage(case_id, newStage, clerkId, `${decision_type} issued`);
+        console.log(`📊 Stage update result:`, stageResult);
 
         // Add timeline event
         const { error: timelineError } = await supabase
@@ -2106,6 +2147,168 @@ router.post("/cases/:case_id/appeal", verifyCourtClerk, async (req, res) => {
             error: "Failed to record appeal",
             details: error.message
         });
+    }
+});
+
+// ============================================
+// LAWYER NOTIFICATION ENDPOINTS
+// ============================================
+
+/**
+ * POST /api/court-clerk/notifications/document-uploaded
+ * Notify court clerk when lawyer uploads documents
+ */
+router.post("/notifications/document-uploaded", async (req, res) => {
+    try {
+        const { case_id, filing_id, document_type, document_count, lawyer_name } = req.body;
+
+        // Get all court clerks to notify from users table
+        const { data: clerks } = await supabase
+            .from("users")
+            .select("user_id")
+            .eq("user_type", "court_clerk");
+
+        // Create notification for each clerk
+        if (clerks && clerks.length > 0) {
+            for (const clerk of clerks) {
+                await createNotification({
+                    userId: clerk.user_id,
+                    userType: 'court_clerk',
+                    title: 'مستندات جديدة من المحامي',
+                    message: `قام المحامي ${lawyer_name || ''} برفع ${document_count} ${document_type}`,
+                    type: NOTIFICATION_TYPES.CASE_UPDATE,
+                    relatedId: null,
+                    relatedType: 'case',
+                    priority: NOTIFICATION_PRIORITY.NORMAL,
+                    actionUrl: filing_id ? `/court-clerk/filings/${filing_id}` : `/court-clerk/cases/${case_id}`
+                });
+            }
+        }
+
+        res.json({ success: true, message: "Notification sent" });
+
+    } catch (error) {
+        console.error("Error sending document notification:", error);
+        res.status(500).json({ error: "Failed to send notification", details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/notifications/postpone-request
+ * Notify court clerk when lawyer requests postponement
+ */
+router.post("/notifications/postpone-request", async (req, res) => {
+    try {
+        const { case_id, hearing_id, reason, hearing_date, lawyer_name } = req.body;
+
+        // Get all court clerks to notify from users table
+        const { data: clerks } = await supabase
+            .from("users")
+            .select("user_id")
+            .eq("user_type", "court_clerk");
+
+        // Create notification for each clerk
+        if (clerks && clerks.length > 0) {
+            for (const clerk of clerks) {
+                await createNotification({
+                    userId: clerk.user_id,
+                    userType: 'court_clerk',
+                    title: 'طلب تأجيل جلسة',
+                    message: `المحامي ${lawyer_name || ''} يطلب تأجيل جلسة ${hearing_date ? new Date(hearing_date).toLocaleDateString('ar-EG') : ''}. السبب: ${reason?.substring(0, 50)}...`,
+                    type: NOTIFICATION_TYPES.HEARING_SCHEDULED,
+                    relatedId: null,
+                    relatedType: 'hearing',
+                    priority: NOTIFICATION_PRIORITY.HIGH,
+                    actionUrl: `/court-clerk/hearings`
+                });
+            }
+        }
+
+        // Add to timeline
+        if (case_id) {
+            await supabase.from("timeline_events").insert({
+                case_id,
+                event_type: 'request',
+                title: 'طلب تأجيل جلسة',
+                description: `سبب التأجيل: ${reason}`,
+                visibility: 'internal'
+            });
+        }
+
+        res.json({ success: true, message: "Postponement request notification sent" });
+
+    } catch (error) {
+        console.error("Error sending postpone notification:", error);
+        res.status(500).json({ error: "Failed to send notification", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/cases/:case_id/lawyer-documents
+ * Get all documents uploaded by lawyer for a case (from filing_attachments)
+ */
+router.get("/cases/:case_id/lawyer-documents", verifyCourtClerk, async (req, res) => {
+    try {
+        const { case_id } = req.params;
+
+        // Get filing_id for this case
+        const { data: filing } = await supabase
+            .from("court_clerk_filings")
+            .select("filing_id")
+            .eq("case_id", case_id)
+            .single();
+
+        if (!filing) {
+            return res.json({ success: true, data: [] });
+        }
+
+        // Get attachments uploaded by lawyer
+        const { data: attachments, error } = await supabase
+            .from("filing_attachments")
+            .select("*")
+            .eq("filing_id", filing.filing_id)
+            .in("attachment_type", ['defense_memo', 'new_document', 'update_response'])
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Error fetching attachments:", error);
+            return res.json({ success: true, data: [] });
+        }
+
+        res.json({ success: true, data: attachments || [] });
+
+    } catch (error) {
+        console.error("Error fetching lawyer documents:", error);
+        res.status(500).json({ error: "Failed to fetch documents", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/postpone-requests
+ * Get all postponement requests from timeline_events
+ */
+router.get("/postpone-requests", verifyCourtClerk, async (req, res) => {
+    try {
+        // Get postponement requests from timeline_events
+        const { data: requests, error } = await supabase
+            .from("timeline_events")
+            .select(`
+                *,
+                case:cases(case_id, case_number, title)
+            `)
+            .eq("event_type", "postpone")
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Error fetching requests:", error);
+            return res.json({ success: true, data: [] });
+        }
+
+        res.json({ success: true, data: requests || [] });
+
+    } catch (error) {
+        console.error("Error fetching postponement requests:", error);
+        res.status(500).json({ error: "Failed to fetch requests", details: error.message });
     }
 });
 

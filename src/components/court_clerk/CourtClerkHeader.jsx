@@ -82,13 +82,20 @@ const CourtClerkHeader = ({ title, subtitle }) => {
 
     // Load notifications
     useEffect(() => {
+        if (!clerkInfo?.user_id) return;
+        
         loadNotifications();
         
-        // Subscribe to new notifications
+        // Subscribe to new notifications for this clerk
         const channel = supabase
-            .channel('clerk-notifications')
+            .channel(`clerk-notifications-${clerkInfo.user_id}`)
             .on('postgres_changes', 
-                { event: 'INSERT', schema: 'public', table: 'notifications' },
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'notifications',
+                    filter: `user_id=eq.${clerkInfo.user_id}`
+                },
                 (payload) => {
                     if (payload.new) {
                         setNotifications(prev => [payload.new, ...prev]);

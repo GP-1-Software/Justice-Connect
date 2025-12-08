@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../../supabaseClient';
 import {
@@ -25,7 +25,10 @@ import {
     FileCheck,
     Truck,
     Shield,
-    Award
+    Award,
+    X,
+    Paperclip,
+    Users
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import FilingUpdateResponse from './FilingUpdateResponse';
@@ -42,6 +45,19 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     const [loading, setLoading] = useState(true);
     const [expandedSection, setExpandedSection] = useState('status');
     const [actionLoading, setActionLoading] = useState(null);
+    
+    // Modal states
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploadType, setUploadType] = useState(''); // 'defense_memo' or 'new_documents'
+    const [uploadFiles, setUploadFiles] = useState([]);
+    const [uploadNotes, setUploadNotes] = useState('');
+    const [uploading, setUploading] = useState(false);
+    
+    const [showPostponeModal, setShowPostponeModal] = useState(false);
+    const [postponeReason, setPostponeReason] = useState('');
+    const [postponeSubmitting, setPostponeSubmitting] = useState(false);
+    
+    const fileInputRef = useRef(null);
 
     // 14 Stages Configuration (+ rejected for filing)
     const STAGES_CONFIG = {
@@ -160,7 +176,6 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             showHearingDate: true,
             actions: [
                 { id: 'upload_defense_memo', label: 'رفع مذكرة دفاعية أو ردية', icon: Upload, variant: 'primary' },
-                { id: 'upload_new_documents', label: 'رفع مستندات جديدة', icon: FileCheck, variant: 'secondary' },
                 { id: 'request_postponement', label: 'طلب تأجيل الجلسة', icon: Clock, variant: 'secondary' }
             ]
         },
@@ -174,8 +189,6 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             description: 'القضية في مرحلة الجلسات',
             actions: [
                 { id: 'upload_defense_memo', label: 'رفع مذكرة دفاعية أو ردية', icon: Upload, variant: 'primary' },
-                { id: 'upload_new_documents', label: 'رفع مستندات جديدة', icon: FileCheck, variant: 'secondary' },
-                { id: 'download_hearing_minutes', label: 'تحميل محضر الجلسة السابقة', icon: Download, variant: 'secondary' },
                 { id: 'request_postponement', label: 'طلب تأجيل الجلسة القادمة', icon: Clock, variant: 'secondary' }
             ]
         },
@@ -370,10 +383,14 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
         
         try {
             switch (actionId) {
-                case 'upload_required_documents':
                 case 'upload_defense_memo':
+                    setUploadType('defense_memo');
+                    setShowUploadModal(true);
+                    break;
+                    
                 case 'upload_new_documents':
-                    toast('سيتم فتح نافذة رفع المستندات', { icon: '📁' });
+                    setUploadType('new_documents');
+                    setShowUploadModal(true);
                     break;
                     
                 case 'contact_court_clerk':
@@ -381,7 +398,6 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                     break;
                     
                 case 'download_registration_receipt':
-                case 'download_hearing_minutes':
                 case 'download_judgment':
                 case 'download_execution_notice':
                     toast('جاري تحميل الملف...', { icon: '📥' });
@@ -393,9 +409,12 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                     break;
                     
                 case 'request_service_speedup':
-                case 'request_postponement':
                 case 'remind_defendant':
                     toast.success('تم إرسال الطلب بنجاح');
+                    break;
+                    
+                case 'request_postponement':
+                    setShowPostponeModal(true);
                     break;
                     
                 case 'submit_appeal':
@@ -422,6 +441,193 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             toast.error('حدث خطأ أثناء تنفيذ الإجراء');
         } finally {
             setActionLoading(null);
+        }
+    };
+
+    // Handle file selection for upload
+    const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files);
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        const validFiles = files.filter(file => {
+            if (file.size > maxSize) {
+                toast.error(`الملف ${file.name} أكبر من 10 ميجابايت`);
+                return false;
+            }
+            return true;
+        });
+        
+        setUploadFiles(prev => [...prev, ...validFiles]);
+    };
+
+    // Remove file from upload list
+    const removeUploadFile = (index) => {
+        setUploadFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Upload documents (defense memo or new documents)
+    const handleUploadDocuments = async () => {
+        if (uploadFiles.length === 0) {
+            toast.error('يرجى اختيار ملف واحد على الأقل');
+            return;
+        }
+
+        setUploading(true);
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        try {
+            const uploadedFiles = [];
+            
+            for (const file of uploadFiles) {
+                const fileName = `${caseId}/${uploadType}/${Date.now()}-${file.name}`;
+                
+                const { data, error } = await supabase.storage
+                    .from('case-documents')
+                    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+                if (error) {
+                    console.error('Upload error:', error);
+                    continue;
+                }
+
+                const { data: publicUrlData } = supabase.storage
+                    .from('case-documents')
+                    .getPublicUrl(fileName);
+
+                uploadedFiles.push({
+                    file_name: file.name,
+                    file_url: publicUrlData.publicUrl,
+                    file_type: file.type,
+                    file_size: file.size,
+                    document_type: uploadType
+                });
+            }
+
+            if (uploadedFiles.length === 0) {
+                throw new Error('فشل في رفع الملفات');
+            }
+
+            // Insert into filing_attachments table
+            const attachmentRecords = uploadedFiles.map(f => ({
+                filing_id: filing?.filing_id,
+                file_name: f.file_name,
+                file_url: f.file_url,
+                file_type: f.file_type,
+                file_size: f.file_size,
+                attachment_type: uploadType === 'defense_memo' ? 'defense_memo' : 'new_document',
+                uploaded_by: user.lawyer_id || user.user_id,
+                uploaded_by_type: 'lawyer'
+            }));
+
+            const { error: insertError } = await supabase
+                .from('filing_attachments')
+                .insert(attachmentRecords);
+
+            if (insertError) {
+                console.error('Insert error:', insertError);
+            }
+
+            // Add timeline event
+            await supabase.from('timeline_events').insert({
+                case_id: caseId,
+                event_type: 'document',
+                author_id: user.lawyer_id || user.user_id,
+                author_type: 'lawyer',
+                title: uploadType === 'defense_memo' ? 'تم رفع مذكرة دفاعية' : 'تم رفع مستندات جديدة',
+                description: uploadNotes || `تم رفع ${uploadedFiles.length} ملف`,
+                visibility: 'all'
+            });
+
+            // Send notification to court clerk via backend
+            try {
+                const response = await fetch('http://localhost:5000/api/court-clerk/notifications/document-uploaded', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        case_id: caseId,
+                        filing_id: filing?.filing_id,
+                        document_type: uploadType === 'defense_memo' ? 'مذكرة دفاعية' : 'مستندات جديدة',
+                        document_count: uploadedFiles.length,
+                        lawyer_name: user.full_name || user.name
+                    })
+                });
+            } catch (notifError) {
+                console.error('Notification error:', notifError);
+            }
+
+            toast.success(uploadType === 'defense_memo' ? 'تم رفع المذكرة الدفاعية بنجاح' : 'تم رفع المستندات بنجاح');
+            setShowUploadModal(false);
+            setUploadFiles([]);
+            setUploadNotes('');
+            setUploadType('');
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('حدث خطأ أثناء رفع الملفات');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Handle postponement request
+    const handlePostponeRequest = async () => {
+        if (!postponeReason.trim()) {
+            toast.error('يرجى إدخال سبب التأجيل');
+            return;
+        }
+
+        setPostponeSubmitting(true);
+        const user = JSON.parse(localStorage.getItem('user'));
+        const nextHearing = hearings.find(h => h.hearing_status === 'scheduled' && new Date(h.hearing_date) > new Date());
+
+        try {
+            // Add postponement request to timeline_events
+            const { error: insertError } = await supabase.from('timeline_events').insert({
+                case_id: caseId,
+                event_type: 'postpone',
+                author_id: user.lawyer_id || user.user_id,
+                author_type: 'lawyer',
+                title: 'طلب تأجيل جلسة',
+                description: `سبب التأجيل: ${postponeReason}${nextHearing ? ` - الجلسة المطلوب تأجيلها: ${new Date(nextHearing.hearing_date).toLocaleDateString('ar-EG')}` : ''}`,
+                visibility: 'all'
+            });
+
+            if (insertError) {
+                console.error('Insert error:', insertError);
+            }
+
+            // Send notification to court clerk
+            try {
+                await fetch('http://localhost:5000/api/court-clerk/notifications/postpone-request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        case_id: caseId,
+                        hearing_id: nextHearing?.hearing_id,
+                        reason: postponeReason,
+                        hearing_date: nextHearing?.hearing_date,
+                        lawyer_name: user.full_name || user.name
+                    })
+                });
+            } catch (notifError) {
+                console.error('Notification error:', notifError);
+            }
+
+            toast.success('تم إرسال طلب التأجيل بنجاح');
+            setShowPostponeModal(false);
+            setPostponeReason('');
+
+        } catch (error) {
+            console.error('Postpone request error:', error);
+            toast.error('حدث خطأ أثناء إرسال الطلب');
+        } finally {
+            setPostponeSubmitting(false);
         }
     };
 
@@ -634,20 +840,128 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                     isExpanded={expandedSection === 'details'}
                     onToggle={() => setExpandedSection(expandedSection === 'details' ? '' : 'details')}
                 >
+                    {/* Basic Info */}
                     <div className="p-4 grid md:grid-cols-2 gap-4">
+                        <InfoRow label="رقم اللائحة" value={filing.filing_number} />
                         <InfoRow label="المحكمة" value={filing.court_name} />
                         <InfoRow label="المدينة" value={filing.city} />
                         <InfoRow label="نوع الدعوى" value={filing.case_type} />
                         <InfoRow label="تاريخ التقديم" value={formatDate(filing.submitted_at)} />
-                        <InfoRow label="المدعي" value={filing.plaintiff_name} />
-                        <InfoRow label="المدعى عليه" value={filing.defendant_name} />
-                        {filing.registry_number && (
-                            <InfoRow label="رقم القيد" value={filing.registry_number} className="text-green-600 font-bold" />
+                        <InfoRow label="حالة اللائحة" value={
+                            filing.filing_status === 'submitted' ? 'مقدمة' :
+                            filing.filing_status === 'under_review' ? 'قيد المراجعة' :
+                            filing.filing_status === 'rejected' ? 'مرفوضة' :
+                            filing.filing_status === 'requested_update' ? 'بحاجة لتعديل' :
+                            filing.filing_status === 'ready_for_registration' ? 'جاهزة للتسجيل' :
+                            filing.filing_status === 'registered' ? 'مسجلة' :
+                            filing.filing_status
+                        } />
+                    </div>
+                    
+                    {/* Parties Section */}
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-blue-500" />
+                            أطراف الدعوى
+                        </h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">المدعي</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{filing.plaintiff_name}</p>
+                                {filing.plaintiff_id_number && (
+                                    <p className="text-sm text-gray-500">رقم الهوية: {filing.plaintiff_id_number}</p>
+                                )}
+                            </div>
+                            <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">المدعى عليه</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{filing.defendant_name}</p>
+                                {filing.defendant_id_number && (
+                                    <p className="text-sm text-gray-500">رقم الهوية: {filing.defendant_id_number}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Filing Content */}
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">محتوى اللائحة</h4>
+                        
+                        {filing.filing_summary && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ملخص اللائحة:</p>
+                                <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg whitespace-pre-wrap">
+                                    {filing.filing_summary}
+                                </p>
+                            </div>
                         )}
-                        {filing.official_case_number && (
-                            <InfoRow label="رقم الدعوى الرسمي" value={filing.official_case_number} className="text-green-600 font-bold" />
+                        
+                        {filing.legal_requests && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الطلبات:</p>
+                                <p className="text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-r-4 border-blue-500 whitespace-pre-wrap">
+                                    {filing.legal_requests}
+                                </p>
+                            </div>
+                        )}
+                        
+                        {filing.jurisdiction_info && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الاختصاص القضائي:</p>
+                                <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                    {filing.jurisdiction_info}
+                                </p>
+                            </div>
                         )}
                     </div>
+                    
+                    {/* Registration Info - Only show if registered */}
+                    {(filing.registry_number || filing.official_case_number) && (
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
+                            <h4 className="font-semibold text-green-800 dark:text-green-400 mb-3 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                بيانات التسجيل
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {filing.registry_number && (
+                                    <InfoRow label="رقم القيد" value={filing.registry_number} className="text-green-600 font-bold" />
+                                )}
+                                {filing.official_case_number && (
+                                    <InfoRow label="رقم الدعوى الرسمي" value={filing.official_case_number} className="text-green-600 font-bold" />
+                                )}
+                                {filing.registration_date && (
+                                    <InfoRow label="تاريخ التسجيل" value={formatDate(filing.registration_date)} />
+                                )}
+                                {filing.court_fees && (
+                                    <InfoRow label="الرسوم" value={`${filing.court_fees} ₪`} />
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Review Notes - Show when update requested */}
+                    {filing.requested_changes && (
+                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border-t border-orange-200 dark:border-orange-800">
+                            <h4 className="text-orange-800 dark:text-orange-400 font-semibold mb-2 flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4" />
+                                التعديلات المطلوبة من قلم المحكمة
+                            </h4>
+                            <p className="text-orange-700 dark:text-orange-300 whitespace-pre-wrap">{filing.requested_changes}</p>
+                        </div>
+                    )}
+                    
+                    {/* Lawyer Response - Show if exists */}
+                    {filing.lawyer_response && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-800">
+                            <h4 className="text-blue-800 dark:text-blue-400 font-semibold mb-2 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                رد المحامي
+                            </h4>
+                            <p className="text-blue-700 dark:text-blue-300 whitespace-pre-wrap">{filing.lawyer_response}</p>
+                            {filing.lawyer_response_date && (
+                                <p className="text-sm text-blue-500 mt-2">تاريخ الرد: {formatDate(filing.lawyer_response_date)}</p>
+                            )}
+                        </div>
+                    )}
                     
                     {filing.rejection_reason && (
                         <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800">
@@ -659,13 +973,13 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                         </div>
                     )}
                     
-                    {filing.review_notes && currentStageKey === 'update_required' && (
-                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border-t border-orange-200 dark:border-orange-800">
-                            <h4 className="text-orange-800 dark:text-orange-400 font-semibold mb-2 flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4" />
+                    {filing.review_notes && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                            <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-2 flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
                                 ملاحظات المراجعة
                             </h4>
-                            <p className="text-orange-700 dark:text-orange-300">{filing.review_notes}</p>
+                            <p className="text-gray-700 dark:text-gray-300">{filing.review_notes}</p>
                         </div>
                     )}
                 </CollapsibleSection>
@@ -743,8 +1057,8 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 >
                     <div className="divide-y dark:divide-gray-700">
                         {decisions.map((decision) => (
-                            <div key={decision.decision_id} className="p-4">
-                                <div className="flex items-center justify-between mb-2">
+                            <div key={decision.decision_id} className={`p-4 ${decision.decision_type === 'final_judgment' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
+                                <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                                             decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-600' :
@@ -757,29 +1071,80 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                                 {decision.decision_title || (
                                                     decision.decision_type === 'final_judgment' ? 'حكم نهائي' :
                                                     decision.decision_type === 'preliminary' ? 'قرار تمهيدي' :
-                                                    decision.decision_type === 'court_order' ? 'أمر محكمة' :
                                                     decision.decision_type
                                                 )}
                                             </p>
                                             <p className="text-sm text-gray-500">
-                                                {formatDate(decision.decision_date)}
+                                                تاريخ القرار: {formatDate(decision.decision_date)}
                                             </p>
                                         </div>
                                     </div>
-                                    {decision.is_appealable && (
-                                        <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                                            قابل للاستئناف
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                            decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                        }`}>
+                                            {decision.decision_type === 'final_judgment' ? 'حكم نهائي' : 'قرار تمهيدي'}
                                         </span>
-                                    )}
+                                        {decision.is_appealable && (
+                                            <span className="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 rounded-full text-xs font-medium">
+                                                قابل للاستئناف
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
+                                
+                                {/* Decision Summary */}
                                 {decision.decision_summary && (
-                                    <p className="text-gray-700 dark:text-gray-300 mr-13">
-                                        {decision.decision_summary}
-                                    </p>
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ملخص القرار:</p>
+                                        <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                            {decision.decision_summary}
+                                        </p>
+                                    </div>
                                 )}
+                                
+                                {/* Ruling (منطوق الحكم) */}
+                                {decision.ruling && (
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">منطوق الحكم:</p>
+                                        <p className="text-gray-800 dark:text-gray-200 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-r-4 border-blue-500">
+                                            {decision.ruling}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {/* In Favor Of */}
+                                {decision.in_favor_of && (
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الحكم لصالح:</p>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                            decision.in_favor_of === 'plaintiff' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                            decision.in_favor_of === 'defendant' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                        }`}>
+                                            {decision.in_favor_of === 'plaintiff' ? 'المدعي' :
+                                             decision.in_favor_of === 'defendant' ? 'المدعى عليه' :
+                                             decision.in_favor_of === 'partial' ? 'حكم جزئي' :
+                                             decision.in_favor_of}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                {/* Appeal Deadline */}
+                                {decision.is_appealable && decision.appeal_deadline && (
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">آخر موعد للاستئناف:</p>
+                                        <span className="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm">
+                                            {formatDate(decision.appeal_deadline)}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                {/* Download File */}
                                 {decision.decision_file_url && (
                                     <a href={decision.decision_file_url} target="_blank" rel="noopener noreferrer"
-                                        className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm">
+                                        className="mt-2 mr-13 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
                                         <Download className="w-4 h-4" />
                                         تحميل ملف القرار
                                     </a>
@@ -833,6 +1198,215 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                     </div>
                 </CollapsibleSection>
             )}
+
+            {/* Upload Documents Modal */}
+            <AnimatePresence>
+                {showUploadModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowUploadModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full p-6"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {uploadType === 'defense_memo' ? 'رفع مذكرة دفاعية أو ردية' : 'رفع مستندات جديدة'}
+                                </h3>
+                                <button
+                                    onClick={() => setShowUploadModal(false)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* File Upload Area */}
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 transition-colors mb-4"
+                            >
+                                <Upload className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                                <p className="text-gray-600 dark:text-gray-400">اضغط لرفع الملفات أو اسحبها هنا</p>
+                                <p className="text-sm text-gray-400 mt-1">PDF, Word, صور (حد أقصى 10 ميجابايت)</p>
+                            </div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                multiple
+                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+
+                            {/* Selected Files */}
+                            {uploadFiles.length > 0 && (
+                                <div className="space-y-2 mb-4">
+                                    {uploadFiles.map((file, index) => (
+                                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <Paperclip className="w-4 h-4 text-gray-500" />
+                                                <span className="text-sm text-gray-700 dark:text-gray-300">{file.name}</span>
+                                                <span className="text-xs text-gray-400">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                            </div>
+                                            <button
+                                                onClick={() => removeUploadFile(index)}
+                                                className="p-1 hover:bg-red-100 rounded text-red-500"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Notes */}
+                            <textarea
+                                value={uploadNotes}
+                                onChange={(e) => setUploadNotes(e.target.value)}
+                                placeholder="ملاحظات إضافية (اختياري)"
+                                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none mb-4"
+                                rows={3}
+                            />
+
+                            {/* Actions */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleUploadDocuments}
+                                    disabled={uploading || uploadFiles.length === 0}
+                                    className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <RefreshCw className="w-5 h-5 animate-spin" />
+                                            جاري الرفع...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-5 h-5" />
+                                            رفع الملفات
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowUploadModal(false);
+                                        setUploadFiles([]);
+                                        setUploadNotes('');
+                                    }}
+                                    className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                                >
+                                    إلغاء
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Postponement Request Modal */}
+            <AnimatePresence>
+                {showPostponeModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowPostponeModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full p-6"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    طلب تأجيل الجلسة القادمة
+                                </h3>
+                                <button
+                                    onClick={() => setShowPostponeModal(false)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Next Hearing Info */}
+                            {hearings.find(h => h.hearing_status === 'scheduled' && new Date(h.hearing_date) > new Date()) && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-4">
+                                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                                        <strong>الجلسة القادمة:</strong>{' '}
+                                        {new Date(hearings.find(h => h.hearing_status === 'scheduled' && new Date(h.hearing_date) > new Date())?.hearing_date).toLocaleDateString('ar-EG', {
+                                            weekday: 'long',
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Reason */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    سبب طلب التأجيل *
+                                </label>
+                                <textarea
+                                    value={postponeReason}
+                                    onChange={(e) => setPostponeReason(e.target.value)}
+                                    placeholder="اذكر السبب المقنع لطلب التأجيل..."
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                                    rows={4}
+                                />
+                            </div>
+
+                            <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4" />
+                                سيتم مراجعة الطلب من قبل قلم المحكمة
+                            </p>
+
+                            {/* Actions */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handlePostponeRequest}
+                                    disabled={postponeSubmitting || !postponeReason.trim()}
+                                    className="flex-1 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {postponeSubmitting ? (
+                                        <>
+                                            <RefreshCw className="w-5 h-5 animate-spin" />
+                                            جاري الإرسال...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="w-5 h-5" />
+                                            إرسال الطلب
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowPostponeModal(false);
+                                        setPostponeReason('');
+                                    }}
+                                    className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                                >
+                                    إلغاء
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

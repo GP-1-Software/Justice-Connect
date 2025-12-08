@@ -21,7 +21,8 @@ import {
     Truck,
     Shield,
     Award,
-    Eye
+    Eye,
+    Users
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -467,20 +468,103 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
                     isExpanded={expandedSection === 'details'}
                     onToggle={() => setExpandedSection(expandedSection === 'details' ? '' : 'details')}
                 >
+                    {/* Basic Info */}
                     <div className="p-4 grid md:grid-cols-2 gap-4">
+                        <InfoRow label="رقم اللائحة" value={filing.filing_number} />
                         <InfoRow label="المحكمة" value={filing.court_name} />
                         <InfoRow label="المدينة" value={filing.city} />
                         <InfoRow label="نوع الدعوى" value={filing.case_type} />
                         <InfoRow label="تاريخ التقديم" value={formatDate(filing.submitted_at)} />
-                        <InfoRow label="المدعي" value={filing.plaintiff_name} />
-                        <InfoRow label="المدعى عليه" value={filing.defendant_name} />
-                        {filing.registry_number && (
-                            <InfoRow label="رقم القيد" value={filing.registry_number} className="text-green-600 font-bold" />
+                        <InfoRow label="حالة اللائحة" value={
+                            filing.filing_status === 'submitted' ? 'مقدمة' :
+                            filing.filing_status === 'under_review' ? 'قيد المراجعة' :
+                            filing.filing_status === 'rejected' ? 'مرفوضة' :
+                            filing.filing_status === 'requested_update' ? 'بحاجة لتعديل' :
+                            filing.filing_status === 'ready_for_registration' ? 'جاهزة للتسجيل' :
+                            filing.filing_status === 'registered' ? 'مسجلة' :
+                            filing.filing_status
+                        } />
+                    </div>
+                    
+                    {/* Parties Section */}
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-blue-500" />
+                            أطراف الدعوى
+                        </h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">المدعي</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{filing.plaintiff_name}</p>
+                                {filing.plaintiff_id_number && (
+                                    <p className="text-sm text-gray-500">رقم الهوية: {filing.plaintiff_id_number}</p>
+                                )}
+                            </div>
+                            <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">المدعى عليه</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{filing.defendant_name}</p>
+                                {filing.defendant_id_number && (
+                                    <p className="text-sm text-gray-500">رقم الهوية: {filing.defendant_id_number}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Filing Content */}
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">محتوى اللائحة</h4>
+                        
+                        {filing.filing_summary && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ملخص اللائحة:</p>
+                                <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg whitespace-pre-wrap">
+                                    {filing.filing_summary}
+                                </p>
+                            </div>
                         )}
-                        {filing.official_case_number && (
-                            <InfoRow label="رقم الدعوى الرسمي" value={filing.official_case_number} className="text-green-600 font-bold" />
+                        
+                        {filing.legal_requests && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الطلبات:</p>
+                                <p className="text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-r-4 border-blue-500 whitespace-pre-wrap">
+                                    {filing.legal_requests}
+                                </p>
+                            </div>
+                        )}
+                        
+                        {filing.jurisdiction_info && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الاختصاص القضائي:</p>
+                                <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                    {filing.jurisdiction_info}
+                                </p>
+                            </div>
                         )}
                     </div>
+                    
+                    {/* Registration Info - Only show if registered */}
+                    {(filing.registry_number || filing.official_case_number) && (
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
+                            <h4 className="font-semibold text-green-800 dark:text-green-400 mb-3 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                بيانات التسجيل
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {filing.registry_number && (
+                                    <InfoRow label="رقم القيد" value={filing.registry_number} className="text-green-600 font-bold" />
+                                )}
+                                {filing.official_case_number && (
+                                    <InfoRow label="رقم الدعوى الرسمي" value={filing.official_case_number} className="text-green-600 font-bold" />
+                                )}
+                                {filing.registration_date && (
+                                    <InfoRow label="تاريخ التسجيل" value={formatDate(filing.registration_date)} />
+                                )}
+                                {filing.court_fees && (
+                                    <InfoRow label="الرسوم" value={`${filing.court_fees} د.أ`} />
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </CollapsibleSection>
             )}
 
@@ -549,8 +633,8 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
                 >
                     <div className="divide-y dark:divide-gray-700">
                         {decisions.map((decision) => (
-                            <div key={decision.decision_id} className="p-4">
-                                <div className="flex items-center justify-between mb-2">
+                            <div key={decision.decision_id} className={`p-4 ${decision.decision_type === 'final_judgment' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
+                                <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                                             decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-600' :
@@ -563,24 +647,80 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
                                                 {decision.decision_title || (
                                                     decision.decision_type === 'final_judgment' ? 'حكم نهائي' :
                                                     decision.decision_type === 'preliminary' ? 'قرار تمهيدي' :
-                                                    decision.decision_type === 'court_order' ? 'أمر محكمة' :
                                                     decision.decision_type
                                                 )}
                                             </p>
                                             <p className="text-sm text-gray-500">
-                                                {formatDate(decision.decision_date)}
+                                                تاريخ القرار: {formatDate(decision.decision_date)}
                                             </p>
                                         </div>
                                     </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                            decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                        }`}>
+                                            {decision.decision_type === 'final_judgment' ? 'حكم نهائي' : 'قرار تمهيدي'}
+                                        </span>
+                                        {decision.is_appealable && (
+                                            <span className="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 rounded-full text-xs font-medium">
+                                                قابل للاستئناف
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
+                                
+                                {/* Decision Summary */}
                                 {decision.decision_summary && (
-                                    <p className="text-gray-700 dark:text-gray-300 mr-13">
-                                        {decision.decision_summary}
-                                    </p>
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ملخص القرار:</p>
+                                        <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                            {decision.decision_summary}
+                                        </p>
+                                    </div>
                                 )}
+                                
+                                {/* Ruling (منطوق الحكم) */}
+                                {decision.ruling && (
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">منطوق الحكم:</p>
+                                        <p className="text-gray-800 dark:text-gray-200 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-r-4 border-blue-500">
+                                            {decision.ruling}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {/* In Favor Of */}
+                                {decision.in_favor_of && (
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الحكم لصالح:</p>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                            decision.in_favor_of === 'plaintiff' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                            decision.in_favor_of === 'defendant' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                        }`}>
+                                            {decision.in_favor_of === 'plaintiff' ? 'المدعي' :
+                                             decision.in_favor_of === 'defendant' ? 'المدعى عليه' :
+                                             decision.in_favor_of === 'partial' ? 'حكم جزئي' :
+                                             decision.in_favor_of}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                {/* Appeal Deadline */}
+                                {decision.is_appealable && decision.appeal_deadline && (
+                                    <div className="mb-3 mr-13">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">آخر موعد للاستئناف:</p>
+                                        <span className="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm">
+                                            {formatDate(decision.appeal_deadline)}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                {/* Download File */}
                                 {decision.decision_file_url && (
                                     <a href={decision.decision_file_url} target="_blank" rel="noopener noreferrer"
-                                        className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm">
+                                        className="mt-2 mr-13 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
                                         <Download className="w-4 h-4" />
                                         تحميل ملف القرار
                                     </a>

@@ -167,8 +167,8 @@ CREATE TABLE IF NOT EXISTS court_decisions (
     
     -- Decision Details
     decision_type VARCHAR(50) NOT NULL 
-        CHECK (decision_type IN ('preliminary', 'interlocutory', 'final_judgment', 'court_order')),
-    -- تمهيدي، قرار بالاستمرار، حكم نهائي، أمر محكمة
+        CHECK (decision_type IN ('preliminary', 'final_judgment')),
+    -- تمهيدي، حكم نهائي
     
     decision_title TEXT NOT NULL,
     decision_summary TEXT NOT NULL,
