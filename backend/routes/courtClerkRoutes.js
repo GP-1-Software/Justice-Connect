@@ -1204,14 +1204,14 @@ router.post("/cases/:case_id/hearings", verifyCourtClerk, validateHearingSchedul
         // Get case details to find lawyer and client
         const { data: caseData } = await supabase
             .from("cases")
-            .select("lawyer_id, client_id")
+            .select("assigned_lawyer_id, client_id")
             .eq("case_id", case_id)
             .single();
 
         // Send notification to lawyer
-        if (caseData?.lawyer_id) {
+        if (caseData?.assigned_lawyer_id) {
             await createNotification({
-                userId: caseData.lawyer_id,
+                userId: caseData.assigned_lawyer_id,
                 userType: 'lawyer',
                 title: 'تم تحديد موعد جلسة',
                 message: `تم تحديد جلسة ${hearing_type} بتاريخ ${hearing_date} الساعة ${hearing_time}`,
@@ -1437,14 +1437,14 @@ router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, asy
         // Get case details to find lawyer and client
         const { data: caseData } = await supabase
             .from("cases")
-            .select("lawyer_id, client_id")
+            .select("assigned_lawyer_id, client_id")
             .eq("case_id", case_id)
             .single();
 
         // Send notification to lawyer
-        if (caseData?.lawyer_id) {
+        if (caseData?.assigned_lawyer_id) {
             await createNotification({
-                userId: caseData.lawyer_id,
+                userId: caseData.assigned_lawyer_id,
                 userType: 'lawyer',
                 title: 'صدر قرار محكمة',
                 message: `صدر قرار محكمة: ${decision_title}`,
@@ -2176,7 +2176,7 @@ router.post("/notifications/document-uploaded", async (req, res) => {
                     userType: 'court_clerk',
                     title: 'مستندات جديدة من المحامي',
                     message: `قام المحامي ${lawyer_name || ''} برفع ${document_count} ${document_type}`,
-                    type: NOTIFICATION_TYPES.CASE_UPDATE,
+                    type: NOTIFICATION_TYPES.CASE_UPDATED,
                     relatedId: null,
                     relatedType: 'case',
                     priority: NOTIFICATION_PRIORITY.NORMAL,
@@ -2309,6 +2309,553 @@ router.get("/postpone-requests", verifyCourtClerk, async (req, res) => {
     } catch (error) {
         console.error("Error fetching postponement requests:", error);
         res.status(500).json({ error: "Failed to fetch requests", details: error.message });
+    }
+});
+
+// ============================================
+// COURT FEES SYSTEM - نظام الرسوم
+// ============================================
+
+/**
+ * Generate unique fee invoice number
+ */
+const generateFeeInvoiceNumber = () => {
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-6);
+    return `FEE-${year}-${timestamp}`;
+};
+
+/**
+ * POST /api/court-clerk/fees/issue
+ * Issue a fee invoice for a case
+ */
+router.post("/fees/issue", verifyCourtClerk, async (req, res) => {
+    try {
+        const {
+            case_id,
+            filing_id,
+            registration_fee,
+            stamp_fee,
+            justice_fund_fee,
+            notification_fee,
+            other_fees,
+            other_fees_description
+        } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        // Calculate total
+        const total_amount = (
+            parseFloat(registration_fee || 0) +
+            parseFloat(stamp_fee || 0) +
+            parseFloat(justice_fund_fee || 0) +
+            parseFloat(notification_fee || 0) +
+            parseFloat(other_fees || 0)
+        );
+
+        if (total_amount <= 0) {
+            return res.status(400).json({ error: "إجمالي الرسوم يجب أن يكون أكبر من صفر" });
+        }
+
+        // Check if fee already exists for this case
+        const { data: existingFee } = await supabase
+            .from("court_fees")
+            .select("fee_id, fee_status")
+            .eq("case_id", case_id)
+            .not("fee_status", "eq", "cancelled")
+            .single();
+
+        if (existingFee) {
+            return res.status(400).json({ error: "يوجد فاتورة رسوم سابقة لهذه القضية" });
+        }
+
+        // Generate invoice number
+        const fee_invoice_number = generateFeeInvoiceNumber();
+
+        // Create fee invoice
+        const { data: fee, error } = await supabase
+            .from("court_fees")
+            .insert({
+                case_id,
+                filing_id,
+                fee_invoice_number,
+                registration_fee: registration_fee || 0,
+                stamp_fee: stamp_fee || 0,
+                justice_fund_fee: justice_fund_fee || 0,
+                notification_fee: notification_fee || 0,
+                other_fees: other_fees || 0,
+                other_fees_description,
+                total_amount,
+                fee_status: 'issued',
+                issued_by: clerkId,
+                issued_at: new Date()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Update case stage to awaiting_fees
+        await supabase
+            .from("cases")
+            .update({ case_stage: 'awaiting_fees', updated_at: new Date() })
+            .eq("case_id", case_id);
+
+        // Add timeline event
+        await supabase.from("timeline_events").insert({
+            case_id,
+            event_type: 'fee_issued',
+            author_id: clerkId,
+            author_type: 'court_clerk',
+            title: 'تم إصدار فاتورة الرسوم',
+            description: `إجمالي الرسوم المستحقة: ${total_amount} شيكل`,
+            visibility: 'all'
+        });
+
+        // Get case details to notify lawyer and client
+        const { data: caseData } = await supabase
+            .from("cases")
+            .select("assigned_lawyer_id, client_id, title")
+            .eq("case_id", case_id)
+            .single();
+
+        // Notify lawyer
+        if (caseData?.assigned_lawyer_id) {
+            await createNotification({
+                userId: caseData.assigned_lawyer_id,
+                userType: 'lawyer',
+                title: 'تم إصدار فاتورة الرسوم',
+                message: `تم إصدار فاتورة رسوم بمبلغ ${total_amount} شيكل للقضية. يرجى إبلاغ الموكل لسداد الرسوم.`,
+                type: NOTIFICATION_TYPES.FEE_ISSUED,
+                relatedId: case_id,
+                relatedType: 'fee',
+                priority: NOTIFICATION_PRIORITY.HIGH,
+                actionUrl: `/lawyer/cases/${case_id}`
+            });
+        }
+
+        // Notify client
+        if (caseData?.client_id) {
+            await createNotification({
+                userId: caseData.client_id,
+                userType: 'client',
+                title: 'رسوم المحكمة مستحقة الدفع',
+                message: `تم إصدار فاتورة رسوم بمبلغ ${total_amount} شيكل. يرجى سداد الرسوم لاستكمال تسجيل الدعوى.`,
+                type: NOTIFICATION_TYPES.FEE_ISSUED,
+                relatedId: case_id,
+                relatedType: 'fee',
+                priority: NOTIFICATION_PRIORITY.URGENT,
+                actionUrl: `/client/court-fees`
+            });
+        }
+
+        // Log action
+        await logClerkAction(clerkId, 'issue_fee', `Fee invoice issued: ${fee_invoice_number}`, {
+            case_id,
+            fee_id: fee.fee_id,
+            total_amount
+        });
+
+        res.json({
+            success: true,
+            message: "تم إصدار فاتورة الرسوم بنجاح",
+            data: fee
+        });
+
+    } catch (error) {
+        console.error("Error issuing fee:", error);
+        res.status(500).json({ error: "Failed to issue fee", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/fees
+ * Get all fee invoices
+ */
+router.get("/fees", verifyCourtClerk, async (req, res) => {
+    try {
+        const { status } = req.query;
+
+        let query = supabase
+            .from("court_fees")
+            .select(`
+                *,
+                case:cases(case_id, case_number, title, case_type),
+                filing:court_clerk_filings(filing_number, plaintiff_name, defendant_name)
+            `)
+            .order("created_at", { ascending: false });
+
+        if (status) {
+            query = query.eq("fee_status", status);
+        }
+
+        const { data: fees, error } = await query;
+
+        if (error) throw error;
+
+        res.json({ success: true, data: fees || [] });
+
+    } catch (error) {
+        console.error("Error fetching fees:", error);
+        res.status(500).json({ error: "Failed to fetch fees", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/fees/:fee_id
+ * Get single fee details
+ */
+router.get("/fees/:fee_id", verifyCourtClerk, async (req, res) => {
+    try {
+        const { fee_id } = req.params;
+
+        const { data: fee, error } = await supabase
+            .from("court_fees")
+            .select(`
+                *,
+                case:cases(case_id, case_number, title, case_type, assigned_lawyer_id, client_id),
+                filing:court_clerk_filings(*)
+            `)
+            .eq("fee_id", fee_id)
+            .single();
+
+        if (error) throw error;
+
+        res.json({ success: true, data: fee });
+
+    } catch (error) {
+        console.error("Error fetching fee:", error);
+        res.status(500).json({ error: "Failed to fetch fee", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/cases/:case_id/fees
+ * Get fee for a specific case
+ */
+router.get("/cases/:case_id/fees", verifyCourtClerk, async (req, res) => {
+    try {
+        const case_id = parseInt(req.params.case_id);
+
+        const { data: fee, error } = await supabase
+            .from("court_fees")
+            .select("*")
+            .eq("case_id", case_id)
+            .not("fee_status", "eq", "cancelled")
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        res.json({ success: true, data: fee || null });
+
+    } catch (error) {
+        console.error("Error fetching case fee:", error);
+        res.status(500).json({ error: "Failed to fetch fee", details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/fees/:fee_id/confirm
+ * Confirm payment (by court clerk)
+ */
+router.post("/fees/:fee_id/confirm", verifyCourtClerk, async (req, res) => {
+    try {
+        const { fee_id } = req.params;
+        const { confirmation_notes } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        // Get fee details
+        const { data: fee, error: fetchError } = await supabase
+            .from("court_fees")
+            .select("*, case:cases(case_id, assigned_lawyer_id, client_id, title)")
+            .eq("fee_id", fee_id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        if (fee.fee_status !== 'paid') {
+            return res.status(400).json({ error: "لا يمكن اعتماد فاتورة لم يتم دفعها" });
+        }
+
+        // Update fee status to confirmed
+        const { error: updateError } = await supabase
+            .from("court_fees")
+            .update({
+                fee_status: 'confirmed',
+                confirmed_by: clerkId,
+                confirmed_at: new Date(),
+                confirmation_notes,
+                updated_at: new Date()
+            })
+            .eq("fee_id", fee_id);
+
+        if (updateError) throw updateError;
+
+        // Update case stage to ready_for_registration
+        await supabase
+            .from("cases")
+            .update({ case_stage: 'ready_for_registration', updated_at: new Date() })
+            .eq("case_id", fee.case_id);
+
+        // Add timeline event
+        await supabase.from("timeline_events").insert({
+            case_id: fee.case_id,
+            event_type: 'fee_confirmed',
+            author_id: clerkId,
+            author_type: 'court_clerk',
+            title: 'تم اعتماد دفع الرسوم',
+            description: 'تم التحقق من الدفع واعتماده. القضية جاهزة للتسجيل الرسمي.',
+            visibility: 'all'
+        });
+
+        // Notify lawyer
+        if (fee.case?.assigned_lawyer_id) {
+            await createNotification({
+                userId: fee.case.assigned_lawyer_id,
+                userType: 'lawyer',
+                title: 'تم اعتماد دفع الرسوم',
+                message: 'تم اعتماد دفع الرسوم. القضية جاهزة للتسجيل الرسمي.',
+                type: NOTIFICATION_TYPES.FEE_CONFIRMED,
+                relatedId: fee.case_id,
+                relatedType: 'fee',
+                priority: NOTIFICATION_PRIORITY.NORMAL,
+                actionUrl: `/lawyer/cases/${fee.case_id}`
+            });
+        }
+
+        // Notify client
+        if (fee.case?.client_id) {
+            await createNotification({
+                userId: fee.case.client_id,
+                userType: 'client',
+                title: 'تم اعتماد دفع الرسوم',
+                message: 'تم اعتماد دفع رسوم الدعوى بنجاح. سيتم تسجيل الدعوى رسمياً.',
+                type: NOTIFICATION_TYPES.FEE_CONFIRMED,
+                relatedId: fee.case_id,
+                relatedType: 'fee',
+                priority: NOTIFICATION_PRIORITY.NORMAL,
+                actionUrl: `/client/cases/${fee.case_id}`
+            });
+        }
+
+        // Log action
+        await logClerkAction(clerkId, 'confirm_fee_payment', `Fee payment confirmed: ${fee.fee_invoice_number}`, {
+            fee_id,
+            case_id: fee.case_id
+        });
+
+        res.json({
+            success: true,
+            message: "تم اعتماد الدفع بنجاح"
+        });
+
+    } catch (error) {
+        console.error("Error confirming fee:", error);
+        res.status(500).json({ error: "Failed to confirm fee", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/fees/pending-confirmation
+ * Get fees awaiting confirmation
+ */
+router.get("/fees/pending-confirmation", verifyCourtClerk, async (req, res) => {
+    try {
+        const { data: fees, error } = await supabase
+            .from("court_fees")
+            .select(`
+                *,
+                case:cases(case_id, case_number, title),
+                filing:court_clerk_filings(filing_number, plaintiff_name)
+            `)
+            .eq("fee_status", "paid")
+            .order("paid_at", { ascending: true });
+
+        if (error) throw error;
+
+        res.json({ success: true, data: fees || [] });
+
+    } catch (error) {
+        console.error("Error fetching pending fees:", error);
+        res.status(500).json({ error: "Failed to fetch fees", details: error.message });
+    }
+});
+
+// ============================================
+// PUBLIC ENDPOINTS FOR CLIENT FEE PAYMENT
+// ============================================
+
+/**
+ * GET /api/court-clerk/public/fees/client/:client_id
+ * Get all fees for a client (public - no auth required)
+ */
+router.get("/public/fees/client/:client_id", async (req, res) => {
+    try {
+        const client_id = req.params.client_id;
+
+        // Get cases where client is involved
+        const { data: cases } = await supabase
+            .from("cases")
+            .select("case_id")
+            .eq("client_id", client_id);
+
+        if (!cases || cases.length === 0) {
+            return res.json({ success: true, data: [] });
+        }
+
+        const caseIds = cases.map(c => c.case_id);
+
+        // Get fees for these cases
+        const { data: fees, error } = await supabase
+            .from("court_fees")
+            .select(`
+                *,
+                case:cases(case_id, case_number, title, case_type)
+            `)
+            .in("case_id", caseIds)
+            .not("fee_status", "eq", "cancelled")
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ success: true, data: fees || [] });
+
+    } catch (error) {
+        console.error("Error fetching client fees:", error);
+        res.status(500).json({ error: "Failed to fetch fees", details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/public/fees/:fee_id/pay
+ * Client submits payment (uploads receipt)
+ */
+router.post("/public/fees/:fee_id/pay", async (req, res) => {
+    try {
+        const { fee_id } = req.params;
+        const { 
+            payment_reference,
+            client_id 
+        } = req.body;
+
+        // Get fee details
+        const { data: fee, error: fetchError } = await supabase
+            .from("court_fees")
+            .select("*, case:cases(case_id, assigned_lawyer_id, client_id, title)")
+            .eq("fee_id", fee_id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        if (!fee) {
+            return res.status(404).json({ error: "لم يتم العثور على الفاتورة" });
+        }
+
+        if (fee.fee_status !== 'issued') {
+            return res.status(400).json({ error: "هذه الفاتورة لا تحتاج للدفع" });
+        }
+
+        // Verify client owns this fee
+        if (fee.case?.client_id !== client_id) {
+            return res.status(403).json({ error: "غير مصرح لك بالوصول لهذه الفاتورة" });
+        }
+
+        // Update fee to paid status
+        const { error: updateError } = await supabase
+            .from("court_fees")
+            .update({
+                fee_status: 'paid',
+                paid_at: new Date(),
+                payment_reference: payment_reference || null,
+                paid_by: client_id,
+                updated_at: new Date()
+            })
+            .eq("fee_id", fee_id);
+
+        if (updateError) throw updateError;
+
+        // Add timeline event
+        await supabase.from("timeline_events").insert({
+            case_id: fee.case_id,
+            event_type: 'fee_paid',
+            author_id: client_id,
+            author_type: 'client',
+            title: 'تم دفع الرسوم',
+            description: `تم دفع رسوم الدعوى بمبلغ ${fee.total_amount} شيكل. بانتظار اعتماد قلم المحكمة.`,
+            visibility: 'all'
+        });
+
+        // Notify court clerks
+        const { data: clerks } = await supabase
+            .from("users")
+            .select("user_id")
+            .eq("user_type", "court_clerk");
+
+        if (clerks && clerks.length > 0) {
+            for (const clerk of clerks) {
+                await createNotification({
+                    userId: clerk.user_id,
+                    userType: 'court_clerk',
+                    title: 'تم دفع رسوم - بانتظار الاعتماد',
+                    message: `تم دفع رسوم الدعوى رقم ${fee.case?.case_number || fee.case_id}. يرجى مراجعة الإيصال واعتماد الدفع.`,
+                    type: NOTIFICATION_TYPES.FEE_PAID,
+                    relatedId: fee.case_id,
+                    relatedType: 'fee',
+                    priority: NOTIFICATION_PRIORITY.HIGH,
+                    actionUrl: `/court-clerk/fees`
+                });
+            }
+        }
+
+        // Notify lawyer
+        if (fee.case?.assigned_lawyer_id) {
+            await createNotification({
+                userId: fee.case.assigned_lawyer_id,
+                userType: 'lawyer',
+                title: 'تم دفع رسوم الدعوى',
+                message: 'تم دفع رسوم الدعوى من قبل الموكل. بانتظار اعتماد قلم المحكمة.',
+                type: NOTIFICATION_TYPES.FEE_PAID,
+                relatedId: fee.case_id,
+                relatedType: 'fee',
+                priority: NOTIFICATION_PRIORITY.NORMAL,
+                actionUrl: `/lawyer/cases/${fee.case_id}`
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "تم تسجيل الدفع بنجاح. سيقوم قلم المحكمة بمراجعة واعتماد الدفع."
+        });
+
+    } catch (error) {
+        console.error("Error processing fee payment:", error);
+        res.status(500).json({ error: "Failed to process payment", details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/public/fees/:fee_id
+ * Get single fee details (for client view)
+ */
+router.get("/public/fees/:fee_id", async (req, res) => {
+    try {
+        const { fee_id } = req.params;
+
+        const { data: fee, error } = await supabase
+            .from("court_fees")
+            .select(`
+                *,
+                case:cases(case_id, case_number, title, case_type)
+            `)
+            .eq("fee_id", fee_id)
+            .single();
+
+        if (error) throw error;
+
+        res.json({ success: true, data: fee });
+
+    } catch (error) {
+        console.error("Error fetching fee:", error);
+        res.status(500).json({ error: "Failed to fetch fee", details: error.message });
     }
 });
 

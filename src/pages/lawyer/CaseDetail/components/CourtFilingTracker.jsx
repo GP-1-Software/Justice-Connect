@@ -113,11 +113,21 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             color: '#64b5f6',
             bgColor: 'bg-blue-100',
             textColor: 'text-blue-700',
-            description: 'تمت الموافقة وتنتظر التسجيل الرسمي',
+            description: 'تمت الموافقة - بانتظار دفع الرسوم وإصدار فاتورة',
+            actions: []
+        },
+        'awaiting_fees': { 
+            order: 5,
+            label: 'بانتظار دفع الرسوم', 
+            icon: Clock, 
+            color: '#ff9800',
+            bgColor: 'bg-orange-100',
+            textColor: 'text-orange-700',
+            description: 'تم إصدار فاتورة الرسوم - يجب على العميل دفع الرسوم',
             actions: []
         },
         'registered': { 
-            order: 5,
+            order: 6,
             label: 'مسجلة رسمياً', 
             icon: Star, 
             color: '#2e7d32',
@@ -130,7 +140,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'service_in_progress': { 
-            order: 6,
+            order: 7,
             label: 'قيد التبليغ', 
             icon: Truck, 
             color: '#1e88e5',
@@ -143,7 +153,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'service_completed': { 
-            order: 7,
+            order: 8,
             label: 'تم التبليغ', 
             icon: CheckCircle, 
             color: '#43a047',
@@ -153,7 +163,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             actions: []
         },
         'awaiting_response': { 
-            order: 8,
+            order: 9,
             label: 'بانتظار الرد', 
             icon: Timer, 
             color: '#fb8c00',
@@ -166,7 +176,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'first_hearing_scheduled': { 
-            order: 9,
+            order: 10,
             label: 'أول جلسة مجدولة', 
             icon: Calendar, 
             color: '#1565c0',
@@ -180,7 +190,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'hearings_ongoing': { 
-            order: 10,
+            order: 11,
             label: 'جلسات جارية', 
             icon: Scale, 
             color: '#42a5f5',
@@ -193,7 +203,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'judgment_issued': { 
-            order: 11,
+            order: 12,
             label: 'صدر الحكم', 
             icon: Gavel, 
             color: '#2e7d32',
@@ -206,7 +216,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'appeal_period': { 
-            order: 12,
+            order: 13,
             label: 'فترة الاستئناف', 
             icon: AlertCircle, 
             color: '#ffeb3b',
@@ -219,7 +229,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'in_execution': { 
-            order: 13,
+            order: 14,
             label: 'قيد التنفيذ', 
             icon: Shield, 
             color: '#7b1fa2',
@@ -233,7 +243,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             ]
         },
         'fully_executed': { 
-            order: 14,
+            order: 15,
             label: 'منفذة بالكامل', 
             icon: Award, 
             color: '#00e676',

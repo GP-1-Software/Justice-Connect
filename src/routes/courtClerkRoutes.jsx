@@ -12,6 +12,7 @@ import HearingsManagement from '../pages/court_clerk/HearingsManagement';
 import DecisionsManagement from '../pages/court_clerk/DecisionsManagement';
 import ServicesManagement from '../pages/court_clerk/ServicesManagement';
 import CasesManagement from '../pages/court_clerk/CasesManagement';
+import FeesManagement from '../pages/court_clerk/FeesManagement';
 
 const CourtClerkRoutes = () => {
     // Check if user is court_clerk
@@ -32,6 +33,7 @@ const CourtClerkRoutes = () => {
             <Route path="/decisions" element={<DecisionsManagement />} />
             <Route path="/services" element={<ServicesManagement />} />
             <Route path="/cases" element={<CasesManagement />} />
+            <Route path="/fees" element={<FeesManagement />} />
         </Routes>
     );
 };

@@ -16,7 +16,8 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Scale
+  Scale,
+  Receipt
 } from 'lucide-react';
 
 const ClientSidebar = ({ isOpen, onClose }) => {
@@ -56,6 +57,11 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       title: 'الفواتير',
       icon: FileText,
       path: 'invoices'
+    },
+    {
+      title: 'رسوم المحكمة',
+      icon: Receipt,
+      path: 'court-fees'
     },
     {
       title: 'البحث عن محامين / حجز مواعيد',

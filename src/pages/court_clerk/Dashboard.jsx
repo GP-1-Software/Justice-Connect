@@ -12,7 +12,8 @@ import {
     Calendar,
     Users,
     Scale,
-    FolderOpen
+    FolderOpen,
+    Receipt
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
@@ -214,6 +215,13 @@ const CourtClerkDashboard = () => {
                         description="إدخال وإدارة القرارات القضائية"
                         onClick={() => navigate('/court-clerk/decisions')}
                         color="bg-indigo-500"
+                    />
+                    <NavigationCard
+                        icon={Receipt}
+                        title="إدارة الرسوم"
+                        description="تحرير واعتماد رسوم الدعاوى"
+                        onClick={() => navigate('/court-clerk/fees')}
+                        color="bg-amber-500"
                     />
                     <NavigationCard
                         icon={FileText}

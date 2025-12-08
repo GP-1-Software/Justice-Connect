@@ -61,7 +61,12 @@ export const NOTIFICATION_TYPES = {
     FIRST_HEARING_SCHEDULED: 'first_hearing_scheduled',
     JUDGMENT_ISSUED: 'judgment_issued',
     CASE_FULLY_EXECUTED: 'case_fully_executed',
-    RESPONSE_DEADLINE_WARNING: 'response_deadline_warning'
+    RESPONSE_DEADLINE_WARNING: 'response_deadline_warning',
+    
+    // Court Fees
+    FEE_ISSUED: 'fee_issued',
+    FEE_PAID: 'fee_paid',
+    FEE_CONFIRMED: 'fee_confirmed'
 };
 
 // Priority Levels
