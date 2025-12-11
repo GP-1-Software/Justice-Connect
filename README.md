@@ -29,6 +29,9 @@ or
  ```bash
 npm run dev
  ```
+
+
+ npm audit fix
 _________
 
 

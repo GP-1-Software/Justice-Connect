@@ -18,6 +18,7 @@ import SupportTickets from './pages/SupportTickets';
 import LegislationPage from './pages/LegislationPage';
 import LawyerRoutes from './routes/lawyerRoutes';
 import ClientRoutes from './routes/clientRoutes';
+import CourtClerkRoutes from './routes/courtClerkRoutes';
 import { LawyerAuthProvider } from './hooks/useLawyerAuth.jsx';
 import { ClientAuthProvider } from './hooks/useClientAuth.jsx';
 
@@ -47,6 +48,8 @@ function App() {
             <Route path="/pending-verification" element={<PendingVerification />} />
             <Route path="/support" element={<SupportTickets />} />
             <Route path="/legislation" element={<LegislationPage />} />
+            {/* Court Clerk protected area */}
+            <Route path="/court-clerk/*" element={<CourtClerkRoutes />} />
             {/* Client protected area */}
             <Route path="/client/*" element={<ClientRoutes />} />
             {/* Lawyer protected area */}

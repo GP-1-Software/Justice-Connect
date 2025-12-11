@@ -166,10 +166,10 @@ const AddCaseModal = ({ isOpen, onClose, onCaseAdded }) => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
-                <option value="low">منخفضة</option>
-                <option value="medium">متوسطة</option>
-                <option value="high">عالية</option>
-                <option value="urgent">عاجلة</option>
+                <option value="low">عادي</option>
+                <option value="medium">متوسط</option>
+                <option value="high">مهم</option>
+                <option value="urgent">عاجل جداً</option>
               </select>
             </div>
 

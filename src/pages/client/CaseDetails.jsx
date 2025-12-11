@@ -4,13 +4,14 @@ import { supabase } from '../../supabaseClient';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import { useCaseReport } from '../../hooks/useCaseReport';
 import { useCaseAccess } from '../../hooks/useCaseAccess';
-import { Loader2, AlertCircle, FileText, Clock, CheckSquare, FolderOpen, MessageSquare, Download, Ban } from 'lucide-react';
+import { Loader2, AlertCircle, FileText, Clock, CheckSquare, FolderOpen, MessageSquare, Download, Ban, Scale } from 'lucide-react';
 import CaseDetailsHeader from '../../components/client/case-details/CaseDetailsHeader';
 import CaseOverview from '../../components/client/case-details/CaseOverview';
 import CaseTimeline from '../../components/client/case-details/CaseTimeline';
 import CaseTasks from '../../components/client/case-details/CaseTasks';
 import CaseFiles from '../../components/client/case-details/CaseFiles';
 import CaseNotes from '../../components/client/case-details/CaseNotes';
+import ClientCourtFilingTracker from '../../components/client/case-details/ClientCourtFilingTracker';
 import MeetingCard from '../../components/shared/MeetingCard';
 import { getMeetingByCase } from '../../services/meetingApi';
 
@@ -31,7 +32,7 @@ const CaseDetails = () => {
   useEffect(() => {
     if (location.hash) {
       const tab = location.hash.replace('#', '');
-      if (['overview', 'timeline', 'tasks', 'files', 'notes'].includes(tab)) {
+      if (['overview', 'court', 'timeline', 'tasks', 'files', 'notes'].includes(tab)) {
         setActiveTab(tab);
       }
     }
@@ -42,8 +43,9 @@ const CaseDetails = () => {
       fetchCaseDetails();
     }
 
-    // Real-time subscription for meetings
+    // Real-time subscriptions
     if (caseId) {
+      // Real-time subscription for meetings
       const meetingsChannel = supabase
         .channel(`case-meetings-${caseId}`)
         .on('postgres_changes',
@@ -68,8 +70,27 @@ const CaseDetails = () => {
         )
         .subscribe();
 
+      // Real-time subscription for case updates (including case_stage)
+      const caseChannel = supabase
+        .channel(`client-case-detail-${caseId}`)
+        .on('postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'cases',
+            filter: `case_id=eq.${caseId}`
+          },
+          (payload) => {
+            if (payload.new) {
+              setCaseData(prev => ({ ...prev, ...payload.new }));
+            }
+          }
+        )
+        .subscribe();
+
       return () => {
         meetingsChannel.unsubscribe();
+        caseChannel.unsubscribe();
       };
     }
   }, [caseId, userProfile]);
@@ -80,6 +101,7 @@ const CaseDetails = () => {
       setError(null);
 
       // Fetch case with lawyer info
+      // Allow access if client_id matches OR client_id_number matches user's id_number
       const { data: caseInfo, error: caseError } = await supabase
         .from('cases')
         .select(`
@@ -99,7 +121,7 @@ const CaseDetails = () => {
           )
         `)
         .eq('case_id', caseId)
-        .eq('client_id', userProfile.user_id)
+        .or(`client_id.eq.${userProfile.user_id},client_id_number.eq.${userProfile.id_number}`)
         .single();
 
       if (caseError) throw caseError;
@@ -151,6 +173,11 @@ const CaseDetails = () => {
       id: 'overview',
       label: 'نظرة عامة',
       icon: FileText
+    },
+    {
+      id: 'court',
+      label: 'المحكمة',
+      icon: Scale
     },
     {
       id: 'timeline',
@@ -321,6 +348,7 @@ const CaseDetails = () => {
         {/* Tab Content */}
         <div className="mt-5">
           {activeTab === 'overview' && <CaseOverview caseData={caseData} lawyer={lawyer} />}
+          {activeTab === 'court' && <ClientCourtFilingTracker caseId={caseId} caseData={caseData} />}
           {activeTab === 'timeline' && <CaseTimeline caseId={caseId} />}
           {activeTab === 'tasks' && <CaseTasks caseId={caseId} canPerformAction={canPerformAction} isDisabled={isDisabled} />}
           {activeTab === 'files' && <CaseFiles caseId={caseId} canPerformAction={canPerformAction} isDisabled={isDisabled} />}

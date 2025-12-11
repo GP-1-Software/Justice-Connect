@@ -115,7 +115,7 @@ const NotificationsPage = () => {
         if (diffHours < 24) return `منذ ${diffHours} ساعة`;
         if (diffDays < 7) return `منذ ${diffDays} يوم`;
 
-        return notifTime.toLocaleDateString('ar-SA', {
+        return notifTime.toLocaleDateString('ar-EG', {
             year: 'numeric',
             month: 'short',
             day: 'numeric'

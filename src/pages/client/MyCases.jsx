@@ -38,6 +38,7 @@ const MyCases = () => {
       }
 
       // Fetch cases with lawyer information
+      // Search by client_id OR by client_id_number (for cases filed by lawyer)
       const { data: casesData, error: casesError } = await supabase
         .from('cases')
         .select(`
@@ -50,7 +51,7 @@ const MyCases = () => {
             specialization
           )
         `)
-        .eq('client_id', userProfile.user_id)
+        .or(`client_id.eq.${userProfile.user_id},client_id_number.eq.${userProfile.id_number}`)
         .order('created_at', { ascending: false });
 
       if (casesError) throw casesError;
