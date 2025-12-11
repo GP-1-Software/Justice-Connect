@@ -13,11 +13,13 @@ import DecisionsManagement from '../pages/court_clerk/DecisionsManagement';
 import ServicesManagement from '../pages/court_clerk/ServicesManagement';
 import CasesManagement from '../pages/court_clerk/CasesManagement';
 import FeesManagement from '../pages/court_clerk/FeesManagement';
+import AppealsManagement from '../pages/court_clerk/AppealsManagement';
+import Settings from '../pages/court_clerk/Settings';
 
 const CourtClerkRoutes = () => {
     // Check if user is court_clerk
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
+
     if (!user || user.user_type !== 'court_clerk') {
         return <Navigate to="/login" replace />;
     }
@@ -34,6 +36,8 @@ const CourtClerkRoutes = () => {
             <Route path="/services" element={<ServicesManagement />} />
             <Route path="/cases" element={<CasesManagement />} />
             <Route path="/fees" element={<FeesManagement />} />
+            <Route path="/appeals" element={<AppealsManagement />} />
+            <Route path="/settings" element={<Settings />} />
         </Routes>
     );
 };

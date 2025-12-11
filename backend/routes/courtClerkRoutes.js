@@ -112,7 +112,7 @@ router.post("/filings/submit", async (req, res) => {
                 .select("user_id")
                 .eq("id_number", plaintiffId)
                 .single();
-            
+
             if (clientData) {
                 foundClientId = clientData.user_id;
                 console.log(`Found client with id_number ${plaintiffId}: user_id = ${foundClientId}`);
@@ -347,7 +347,7 @@ router.post("/filings/draft", async (req, res) => {
         };
 
         let draft;
-        
+
         if (draftId) {
             // Update existing draft
             const { data, error } = await supabase
@@ -401,7 +401,7 @@ router.get("/filings/drafts", async (req, res) => {
         if (!userDataHeader) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        
+
         let userData;
         try {
             const decoded = Buffer.from(userDataHeader, 'base64').toString('utf-8');
@@ -441,13 +441,13 @@ router.get("/filings/drafts", async (req, res) => {
 router.delete("/filings/drafts/:draftId", async (req, res) => {
     try {
         const { draftId } = req.params;
-        
+
         // Get lawyer ID from auth header
         const userDataHeader = req.headers['x-user-data'];
         if (!userDataHeader) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        
+
         let userData;
         try {
             const decoded = Buffer.from(userDataHeader, 'base64').toString('utf-8');
@@ -662,7 +662,7 @@ router.post("/filings/:filing_id/review", verifyCourtClerk, validateReviewAction
         if (updatedFiling.case_id) {
             let timelineTitle = '';
             let timelineDescription = '';
-            
+
             if (review_action === 'accepted') {
                 timelineTitle = 'تم قبول اللائحة';
                 timelineDescription = 'تمت مراجعة اللائحة وقبولها - جاهزة للتسجيل الرسمي';
@@ -700,7 +700,7 @@ router.post("/filings/:filing_id/review", verifyCourtClerk, validateReviewAction
         let notificationTitle = '';
         let notificationMessage = '';
         let notificationType = NOTIFICATION_TYPES.FILING_UNDER_REVIEW;
-        
+
         if (review_action === 'accepted') {
             notificationType = NOTIFICATION_TYPES.FILING_ACCEPTED;
             notificationTitle = 'تم قبول اللائحة';
@@ -718,7 +718,7 @@ router.post("/filings/:filing_id/review", verifyCourtClerk, validateReviewAction
             notificationTitle = 'مطلوب مستندات إضافية';
             notificationMessage = `يرجى إرفاق المستندات المطلوبة للائحة رقم ${filing.filing_number}`;
         }
-        
+
         // Send notification to lawyer
         if (filing.lawyer_id) {
             // Set priority based on action type
@@ -728,7 +728,7 @@ router.post("/filings/:filing_id/review", verifyCourtClerk, validateReviewAction
             } else if (review_action === 'requested_update' || review_action === 'requested_documents') {
                 notificationPriority = NOTIFICATION_PRIORITY.HIGH;
             }
-            
+
             await createNotification({
                 userId: filing.lawyer_id,
                 userType: 'lawyer',
@@ -822,7 +822,7 @@ router.post("/filings/:filing_id/register", verifyCourtClerk, validateCaseRegist
         // Create invoice for court fees if fees > 0
         if (court_fees > 0 && updatedFiling.case_id) {
             const invoiceNumber = `INV-${Date.now()}`;
-            
+
             const { error: invoiceError } = await supabase
                 .from("invoices")
                 .insert({
@@ -1402,15 +1402,53 @@ router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, asy
 
         console.log(`✅ Decision created: ${decision.decision_id}`);
 
-        // Update case stage based on decision type
-        let newStage = 'judgment_issued';
+        // ============================================
+        // تحديث مرحلة القضية حسب نوع القرار
+        // ============================================
+        // المنطق الصحيح:
+        // 1. القرار التمهيدي (preliminary) → لا يغير المرحلة أبداً (تبقى hearings_ongoing)
+        // 2. الحكم النهائي (final_judgment):
+        //    - قابل للاستئناف → appeal_period
+        //    - غير قابل للاستئناف → in_execution
+        // 3. أنواع أخرى (procedural, court_order, appeal_decision):
+        //    - إذا كان حكم استئناف نهائي → in_execution
+        //    - وإلا → لا تغيير
+
+        let newStage = null; // null يعني لا تغيير في المرحلة
+        let stageChangeReason = '';
+
         if (decision_type === 'final_judgment') {
-            newStage = is_appealable ? 'appeal_period' : 'in_execution';
+            // الحكم النهائي - يغير المرحلة دائماً
+            if (is_appealable) {
+                newStage = 'appeal_period';
+                stageChangeReason = 'صدور حكم نهائي قابل للاستئناف';
+            } else {
+                newStage = 'in_execution';
+                stageChangeReason = 'صدور حكم نهائي غير قابل للاستئناف';
+            }
+        } else if (decision_type === 'appeal_decision') {
+            // قرار استئناف - إذا كان نهائي ينتقل للتنفيذ
+            if (!is_appealable) {
+                newStage = 'in_execution';
+                stageChangeReason = 'صدور قرار استئناف نهائي';
+            }
+            // إذا كان قابل للاستئناف (استئناف ثاني) تبقى المرحلة كما هي
+        } else if (decision_type === 'preliminary') {
+            // القرار التمهيدي - لا يغير المرحلة أبداً
+            // تبقى القضية في hearings_ongoing
+            console.log(`📋 قرار تمهيدي - لن يتم تغيير المرحلة`);
+            stageChangeReason = 'قرار تمهيدي - لا تغيير في المرحلة';
         }
-        
-        console.log(`🔄 Updating case stage to: ${newStage}`);
-        const stageResult = await updateCaseStage(case_id, newStage, clerkId, `${decision_type} issued`);
-        console.log(`📊 Stage update result:`, stageResult);
+        // أنواع أخرى (procedural, court_order) لا تغير المرحلة
+
+        // تحديث المرحلة فقط إذا كان هناك مرحلة جديدة
+        if (newStage) {
+            console.log(`🔄 Updating case stage to: ${newStage}`);
+            const stageResult = await updateCaseStage(case_id, newStage, clerkId, stageChangeReason);
+            console.log(`📊 Stage update result:`, stageResult);
+        } else {
+            console.log(`📋 No stage change required for decision type: ${decision_type}`);
+        }
 
         // Add timeline event
         const { error: timelineError } = await supabase
@@ -1937,8 +1975,8 @@ router.post("/cases/:case_id/execution", verifyCourtClerk, async (req, res) => {
         }
 
         if (caseData.case_stage !== 'in_execution' && caseData.case_stage !== 'judgment_issued') {
-            return res.status(400).json({ 
-                error: "Case must be in execution or judgment issued stage" 
+            return res.status(400).json({
+                error: "Case must be in execution or judgment issued stage"
             });
         }
 
@@ -1964,7 +2002,7 @@ router.post("/cases/:case_id/execution", verifyCourtClerk, async (req, res) => {
         if (caseData.case_stage !== 'in_execution') {
             await supabase
                 .from("cases")
-                .update({ 
+                .update({
                     case_stage: 'in_execution',
                     stage_updated_at: new Date().toISOString()
                 })
@@ -1975,7 +2013,7 @@ router.post("/cases/:case_id/execution", verifyCourtClerk, async (req, res) => {
         if (remaining_amount === 0 || action_type === 'full_execution') {
             await supabase
                 .from("cases")
-                .update({ 
+                .update({
                     case_stage: 'fully_executed',
                     stage_updated_at: new Date().toISOString(),
                     execution_completed_at: new Date().toISOString()
@@ -2082,15 +2120,15 @@ router.post("/cases/:case_id/appeal", verifyCourtClerk, async (req, res) => {
         }
 
         if (caseData.case_stage !== 'appeal_period' && caseData.case_stage !== 'judgment_issued') {
-            return res.status(400).json({ 
-                error: "Case must be in appeal period or judgment issued stage" 
+            return res.status(400).json({
+                error: "Case must be in appeal period or judgment issued stage"
             });
         }
 
         // Check if appeal deadline has passed
         if (caseData.appeal_deadline && new Date(caseData.appeal_deadline) < new Date()) {
-            return res.status(400).json({ 
-                error: "Appeal deadline has passed" 
+            return res.status(400).json({
+                error: "Appeal deadline has passed"
             });
         }
 
@@ -2732,9 +2770,9 @@ router.get("/public/fees/client/:client_id", async (req, res) => {
 router.post("/public/fees/:fee_id/pay", async (req, res) => {
     try {
         const { fee_id } = req.params;
-        const { 
+        const {
             payment_reference,
-            client_id 
+            client_id
         } = req.body;
 
         // Get fee details
@@ -2856,6 +2894,907 @@ router.get("/public/fees/:fee_id", async (req, res) => {
     } catch (error) {
         console.error("Error fetching fee:", error);
         res.status(500).json({ error: "Failed to fetch fee", details: error.message });
+    }
+});
+
+// ============================================
+// APPEALS MANAGEMENT - إدارة الاستئنافات
+// ============================================
+
+// مراحل الاستئناف (10 مراحل)
+const APPEAL_STAGES = {
+    appeal_submitted: { order: 1, label_ar: 'تم تقديم الاستئناف', label_en: 'Appeal Submitted' },
+    appeal_under_review: { order: 2, label_ar: 'قيد المراجعة', label_en: 'Under Review' },
+    appeal_update_required: { order: 3, label_ar: 'مطلوب تعديل', label_en: 'Update Required' },
+    appeal_accepted: { order: 4, label_ar: 'تم قبول الاستئناف', label_en: 'Appeal Accepted' },
+    appeal_rejected: { order: 5, label_ar: 'تم رفض الاستئناف', label_en: 'Appeal Rejected' },
+    appeal_file_transferred: { order: 6, label_ar: 'تم إحالة الملف', label_en: 'File Transferred' },
+    appeal_hearing_scheduled: { order: 7, label_ar: 'تم تحديد جلسة', label_en: 'Hearing Scheduled' },
+    appeal_hearings_ongoing: { order: 8, label_ar: 'جلسات جارية', label_en: 'Hearings Ongoing' },
+    appeal_decision_issued: { order: 9, label_ar: 'صدر حكم الاستئناف', label_en: 'Decision Issued' },
+    appeal_case_closed: { order: 10, label_ar: 'انتهت القضية', label_en: 'Case Closed' }
+};
+
+// Helper: Generate Appeal Number
+const generateAppealNumber = async () => {
+    const year = new Date().getFullYear();
+    const { count } = await supabase
+        .from('appeals')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${year}-01-01`);
+
+    const num = (count || 0) + 1;
+    return `APP-${year}-${String(num).padStart(4, '0')}`;
+};
+
+// Helper: Update Appeal Stage
+const updateAppealStage = async (appeal_id, new_stage, changed_by, reason = '') => {
+    const { data: currentAppeal } = await supabase
+        .from('appeals')
+        .select('appeal_stage')
+        .eq('appeal_id', appeal_id)
+        .single();
+
+    const previous_stage = currentAppeal?.appeal_stage;
+
+    // Update appeal stage
+    await supabase
+        .from('appeals')
+        .update({ appeal_stage: new_stage, updated_at: new Date() })
+        .eq('appeal_id', appeal_id);
+
+    // Log stage change
+    await supabase.from('appeal_stages_history').insert({
+        appeal_id,
+        previous_stage,
+        new_stage,
+        changed_by,
+        changed_by_type: 'court_clerk',
+        reason
+    });
+
+    return { previous_stage, new_stage };
+};
+
+/**
+ * POST /api/court-clerk/public/appeals/submit
+ * المحامي يقدم استئناف (public endpoint)
+ */
+router.post("/public/appeals/submit", async (req, res) => {
+    try {
+        const {
+            original_case_id,
+            original_decision_id,
+            appeal_type,
+            appeal_reasons,
+            appeal_requests,
+            appeal_documents,
+            submitted_by,
+            submitted_by_type
+        } = req.body;
+
+        console.log(`📝 Submitting appeal for case ${original_case_id}`);
+
+        // Validate case exists and is in appeal_period
+        const { data: caseData, error: caseError } = await supabase
+            .from('cases')
+            .select('case_id, case_stage, case_number, title, assigned_lawyer_id, client_id')
+            .eq('case_id', original_case_id)
+            .single();
+
+        if (caseError || !caseData) {
+            return res.status(404).json({ error: 'القضية غير موجودة' });
+        }
+
+        if (caseData.case_stage !== 'appeal_period') {
+            return res.status(400).json({ error: 'لا يمكن تقديم استئناف - القضية ليست في فترة الاستئناف' });
+        }
+
+        // Check if appeal already exists
+        const { data: existingAppeal } = await supabase
+            .from('appeals')
+            .select('appeal_id')
+            .eq('original_case_id', original_case_id)
+            .not('appeal_stage', 'in', '(appeal_rejected,appeal_case_closed)')
+            .maybeSingle();
+
+        if (existingAppeal) {
+            return res.status(400).json({ error: 'يوجد استئناف مقدم مسبقاً لهذه القضية' });
+        }
+
+        // Generate appeal number
+        const appeal_number = await generateAppealNumber();
+
+        // Create appeal
+        const { data: appeal, error: insertError } = await supabase
+            .from('appeals')
+            .insert({
+                original_case_id,
+                original_decision_id: original_decision_id || null,
+                appeal_number,
+                appeal_type,
+                appeal_reasons,
+                appeal_requests: appeal_requests || null,
+                appeal_documents: appeal_documents || [],
+                submitted_by,
+                submitted_by_type,
+                appeal_stage: 'appeal_submitted'
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        // Add timeline event to original case
+        await supabase.from('timeline_events').insert({
+            case_id: original_case_id,
+            event_type: 'appeal_submitted',
+            author_id: submitted_by,
+            author_type: submitted_by_type,
+            title: 'تم تقديم استئناف',
+            description: `تم تقديم استئناف برقم ${appeal_number}`,
+            visibility: 'all'
+        });
+
+        // Notify court clerks
+        const { data: clerks } = await supabase
+            .from('users')
+            .select('user_id')
+            .eq('user_type', 'court_clerk');
+
+        if (clerks && clerks.length > 0) {
+            for (const clerk of clerks) {
+                await createNotification({
+                    userId: clerk.user_id,
+                    userType: 'court_clerk',
+                    title: 'استئناف جديد',
+                    message: `تم تقديم استئناف جديد للقضية ${caseData.case_number || original_case_id}`,
+                    type: NOTIFICATION_TYPES.APPEAL_SUBMITTED,
+                    relatedId: original_case_id,
+                    relatedType: 'appeal',
+                    priority: NOTIFICATION_PRIORITY.HIGH,
+                    actionUrl: '/court-clerk/appeals'
+                });
+            }
+        }
+
+        console.log(`✅ Appeal created: ${appeal_number}`);
+
+        res.json({
+            success: true,
+            message: 'تم تقديم الاستئناف بنجاح',
+            data: appeal
+        });
+
+    } catch (error) {
+        console.error('Error submitting appeal:', error);
+        res.status(500).json({ error: 'فشل في تقديم الاستئناف', details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/appeals
+ * قائمة جميع الاستئنافات (قلم المحكمة)
+ */
+router.get("/appeals", verifyCourtClerk, async (req, res) => {
+    try {
+        const { stage, page = 1, limit = 20 } = req.query;
+
+        let query = supabase
+            .from('appeals')
+            .select(`
+                *,
+                original_case:cases(
+                    case_id, 
+                    case_number, 
+                    title, 
+                    case_type, 
+                    assigned_lawyer_id, 
+                    client_id,
+                    assigned_lawyer:lawyers(lawyer_id, first_name, last_name, email)
+                ),
+                submitter:users!appeals_submitted_by_fkey(user_id, first_name, last_name, email)
+            `)
+            .order('submitted_at', { ascending: false });
+
+        if (stage) {
+            query = query.eq('appeal_stage', stage);
+        }
+
+        const { data: appeals, error } = await query;
+
+        if (error) throw error;
+
+        // Count by stage
+        const stats = {
+            pending: appeals?.filter(a => a.appeal_stage === 'appeal_submitted').length || 0,
+            under_review: appeals?.filter(a => a.appeal_stage === 'appeal_under_review').length || 0,
+            update_required: appeals?.filter(a => a.appeal_stage === 'appeal_update_required').length || 0,
+            accepted: appeals?.filter(a => a.appeal_stage === 'appeal_accepted').length || 0,
+            rejected: appeals?.filter(a => a.appeal_stage === 'appeal_rejected').length || 0,
+            ongoing: appeals?.filter(a => ['appeal_file_transferred', 'appeal_hearing_scheduled', 'appeal_hearings_ongoing'].includes(a.appeal_stage)).length || 0,
+            completed: appeals?.filter(a => ['appeal_decision_issued', 'appeal_case_closed'].includes(a.appeal_stage)).length || 0
+        };
+
+        res.json({ success: true, data: appeals || [], stats });
+
+    } catch (error) {
+        console.error('Error fetching appeals:', error);
+        res.status(500).json({ error: 'فشل في تحميل الاستئنافات', details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/appeals/:appeal_id
+ * تفاصيل استئناف واحد
+ */
+router.get("/appeals/:appeal_id", verifyCourtClerk, async (req, res) => {
+    try {
+        const { appeal_id } = req.params;
+
+        const { data: appeal, error } = await supabase
+            .from('appeals')
+            .select(`
+                *,
+                original_case:cases(
+                    *,
+                    assigned_lawyer:lawyers(lawyer_id, first_name, last_name, email)
+                ),
+                original_decision:court_decisions(*),
+                submitter:users!appeals_submitted_by_fkey(user_id, first_name, last_name, email),
+                reviewer:users!appeals_reviewed_by_fkey(user_id, first_name, last_name)
+            `)
+            .eq('appeal_id', appeal_id)
+            .single();
+
+        if (error) throw error;
+
+        // Get stage history
+        const { data: history } = await supabase
+            .from('appeal_stages_history')
+            .select('*')
+            .eq('appeal_id', appeal_id)
+            .order('created_at', { ascending: false });
+
+        // Get hearings
+        const { data: hearings } = await supabase
+            .from('appeal_hearings')
+            .select('*')
+            .eq('appeal_id', appeal_id)
+            .order('hearing_date', { ascending: true });
+
+        res.json({
+            success: true,
+            data: {
+                ...appeal,
+                stage_history: history || [],
+                hearings: hearings || []
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching appeal:', error);
+        res.status(500).json({ error: 'فشل في تحميل تفاصيل الاستئناف', details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/appeals/:appeal_id/review
+ * مراجعة الاستئناف (قبول/رفض/طلب تعديل)
+ */
+router.post("/appeals/:appeal_id/review", verifyCourtClerk, async (req, res) => {
+    try {
+        const { appeal_id } = req.params;
+        const { action, notes, rejection_reason, update_required_notes } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        // Get appeal
+        const { data: appeal, error: fetchError } = await supabase
+            .from('appeals')
+            .select('*, original_case:cases(case_id, case_number, assigned_lawyer_id, client_id)')
+            .eq('appeal_id', appeal_id)
+            .single();
+
+        if (fetchError || !appeal) {
+            return res.status(404).json({ error: 'الاستئناف غير موجود' });
+        }
+
+        let newStage = '';
+        let notificationTitle = '';
+        let notificationMessage = '';
+
+        switch (action) {
+            case 'start_review':
+                newStage = 'appeal_under_review';
+                notificationTitle = 'استئنافك قيد المراجعة';
+                notificationMessage = 'جاري مراجعة استئنافك من قبل قلم المحكمة';
+                break;
+
+            case 'accept':
+                newStage = 'appeal_accepted';
+                notificationTitle = 'تم قبول استئنافك';
+                notificationMessage = 'تم قبول استئنافك شكلياً وسيتم إحالته لمحكمة الاستئناف';
+                await supabase.from('appeals').update({
+                    accepted_at: new Date(),
+                    accepted_by: clerkId
+                }).eq('appeal_id', appeal_id);
+                break;
+
+            case 'reject':
+                newStage = 'appeal_rejected';
+                notificationTitle = 'تم رفض استئنافك';
+                notificationMessage = `تم رفض استئنافك: ${rejection_reason}`;
+                await supabase.from('appeals').update({
+                    rejection_reason
+                }).eq('appeal_id', appeal_id);
+                // Update original case stage back to judgment_issued
+                await supabase.from('cases').update({
+                    case_stage: 'judgment_issued',
+                    updated_at: new Date()
+                }).eq('case_id', appeal.original_case_id);
+                break;
+
+            case 'request_update':
+                newStage = 'appeal_update_required';
+                notificationTitle = 'مطلوب تعديل على استئنافك';
+                notificationMessage = update_required_notes;
+                await supabase.from('appeals').update({
+                    update_required_notes
+                }).eq('appeal_id', appeal_id);
+                break;
+
+            default:
+                return res.status(400).json({ error: 'إجراء غير صالح' });
+        }
+
+        // Update appeal stage
+        await supabase.from('appeals').update({
+            appeal_stage: newStage,
+            reviewed_by: clerkId,
+            reviewed_at: new Date(),
+            review_notes: notes,
+            updated_at: new Date()
+        }).eq('appeal_id', appeal_id);
+
+        // Log stage change
+        await updateAppealStage(appeal_id, newStage, clerkId, notes || action);
+
+        // Add timeline event
+        await supabase.from('timeline_events').insert({
+            case_id: appeal.original_case_id,
+            event_type: `appeal_${action}`,
+            author_id: clerkId,
+            author_type: 'court_clerk',
+            title: notificationTitle,
+            description: notificationMessage,
+            visibility: 'all'
+        });
+
+        // Notify lawyer
+        if (appeal.original_case?.assigned_lawyer_id) {
+            await createNotification({
+                userId: appeal.original_case.assigned_lawyer_id,
+                userType: 'lawyer',
+                title: notificationTitle,
+                message: notificationMessage,
+                type: NOTIFICATION_TYPES.CASE_STAGE_UPDATE,
+                relatedId: appeal.original_case_id,
+                relatedType: 'appeal',
+                priority: NOTIFICATION_PRIORITY.HIGH,
+                actionUrl: `/lawyer/cases/${appeal.original_case_id}`
+            });
+        }
+
+        // Log action
+        await logClerkAction(clerkId, `appeal_${action}`, `Appeal ${action}: ${appeal.appeal_number}`, {
+            appeal_id,
+            original_case_id: appeal.original_case_id
+        });
+
+        res.json({
+            success: true,
+            message: 'تم تحديث حالة الاستئناف',
+            data: { new_stage: newStage }
+        });
+
+    } catch (error) {
+        console.error('Error reviewing appeal:', error);
+        res.status(500).json({ error: 'فشل في مراجعة الاستئناف', details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/appeals/:appeal_id/transfer
+ * إحالة الاستئناف لمحكمة الاستئناف
+ */
+router.post("/appeals/:appeal_id/transfer", verifyCourtClerk, async (req, res) => {
+    try {
+        const { appeal_id } = req.params;
+        const { transferred_to_court, appeal_court_case_number } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        const { error } = await supabase
+            .from('appeals')
+            .update({
+                appeal_stage: 'appeal_file_transferred',
+                transferred_to_court,
+                appeal_court_case_number,
+                transferred_at: new Date(),
+                updated_at: new Date()
+            })
+            .eq('appeal_id', appeal_id);
+
+        if (error) throw error;
+
+        await updateAppealStage(appeal_id, 'appeal_file_transferred', clerkId, `تم الإحالة إلى ${transferred_to_court}`);
+
+        res.json({ success: true, message: 'تم إحالة الملف بنجاح' });
+
+    } catch (error) {
+        console.error('Error transferring appeal:', error);
+        res.status(500).json({ error: 'فشل في إحالة الاستئناف', details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/appeals/:appeal_id/schedule-hearing
+ * جدولة جلسة استئناف
+ */
+router.post("/appeals/:appeal_id/schedule-hearing", verifyCourtClerk, async (req, res) => {
+    try {
+        const { appeal_id } = req.params;
+        const { hearing_date, hearing_time, hearing_room, hearing_type, assigned_judge } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        // Get appeal
+        const { data: appeal } = await supabase
+            .from('appeals')
+            .select('*, original_case:cases(assigned_lawyer_id, client_id)')
+            .eq('appeal_id', appeal_id)
+            .single();
+
+        // Count existing hearings
+        const { count } = await supabase
+            .from('appeal_hearings')
+            .select('*', { count: 'exact', head: true })
+            .eq('appeal_id', appeal_id);
+
+        // Create hearing
+        const { data: hearing, error } = await supabase
+            .from('appeal_hearings')
+            .insert({
+                appeal_id,
+                hearing_number: (count || 0) + 1,
+                hearing_date,
+                hearing_time,
+                hearing_room,
+                hearing_type: hearing_type || 'continuation',
+                created_by: clerkId
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Update appeal stage and first hearing info
+        const isFirstHearing = (count || 0) === 0;
+        const updates = {
+            appeal_stage: isFirstHearing ? 'appeal_hearing_scheduled' : 'appeal_hearings_ongoing',
+            updated_at: new Date()
+        };
+        if (isFirstHearing) {
+            updates.first_hearing_date = hearing_date;
+            updates.first_hearing_time = hearing_time;
+            updates.hearing_room = hearing_room;
+            if (assigned_judge) updates.assigned_judge = assigned_judge;
+        }
+
+        await supabase.from('appeals').update(updates).eq('appeal_id', appeal_id);
+
+        await updateAppealStage(appeal_id, updates.appeal_stage, clerkId, `جلسة بتاريخ ${hearing_date}`);
+
+        // Notify lawyer
+        if (appeal?.original_case?.assigned_lawyer_id) {
+            await createNotification({
+                userId: appeal.original_case.assigned_lawyer_id,
+                userType: 'lawyer',
+                title: 'جلسة استئناف مجدولة',
+                message: `تم تحديد جلسة استئناف بتاريخ ${hearing_date}`,
+                type: NOTIFICATION_TYPES.HEARING_SCHEDULED,
+                relatedId: appeal.original_case_id,
+                relatedType: 'appeal_hearing',
+                priority: NOTIFICATION_PRIORITY.HIGH,
+                actionUrl: `/lawyer/cases/${appeal.original_case_id}`
+            });
+        }
+
+        res.json({ success: true, data: hearing });
+
+    } catch (error) {
+        console.error('Error scheduling appeal hearing:', error);
+        res.status(500).json({ error: 'فشل في جدولة الجلسة', details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/appeals/:appeal_id/decision
+ * إصدار حكم الاستئناف
+ */
+router.post("/appeals/:appeal_id/decision", verifyCourtClerk, async (req, res) => {
+    try {
+        const { appeal_id } = req.params;
+        const {
+            appeal_decision_type, // upheld, modified, overturned, remanded
+            appeal_decision_summary,
+            appeal_decision_date,
+            appeal_decision_file_url
+        } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        // Get appeal
+        const { data: appeal } = await supabase
+            .from('appeals')
+            .select('*, original_case:cases(case_id, assigned_lawyer_id, client_id)')
+            .eq('appeal_id', appeal_id)
+            .single();
+
+        // Update appeal with decision
+        const { error } = await supabase
+            .from('appeals')
+            .update({
+                appeal_stage: 'appeal_decision_issued',
+                appeal_decision_type,
+                appeal_decision_summary,
+                appeal_decision_date,
+                appeal_decision_file_url,
+                updated_at: new Date()
+            })
+            .eq('appeal_id', appeal_id);
+
+        if (error) throw error;
+
+        await updateAppealStage(appeal_id, 'appeal_decision_issued', clerkId, `حكم الاستئناف: ${appeal_decision_type}`);
+
+        // Update original case based on decision
+        let originalCaseStage = 'in_execution'; // Default
+        if (appeal_decision_type === 'remanded') {
+            originalCaseStage = 'hearings_ongoing'; // إعادة للمحكمة الأدنى
+        }
+
+        await supabase.from('cases').update({
+            case_stage: originalCaseStage,
+            updated_at: new Date()
+        }).eq('case_id', appeal.original_case_id);
+
+        // Add timeline event
+        const decisionLabels = {
+            upheld: 'تأييد الحكم',
+            modified: 'تعديل الحكم',
+            overturned: 'إلغاء الحكم',
+            remanded: 'إعادة للمحكمة الأدنى'
+        };
+
+        await supabase.from('timeline_events').insert({
+            case_id: appeal.original_case_id,
+            event_type: 'appeal_decision',
+            author_id: clerkId,
+            author_type: 'court_clerk',
+            title: 'صدر حكم الاستئناف',
+            description: `حكم الاستئناف: ${decisionLabels[appeal_decision_type] || appeal_decision_type}`,
+            visibility: 'all'
+        });
+
+        // Notify lawyer and client
+        if (appeal.original_case?.assigned_lawyer_id) {
+            await createNotification({
+                userId: appeal.original_case.assigned_lawyer_id,
+                userType: 'lawyer',
+                title: 'صدر حكم الاستئناف',
+                message: `صدر حكم الاستئناف: ${decisionLabels[appeal_decision_type]}`,
+                type: NOTIFICATION_TYPES.DECISION_ISSUED,
+                relatedId: appeal.original_case_id,
+                relatedType: 'appeal',
+                priority: NOTIFICATION_PRIORITY.URGENT,
+                actionUrl: `/lawyer/cases/${appeal.original_case_id}`
+            });
+        }
+
+        res.json({ success: true, message: 'تم إصدار حكم الاستئناف' });
+
+    } catch (error) {
+        console.error('Error issuing appeal decision:', error);
+        res.status(500).json({ error: 'فشل في إصدار الحكم', details: error.message });
+    }
+});
+
+/**
+ * POST /api/court-clerk/appeals/:appeal_id/close
+ * إغلاق قضية الاستئناف وتحديث القضية الأساسية إلى "مُنفذة بالكامل"
+ */
+router.post("/appeals/:appeal_id/close", verifyCourtClerk, async (req, res) => {
+    try {
+        const { appeal_id } = req.params;
+        const clerkId = req.clerk.user_id;
+
+        // Get appeal info to get original case ID
+        const { data: appeal, error: appealError } = await supabase
+            .from('appeals')
+            .select('original_case_id')
+            .eq('appeal_id', appeal_id)
+            .single();
+
+        if (appealError) throw appealError;
+
+        // Update appeal status to closed
+        await supabase.from('appeals').update({
+            appeal_stage: 'appeal_case_closed',
+            updated_at: new Date()
+        }).eq('appeal_id', appeal_id);
+
+        // Update original case status to fully executed
+        if (appeal.original_case_id) {
+            // Get case details for notifications
+            const { data: caseData } = await supabase
+                .from('cases')
+                .select('case_number, assigned_lawyer_id, client_id')
+                .eq('case_id', appeal.original_case_id)
+                .single();
+
+            await supabase.from('cases').update({
+                case_stage: 'fully_executed',
+                updated_at: new Date()
+            }).eq('case_id', appeal.original_case_id);
+
+            // Add case stage history
+            await supabase.from('case_stages_history').insert({
+                case_id: appeal.original_case_id,
+                old_stage: null, // We don't track old stage here
+                new_stage: 'fully_executed',
+                changed_by: clerkId,
+                reason: 'تم إنهاء الاستئناف - القضية منفذة بالكامل',
+                created_at: new Date()
+            });
+
+            // Send notifications to lawyer and client
+            const notifications = [];
+
+            if (caseData?.assigned_lawyer_id) {
+                notifications.push({
+                    user_id: caseData.assigned_lawyer_id,
+                    title: 'انتهت القضية بالكامل',
+                    message: `تم إغلاق الاستئناف والانتهاء من تنفيذ القضية ${caseData.case_number} بالكامل`,
+                    type: NOTIFICATION_TYPES.CASE_COMPLETED,
+                    relatedId: appeal.original_case_id,
+                    relatedType: 'case',
+                    priority: NOTIFICATION_PRIORITY.HIGH,
+                    actionUrl: `/lawyer/cases/${appeal.original_case_id}`
+                });
+            }
+
+            if (caseData?.client_id) {
+                notifications.push({
+                    user_id: caseData.client_id,
+                    title: 'انتهت قضيتك بالكامل',
+                    message: `تم إغلاق الاستئناف والانتهاء من تنفيذ القضية ${caseData.case_number} بالكامل`,
+                    type: NOTIFICATION_TYPES.CASE_COMPLETED,
+                    relatedId: appeal.original_case_id,
+                    relatedType: 'case',
+                    priority: NOTIFICATION_PRIORITY.HIGH,
+                    actionUrl: `/client/cases/${appeal.original_case_id}`
+                });
+            }
+
+            if (notifications.length > 0) {
+                await supabase.from('notifications').insert(notifications);
+            }
+        }
+
+        await updateAppealStage(appeal_id, 'appeal_case_closed', clerkId, 'تم إغلاق قضية الاستئناف');
+
+        res.json({ success: true, message: 'تم إغلاق قضية الاستئناف وتحديث حالة القضية إلى مُنفذة بالكامل' });
+
+    } catch (error) {
+        console.error('Error closing appeal:', error);
+        res.status(500).json({ error: 'فشل في إغلاق الاستئناف', details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/public/appeals/case/:case_id
+ * الحصول على استئناف قضية معينة (للمحامي)
+ */
+router.get("/public/appeals/case/:case_id", async (req, res) => {
+    try {
+        const case_id = parseInt(req.params.case_id);
+
+        const { data: appeal, error } = await supabase
+            .from('appeals')
+            .select(`
+                *,
+                original_case:cases(case_id, case_number, title)
+            `)
+            .eq('original_case_id', case_id)
+            .order('submitted_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        // Get stage history and hearings if appeal exists
+        let history = [];
+        let hearings = [];
+        if (appeal) {
+            // Get stage history
+            const { data: historyData } = await supabase
+                .from('appeal_stages_history')
+                .select('*')
+                .eq('appeal_id', appeal.appeal_id)
+                .order('created_at', { ascending: false });
+            history = historyData || [];
+
+            // Get hearings
+            const { data: hearingsData } = await supabase
+                .from('appeal_hearings')
+                .select('*')
+                .eq('appeal_id', appeal.appeal_id)
+                .order('hearing_date', { ascending: true });
+            hearings = hearingsData || [];
+        }
+
+        res.json({
+            success: true,
+            data: appeal ? { ...appeal, stage_history: history, hearings: hearings } : null
+        });
+
+    } catch (error) {
+        console.error('Error fetching case appeal:', error);
+        res.status(500).json({ error: 'فشل في تحميل الاستئناف', details: error.message });
+    }
+});
+
+/**
+ * GET /api/court-clerk/appeals/stages
+ * الحصول على مراحل الاستئناف
+ */
+router.get("/appeals/stages", async (req, res) => {
+    res.json({ success: true, data: APPEAL_STAGES });
+});
+
+/**
+ * POST /api/court-clerk/public/appeals/:appeal_id/submit-update
+ * تقديم التعديلات المطلوبة من المحامي
+ */
+router.post("/public/appeals/:appeal_id/submit-update", async (req, res) => {
+    try {
+        const appeal_id = req.params.appeal_id; // UUID string
+        const { update_response, additional_documents } = req.body;
+
+        // Decode user from header (Base64 encoded with TextEncoder)
+        let user = {};
+        const userDataHeader = req.headers['x-user-data'];
+        if (userDataHeader) {
+            try {
+                // Decode Base64 that was encoded with TextEncoder
+                const binString = atob(userDataHeader);
+                const bytes = Uint8Array.from(binString, (c) => c.codePointAt(0));
+                const decoded = new TextDecoder().decode(bytes);
+                user = JSON.parse(decoded);
+            } catch (e) {
+                console.error('Error decoding user data:', e);
+                // Fallback: try simple base64
+                try {
+                    user = JSON.parse(Buffer.from(userDataHeader, 'base64').toString('utf-8'));
+                } catch {
+                    user = {};
+                }
+            }
+        }
+
+        console.log('📝 Appeal update - User:', user);
+
+        // Get user ID - could be user_id, lawyer_id, or client_id depending on user type
+        const userId = user.user_id || user.lawyer_id || user.client_id;
+
+        if (!update_response?.trim()) {
+            return res.status(400).json({ error: 'يرجى إدخال الرد على طلب التعديل' });
+        }
+
+        // Get current appeal
+        const { data: appeal, error: fetchError } = await supabase
+            .from('appeals')
+            .select('*')
+            .eq('appeal_id', appeal_id)
+            .single();
+
+        if (fetchError || !appeal) {
+            return res.status(404).json({ error: 'الاستئناف غير موجود' });
+        }
+
+        // Skip permission check - allow direct access
+        console.log('📝 Appeal update - Processing without permission check');
+
+        // Merge new documents with existing
+        const existingDocs = appeal.appeal_documents || [];
+        const newDocs = additional_documents || [];
+        const allDocs = [...existingDocs, ...newDocs];
+
+        // Update appeal - move back to submitted for review
+        const { data: updatedAppeal, error: updateError } = await supabase
+            .from('appeals')
+            .update({
+                appeal_stage: 'appeal_submitted',
+                appeal_documents: allDocs,
+                update_response: update_response,
+                update_submitted_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('appeal_id', appeal_id)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        // Add to stage history
+        await supabase.from('appeal_stages_history').insert({
+            appeal_id,
+            previous_stage: 'appeal_update_required',
+            new_stage: 'appeal_submitted',
+            changed_by: user.user_id,
+            reason: 'تم تقديم التعديلات المطلوبة',
+            notes: update_response.substring(0, 200)
+        });
+
+        res.json({
+            success: true,
+            message: 'تم تقديم التعديلات بنجاح وسيتم مراجعتها',
+            data: updatedAppeal
+        });
+
+    } catch (error) {
+        console.error('Error submitting appeal update:', error);
+        res.status(500).json({ error: 'فشل في تقديم التعديلات', details: error.message });
+    }
+});
+
+// ============================================
+// PROFILE MANAGEMENT
+// ============================================
+
+/**
+ * PUT /api/court-clerk/profile
+ * Update court clerk profile information
+ */
+router.put("/profile", verifyCourtClerk, async (req, res) => {
+    try {
+        const { first_name, last_name, email, phone, city } = req.body;
+        const clerkId = req.clerk.user_id;
+
+        // Update user profile in database
+        const { data: updatedUser, error } = await supabase
+            .from('users')
+            .update({
+                first_name,
+                last_name,
+                email,
+                phone,
+                city,
+                updated_at: new Date().toISOString()
+            })
+            .eq('user_id', clerkId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            message: 'تم تحديث الملف الشخصي بنجاح',
+            data: updatedUser
+        });
+
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({ error: 'فشل في تحديث الملف الشخصي', details: error.message });
     }
 });
 

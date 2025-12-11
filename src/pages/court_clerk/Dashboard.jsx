@@ -4,16 +4,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    FileText, 
-    Clock, 
-    CheckCircle, 
-    AlertCircle, 
+import {
+    FileText,
+    Clock,
+    CheckCircle,
+    AlertCircle,
     Calendar,
     Users,
     Scale,
     FolderOpen,
-    Receipt
+    Receipt,
+    Gavel
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
@@ -47,7 +48,7 @@ const CourtClerkDashboard = () => {
         try {
             const user = localStorage.getItem('user');
             const token = user ? btoa(user) : '';
-            
+
             const response = await fetch('http://localhost:5000/api/court-clerk/dashboard', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -70,7 +71,7 @@ const CourtClerkDashboard = () => {
     };
 
     const StatCard = ({ icon: Icon, title, value, color, onClick }) => (
-        <div 
+        <div
             className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-xl transition cursor-pointer border-r-4 ${color}`}
             onClick={onClick}
         >
@@ -100,14 +101,14 @@ const CourtClerkDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
             {/* Header */}
-            <CourtClerkHeader 
+            <CourtClerkHeader
                 title={`مرحباً، ${clerk?.first_name || ''} ${clerk?.last_name || ''}`}
                 subtitle="لوحة تحكم قلم المحكمة - إدارة اللوائح والقضايا"
             />
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-                
+
                 {/* Statistics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <StatCard
@@ -140,44 +141,6 @@ const CourtClerkDashboard = () => {
                     />
                 </div>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                            <Users size={20} className="text-orange-500" />
-                            التبليغات المعلقة
-                        </h3>
-                        <div className="flex justify-between items-center">
-                            <span className="text-3xl font-bold text-orange-600">
-                                {stats?.pending_service || 0}
-                            </span>
-                            <button
-                                onClick={() => navigate('/court-clerk/services')}
-                                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-                            >
-                                إدارة التبليغات
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                            <Calendar size={20} className="text-purple-500" />
-                            جلسات اليوم
-                        </h3>
-                        <div className="flex justify-between items-center">
-                            <span className="text-3xl font-bold text-purple-600">
-                                {stats?.hearings_today || 0}
-                            </span>
-                            <button
-                                onClick={() => navigate('/court-clerk/hearings')}
-                                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-                            >
-                                عرض الجلسات
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Navigation Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -229,6 +192,13 @@ const CourtClerkDashboard = () => {
                         description="عرض ومتابعة جميع القضايا"
                         onClick={() => navigate('/court-clerk/cases')}
                         color="bg-teal-500"
+                    />
+                    <NavigationCard
+                        icon={Gavel}
+                        title="إدارة الاستئنافات"
+                        description="مراجعة وإدارة طلبات الاستئناف"
+                        onClick={() => navigate('/court-clerk/appeals')}
+                        color="bg-rose-500"
                     />
                 </div>
             </div>

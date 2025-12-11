@@ -20,7 +20,7 @@ export const verifyCourtClerk = async (req, res, next) => {
 
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
-            
+
             // Try to parse as JSON (user data sent directly)
             try {
                 userData = JSON.parse(atob(token));
@@ -35,13 +35,19 @@ export const verifyCourtClerk = async (req, res, next) => {
             }
         }
 
-        // Also check x-user-data header (Base64 encoded)
+        // Also check x-user-data header (can be JSON string or Base64 encoded)
         if (!userData && req.headers['x-user-data']) {
             try {
-                const decoded = Buffer.from(req.headers['x-user-data'], 'base64').toString('utf-8');
-                userData = JSON.parse(decoded);
+                // Try parsing as JSON directly first
+                userData = JSON.parse(req.headers['x-user-data']);
             } catch {
-                userData = null;
+                // If that fails, try base64 decoding
+                try {
+                    const decoded = Buffer.from(req.headers['x-user-data'], 'base64').toString('utf-8');
+                    userData = JSON.parse(decoded);
+                } catch {
+                    userData = null;
+                }
             }
         }
 
@@ -54,7 +60,7 @@ export const verifyCourtClerk = async (req, res, next) => {
 
         // Check if user has court_clerk role in user_roles table
         let roleQuery = supabase.from("user_roles").select("role");
-        
+
         if (idNumber) {
             roleQuery = roleQuery.eq("id_number", idNumber);
         } else if (userId) {
@@ -64,20 +70,20 @@ export const verifyCourtClerk = async (req, res, next) => {
                 .select("id_number")
                 .eq("user_id", userId)
                 .single();
-            
+
             if (userIdData?.id_number) {
                 roleQuery = roleQuery.eq("id_number", userIdData.id_number);
             }
         }
-        
+
         roleQuery = roleQuery.eq("role", "court_clerk");
 
         const { data: roleData, error: roleError } = await roleQuery.single();
 
         if (roleError || !roleData) {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 error: "Forbidden: User is not a Court Clerk",
-                details: roleError?.message 
+                details: roleError?.message
             });
         }
 
@@ -99,7 +105,7 @@ export const verifyCourtClerk = async (req, res, next) => {
  * Validate filing submission data
  */
 export const validateFilingSubmission = (req, res, next) => {
-    const { 
+    const {
         case_id,
         court_name,
         city,
@@ -122,9 +128,9 @@ export const validateFilingSubmission = (req, res, next) => {
     if (!legal_requests || legal_requests.trim() === "") errors.push("legal_requests is required");
 
     if (errors.length > 0) {
-        return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errors 
+        return res.status(400).json({
+            error: "Validation failed",
+            details: errors
         });
     }
 
@@ -161,9 +167,9 @@ export const validateReviewAction = (req, res, next) => {
     }
 
     if (errors.length > 0) {
-        return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errors 
+        return res.status(400).json({
+            error: "Validation failed",
+            details: errors
         });
     }
 
@@ -174,13 +180,13 @@ export const validateReviewAction = (req, res, next) => {
  * Validate case registration data
  */
 export const validateCaseRegistration = (req, res, next) => {
-    const { 
+    const {
         registry_number,
         official_case_number,
         registration_date,
         court_fees
     } = req.body;
-    
+
     // filing_id comes from URL params, not body
     const filing_id = req.params.filing_id;
 
@@ -195,9 +201,9 @@ export const validateCaseRegistration = (req, res, next) => {
     }
 
     if (errors.length > 0) {
-        return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errors 
+        return res.status(400).json({
+            error: "Validation failed",
+            details: errors
         });
     }
 
@@ -208,7 +214,7 @@ export const validateCaseRegistration = (req, res, next) => {
  * Validate service of process data
  */
 export const validateServiceOfProcess = (req, res, next) => {
-    const { 
+    const {
         case_id,
         service_method,
         defendant_name,
@@ -226,7 +232,7 @@ export const validateServiceOfProcess = (req, res, next) => {
     } else if (!validMethods.includes(service_method)) {
         errors.push(`service_method must be one of: ${validMethods.join(', ')}`);
     }
-    
+
     if (!defendant_name || defendant_name.trim() === "") errors.push("defendant_name is required");
     if (!attempt_date) errors.push("attempt_date is required");
     if (!attempt_result) {
@@ -236,9 +242,9 @@ export const validateServiceOfProcess = (req, res, next) => {
     }
 
     if (errors.length > 0) {
-        return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errors 
+        return res.status(400).json({
+            error: "Validation failed",
+            details: errors
         });
     }
 
@@ -249,12 +255,12 @@ export const validateServiceOfProcess = (req, res, next) => {
  * Validate hearing scheduling data
  */
 export const validateHearingSchedule = (req, res, next) => {
-    const { 
+    const {
         hearing_type,
         hearing_date,
         hearing_time
     } = req.body;
-    
+
     // case_id comes from URL params
     const case_id = req.params.case_id;
 
@@ -267,14 +273,14 @@ export const validateHearingSchedule = (req, res, next) => {
     } else if (!validTypes.includes(hearing_type)) {
         errors.push(`hearing_type must be one of: ${validTypes.join(', ')}`);
     }
-    
+
     if (!hearing_date) errors.push("hearing_date is required");
     if (!hearing_time) errors.push("hearing_time is required");
 
     if (errors.length > 0) {
-        return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errors 
+        return res.status(400).json({
+            error: "Validation failed",
+            details: errors
         });
     }
 
@@ -285,13 +291,13 @@ export const validateHearingSchedule = (req, res, next) => {
  * Validate decision/judgment data
  */
 export const validateDecision = (req, res, next) => {
-    const { 
+    const {
         decision_type,
         decision_title,
         decision_summary,
         decision_date
     } = req.body;
-    
+
     // case_id comes from URL params
     const case_id = req.params.case_id;
 
@@ -304,15 +310,15 @@ export const validateDecision = (req, res, next) => {
     } else if (!validTypes.includes(decision_type)) {
         errors.push(`decision_type must be one of: ${validTypes.join(', ')}`);
     }
-    
+
     if (!decision_title || decision_title.trim() === "") errors.push("decision_title is required");
     if (!decision_summary || decision_summary.trim() === "") errors.push("decision_summary is required");
     if (!decision_date) errors.push("decision_date is required");
 
     if (errors.length > 0) {
-        return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errors 
+        return res.status(400).json({
+            error: "Validation failed",
+            details: errors
         });
     }
 

@@ -1,7 +1,7 @@
 // Court Clerk - Decisions Management
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Scale, Plus, FileText } from 'lucide-react';
+import { Scale, Plus, FileText, AlertTriangle, Info, Gavel, FileQuestion } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAuthHeaders } from '../../utils/authHelpers';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
@@ -23,6 +23,24 @@ const DecisionsManagement = () => {
         appeal_deadline: '',
         decision_date: new Date().toISOString().split('T')[0]
     });
+
+    // معلومات توضيحية لكل نوع قرار
+    const DECISION_TYPE_INFO = {
+        preliminary: {
+            label: 'قرار تمهيدي',
+            icon: FileQuestion,
+            color: 'blue',
+            stageEffect: 'لا يغيّر مرحلة الدعوى - تبقى في "الجلسات جارية"',
+            description: 'قرار مؤقت أثناء سير الدعوى (مثل: تأجيل، طلب خبرة، إلخ)'
+        },
+        final_judgment: {
+            label: 'حكم نهائي',
+            icon: Gavel,
+            color: 'red',
+            stageEffect: 'يغيّر مرحلة الدعوى حسب قابلية الاستئناف',
+            description: 'الحكم الفاصل في الدعوى'
+        }
+    };
 
     useEffect(() => {
         fetchCases();
@@ -159,16 +177,32 @@ const DecisionsManagement = () => {
                                 ) : (
                                     <div className="space-y-4">
                                         {decisions.map(decision => (
-                                            <div key={decision.decision_id} className="p-6 border border-gray-200 dark:border-gray-600 rounded-lg">
+                                            <div key={decision.decision_id} className={`p-6 border rounded-lg ${
+                                                decision.decision_type === 'final_judgment' 
+                                                    ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10' 
+                                                    : 'border-gray-200 dark:border-gray-600'
+                                            }`}>
                                                 <div className="flex justify-between items-start mb-3">
-                                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{decision.decision_title}</h3>
-                                                    <span className={`px-3 py-1 rounded text-xs ${
-                                                        decision.decision_type === 'final_judgment' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                                                        decision.decision_type === 'preliminary' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                                                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
-                                                    }`}>
-                                                        {decision.decision_type}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        {decision.decision_type === 'final_judgment' ? (
+                                                            <Gavel className="text-red-600" size={20} />
+                                                        ) : (
+                                                            <FileQuestion className="text-blue-600" size={20} />
+                                                        )}
+                                                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{decision.decision_title}</h3>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className={`px-3 py-1 rounded text-xs font-medium ${
+                                                            decision.decision_type === 'final_judgment' 
+                                                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' 
+                                                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                                        }`}>
+                                                            {decision.decision_type === 'final_judgment' ? 'حكم نهائي' : 'قرار تمهيدي'}
+                                                        </span>
+                                                        {decision.decision_type === 'preliminary' && (
+                                                            <span className="text-xs text-gray-500">لم يغيّر مرحلة الدعوى</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <p className="text-gray-700 dark:text-gray-300 mb-3">{decision.decision_summary}</p>
                                                 {decision.ruling && (
@@ -230,6 +264,36 @@ const DecisionsManagement = () => {
                                     />
                                 </div>
                             </div>
+                            
+                            {/* معلومات توضيحية عن نوع القرار */}
+                            {formData.decision_type && DECISION_TYPE_INFO[formData.decision_type] && (
+                                <div className={`p-4 rounded-lg border ${
+                                    formData.decision_type === 'preliminary' 
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' 
+                                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                }`}>
+                                    <div className="flex items-start gap-3">
+                                        <Info className={`mt-0.5 ${formData.decision_type === 'preliminary' ? 'text-blue-600' : 'text-red-600'}`} size={20} />
+                                        <div>
+                                            <p className={`font-medium ${formData.decision_type === 'preliminary' ? 'text-blue-800 dark:text-blue-300' : 'text-red-800 dark:text-red-300'}`}>
+                                                {DECISION_TYPE_INFO[formData.decision_type].description}
+                                            </p>
+                                            <p className={`text-sm mt-1 ${formData.decision_type === 'preliminary' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                ⚡ {DECISION_TYPE_INFO[formData.decision_type].stageEffect}
+                                            </p>
+                                            
+                                            {/* توضيح إضافي للحكم النهائي */}
+                                            {formData.decision_type === 'final_judgment' && (
+                                                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                                    <p>• إذا كان <strong>قابل للاستئناف</strong> ← ستنتقل الدعوى إلى مرحلة "فترة الاستئناف"</p>
+                                                    <p>• إذا كان <strong>غير قابل للاستئناف</strong> ← ستنتقل الدعوى مباشرة إلى مرحلة "قيد التنفيذ"</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">عنوان القرار *</label>
                                 <input

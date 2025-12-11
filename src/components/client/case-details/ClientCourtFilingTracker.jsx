@@ -25,6 +25,7 @@ import {
     Users
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getAuthHeaders } from '../../../utils/authHelpers';
 
 /**
  * Client Court Filing Tracker - متتبع مراحل القضية للعميل (قراءة فقط)
@@ -37,6 +38,85 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedSection, setExpandedSection] = useState('status');
+    
+    // Appeal Status states
+    const [caseAppeal, setCaseAppeal] = useState(null);
+    const [loadingAppeal, setLoadingAppeal] = useState(false);
+
+    // Appeal Stages Configuration (10 stages) - Read-only for client
+    const APPEAL_STAGES_CONFIG = {
+        'appeal_submitted': {
+            order: 1,
+            label: 'تم التقديم',
+            icon: FileText,
+            color: '#9e9e9e',
+            description: 'تم تقديم طلب الاستئناف'
+        },
+        'appeal_under_review': {
+            order: 2,
+            label: 'قيد المراجعة',
+            icon: Clock,
+            color: '#ff9800',
+            description: 'قلم المحكمة يراجع طلب الاستئناف'
+        },
+        'appeal_update_required': {
+            order: 3,
+            label: 'قيد المراجعة',
+            icon: Clock,
+            color: '#ff9800',
+            description: 'المحامي يعمل على بعض التحديثات',
+            clientNote: 'المحامي يعمل على التعديلات المطلوبة'
+        },
+        'appeal_accepted': {
+            order: 4,
+            label: 'تم القبول',
+            icon: CheckCircle,
+            color: '#4caf50',
+            description: 'تم قبول طلب الاستئناف'
+        },
+        'appeal_rejected': {
+            order: 5,
+            label: 'تم الرفض',
+            icon: XCircle,
+            color: '#f44336',
+            description: 'تم رفض طلب الاستئناف'
+        },
+        'appeal_file_transferred': {
+            order: 6,
+            label: 'تم إحالة الملف',
+            icon: Truck,
+            color: '#2196f3',
+            description: 'تم إحالة الملف لمحكمة الاستئناف'
+        },
+        'appeal_hearing_scheduled': {
+            order: 7,
+            label: 'تم تحديد جلسة',
+            icon: Calendar,
+            color: '#9c27b0',
+            description: 'تم تحديد موعد جلسة الاستئناف'
+        },
+        'appeal_hearings_ongoing': {
+            order: 8,
+            label: 'جلسات جارية',
+            icon: Gavel,
+            color: '#ff5722',
+            description: 'جلسات الاستئناف جارية'
+        },
+        'appeal_decision_issued': {
+            order: 9,
+            label: 'صدر الحكم',
+            icon: Award,
+            color: '#4caf50',
+            description: 'صدر حكم محكمة الاستئناف'
+        },
+        'appeal_case_closed': {
+            order: 10,
+            label: 'انتهت القضية',
+            icon: CheckCircle,
+            color: '#2e7d32',
+            description: 'انتهت قضية الاستئناف'
+        }
+    };
 
     // 14 Stages Configuration (same as lawyer but NO actions) + rejected handling
     const STAGES_CONFIG = {
@@ -226,8 +306,27 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
         }
     };
 
+    // Load case appeal data
+    const loadCaseAppeal = async () => {
+        try {
+            setLoadingAppeal(true);
+            const response = await fetch(`http://localhost:5000/api/court-clerk/public/appeals/case/${caseId}`, {
+                headers: getAuthHeaders()
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setCaseAppeal(data.data);
+            }
+        } catch (error) {
+            console.error('Error loading appeal:', error);
+        } finally {
+            setLoadingAppeal(false);
+        }
+    };
+
     useEffect(() => {
         loadFilingData();
+        loadCaseAppeal(); // Load appeal data
 
         // Real-time subscriptions
         const filingChannel = supabase
@@ -417,6 +516,166 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
                     </div>
                 )}
             </motion.div>
+
+            {/* Appeal Stages Progress Timeline - Shows only if there's an appeal */}
+            {caseAppeal && (
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl shadow-lg p-6 border-2 border-purple-200 dark:border-purple-700">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <Scale className="w-5 h-5 text-purple-600" />
+                        مراحل الاستئناف (10 مراحل)
+                    </h3>
+                    
+                    <div className="relative overflow-x-auto">
+                        <div className="flex gap-2 min-w-max pb-4">
+                            {Object.entries(APPEAL_STAGES_CONFIG).map(([key, stage], index) => {
+                                const StepIcon = stage.icon;
+                                const currentStage = caseAppeal.appeal_stage;
+                                const currentOrder = APPEAL_STAGES_CONFIG[currentStage]?.order || 1;
+                                const isActive = currentStage === key;
+                                const isPast = stage.order < currentOrder;
+                                
+                                return (
+                                    <div key={key} className="flex flex-col items-center relative">
+                                        {index > 0 && (
+                                            <div className={`absolute top-5 right-full w-2 h-0.5 ${
+                                                isPast ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'
+                                            }`} />
+                                        )}
+                                        
+                                        <div 
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                                                isActive ? 'ring-4 ring-opacity-30' : ''
+                                            } ${isPast ? 'bg-purple-500 text-white' : isActive ? '' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}
+                                            style={isActive ? { 
+                                                backgroundColor: stage.color, 
+                                                color: 'white',
+                                                boxShadow: `0 0 0 4px ${stage.color}40`
+                                            } : {}}
+                                        >
+                                            <StepIcon className="w-5 h-5" />
+                                        </div>
+                                        <span className={`text-[10px] mt-2 text-center max-w-[60px] leading-tight ${
+                                            isActive ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-500 dark:text-gray-400'
+                                        }`}>
+                                            {stage.label}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    {/* Current Appeal Stage Description */}
+                    <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {APPEAL_STAGES_CONFIG[caseAppeal.appeal_stage]?.description || 'جاري معالجة الاستئناف'}
+                        </p>
+                        {APPEAL_STAGES_CONFIG[caseAppeal.appeal_stage]?.clientNote && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                💡 {APPEAL_STAGES_CONFIG[caseAppeal.appeal_stage].clientNote}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Next Hearing Info - يظهر إذا كانت هناك جلسة قادمة */}
+                    {caseAppeal.hearings?.length > 0 && (
+                        <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border-r-4 border-indigo-500">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Calendar className="text-indigo-600" size={18} />
+                                <span className="font-medium text-indigo-800 dark:text-indigo-300">
+                                    {caseAppeal.hearings.filter(h => h.hearing_status === 'scheduled').length > 0 
+                                        ? 'الجلسة القادمة' 
+                                        : `جلسات الاستئناف (${caseAppeal.hearings.length})`}
+                                </span>
+                            </div>
+                            {(() => {
+                                const nextHearing = caseAppeal.hearings.find(h => h.hearing_status === 'scheduled');
+                                if (nextHearing) {
+                                    return (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                                            <div>
+                                                <span className="text-gray-500">التاريخ:</span>
+                                                <p className="font-bold text-indigo-700 dark:text-indigo-400">
+                                                    {new Date(nextHearing.hearing_date).toLocaleDateString('ar-EG')}
+                                                </p>
+                                            </div>
+                                            {nextHearing.hearing_time && (
+                                                <div>
+                                                    <span className="text-gray-500">الوقت:</span>
+                                                    <p className="font-medium">{nextHearing.hearing_time}</p>
+                                                </div>
+                                            )}
+                                            {nextHearing.hearing_room && (
+                                                <div>
+                                                    <span className="text-gray-500">القاعة:</span>
+                                                    <p className="font-medium">{nextHearing.hearing_room}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                } else {
+                                    return (
+                                        <p className="text-sm text-indigo-700 dark:text-indigo-400">
+                                            تم عقد {caseAppeal.hearings.length} جلسة
+                                        </p>
+                                    );
+                                }
+                            })()}
+                        </div>
+                    )}
+
+                    {/* Appeal Decision Info - يظهر إذا صدر حكم */}
+                    {caseAppeal.appeal_decision_type && (
+                        <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-r-4 border-green-500">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Gavel className="text-green-600" size={18} />
+                                <span className="font-medium text-green-800 dark:text-green-300">حكم الاستئناف</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                    caseAppeal.appeal_decision_type === 'upheld' ? 'bg-gray-200 text-gray-700' :
+                                    caseAppeal.appeal_decision_type === 'modified' ? 'bg-yellow-200 text-yellow-700' :
+                                    caseAppeal.appeal_decision_type === 'overturned' ? 'bg-green-200 text-green-700' :
+                                    'bg-blue-200 text-blue-700'
+                                }`}>
+                                    {caseAppeal.appeal_decision_type === 'upheld' && 'تأييد الحكم'}
+                                    {caseAppeal.appeal_decision_type === 'modified' && 'تعديل الحكم'}
+                                    {caseAppeal.appeal_decision_type === 'overturned' && 'إلغاء الحكم'}
+                                    {caseAppeal.appeal_decision_type === 'remanded' && 'إعادة للمحكمة الأدنى'}
+                                </span>
+                                {caseAppeal.appeal_decision_date && (
+                                    <span className="text-sm text-gray-500">
+                                        {new Date(caseAppeal.appeal_decision_date).toLocaleDateString('ar-EG')}
+                                    </span>
+                                )}
+                            </div>
+                            {caseAppeal.appeal_decision_summary && (
+                                <p className="mt-2 text-sm text-green-700 dark:text-green-400">
+                                    {caseAppeal.appeal_decision_summary}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Transferred Court Info */}
+                    {caseAppeal.transferred_to_court && (
+                        <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-r-4 border-purple-500">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Truck className="text-purple-600" size={18} />
+                                <span className="font-medium text-purple-800 dark:text-purple-300">محكمة الاستئناف</span>
+                            </div>
+                            <p className="text-sm text-purple-700 dark:text-purple-400">
+                                <strong>المحكمة:</strong> {caseAppeal.transferred_to_court}
+                            </p>
+                            {caseAppeal.appeal_court_case_number && (
+                                <p className="text-sm text-purple-700 dark:text-purple-400 mt-1">
+                                    <strong>رقم القضية:</strong> {caseAppeal.appeal_court_case_number}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Stages Progress Timeline */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
@@ -736,6 +995,179 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
                                 )}
                             </div>
                         ))}
+                    </div>
+                </CollapsibleSection>
+            )}
+
+            {/* Appeal Status Section - حالة الاستئناف */}
+            {caseAppeal && (
+                <CollapsibleSection
+                    title="حالة الاستئناف"
+                    icon={Scale}
+                    iconColor="text-purple-500"
+                    isExpanded={expandedSection === 'appeal'}
+                    onToggle={() => setExpandedSection(expandedSection === 'appeal' ? '' : 'appeal')}
+                >
+                    <div className="p-4 space-y-4">
+                        {/* Appeal Info Card */}
+                        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <Scale className="text-purple-600" size={20} />
+                                    <span className="font-bold text-gray-900 dark:text-white">{caseAppeal.appeal_number}</span>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    caseAppeal.appeal_stage === 'appeal_update_required' 
+                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                                        : caseAppeal.appeal_stage === 'appeal_accepted'
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                        : caseAppeal.appeal_stage === 'appeal_rejected'
+                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                }`}>
+                                    {caseAppeal.appeal_stage === 'appeal_submitted' && 'تم التقديم'}
+                                    {caseAppeal.appeal_stage === 'appeal_under_review' && 'قيد المراجعة'}
+                                    {caseAppeal.appeal_stage === 'appeal_update_required' && 'مطلوب تعديل'}
+                                    {caseAppeal.appeal_stage === 'appeal_accepted' && 'مقبول'}
+                                    {caseAppeal.appeal_stage === 'appeal_rejected' && 'مرفوض'}
+                                    {caseAppeal.appeal_stage === 'appeal_file_transferred' && 'تم الإحالة'}
+                                    {caseAppeal.appeal_stage === 'appeal_hearing_scheduled' && 'تم تحديد جلسة'}
+                                    {caseAppeal.appeal_stage === 'appeal_hearings_ongoing' && 'جلسات جارية'}
+                                    {caseAppeal.appeal_stage === 'appeal_decision_issued' && 'صدر الحكم'}
+                                    {caseAppeal.appeal_stage === 'appeal_case_closed' && 'منتهي'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <span className="text-gray-500">نوع الاستئناف:</span>
+                                    <p className="font-medium">{caseAppeal.appeal_type === 'full_appeal' ? 'استئناف كامل' : 'استئناف جزئي'}</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-500">تاريخ التقديم:</span>
+                                    <p className="font-medium">{new Date(caseAppeal.submitted_at).toLocaleDateString('ar-EG')}</p>
+                                </div>
+                            </div>
+
+                            {/* Update Required Alert */}
+                            {caseAppeal.appeal_stage === 'appeal_update_required' && (
+                                <div className="mt-4 p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                                    <div className="flex items-start gap-2">
+                                        <AlertTriangle className="text-orange-600 flex-shrink-0 mt-0.5" size={18} />
+                                        <div>
+                                            <p className="font-medium text-orange-800 dark:text-orange-300">مطلوب تعديلات</p>
+                                            <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                                                {caseAppeal.update_required_notes || 'يرجى التواصل مع المحامي بخصوص التعديلات المطلوبة'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Rejection Reason */}
+                            {caseAppeal.appeal_stage === 'appeal_rejected' && caseAppeal.rejection_reason && (
+                                <div className="mt-4 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                                    <p className="font-medium text-red-800 dark:text-red-300">سبب الرفض:</p>
+                                    <p className="text-sm text-red-700 dark:text-red-400 mt-1">{caseAppeal.rejection_reason}</p>
+                                </div>
+                            )}
+
+                            {/* Appeal Decision */}
+                            {caseAppeal.appeal_decision_type && (
+                                <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                    <p className="font-medium text-green-800 dark:text-green-300 mb-1">حكم الاستئناف:</p>
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                        caseAppeal.appeal_decision_type === 'upheld' ? 'bg-gray-200 text-gray-700' :
+                                        caseAppeal.appeal_decision_type === 'modified' ? 'bg-yellow-200 text-yellow-700' :
+                                        caseAppeal.appeal_decision_type === 'overturned' ? 'bg-green-200 text-green-700' :
+                                        'bg-blue-200 text-blue-700'
+                                    }`}>
+                                        {caseAppeal.appeal_decision_type === 'upheld' && 'تأييد الحكم'}
+                                        {caseAppeal.appeal_decision_type === 'modified' && 'تعديل الحكم'}
+                                        {caseAppeal.appeal_decision_type === 'overturned' && 'إلغاء الحكم'}
+                                        {caseAppeal.appeal_decision_type === 'remanded' && 'إعادة للمحكمة الأدنى'}
+                                    </span>
+                                    {caseAppeal.appeal_decision_summary && (
+                                        <p className="text-sm text-green-700 dark:text-green-400 mt-2">{caseAppeal.appeal_decision_summary}</p>
+                                    )}
+                                    {caseAppeal.appeal_decision_date && (
+                                        <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                                            تاريخ الحكم: {new Date(caseAppeal.appeal_decision_date).toLocaleDateString('ar-EG')}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Transferred Info */}
+                            {caseAppeal.transferred_to_court && (
+                                <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-r-4 border-purple-500">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Truck className="text-purple-600" size={18} />
+                                        <span className="font-medium text-purple-800 dark:text-purple-300">تم إحالة الملف</span>
+                                    </div>
+                                    <p className="text-sm text-purple-700 dark:text-purple-400">
+                                        <strong>المحكمة:</strong> {caseAppeal.transferred_to_court}
+                                    </p>
+                                    {caseAppeal.appeal_court_case_number && (
+                                        <p className="text-sm text-purple-700 dark:text-purple-400 mt-1">
+                                            <strong>رقم القضية:</strong> {caseAppeal.appeal_court_case_number}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Appeal Hearings */}
+                        {caseAppeal.hearings?.length > 0 && (
+                            <div className="border-t pt-4 dark:border-gray-700">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
+                                    <Calendar className="text-indigo-500" size={16} />
+                                    جلسات الاستئناف ({caseAppeal.hearings.length})
+                                </p>
+                                <div className="space-y-2">
+                                    {caseAppeal.hearings.map((hearing, i) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                                            <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-800 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                                                {hearing.hearing_number || i + 1}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-medium text-gray-900 dark:text-white">
+                                                    {new Date(hearing.hearing_date).toLocaleDateString('ar-EG')}
+                                                    {hearing.hearing_time && ` - ${hearing.hearing_time}`}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {hearing.hearing_room && `قاعة ${hearing.hearing_room}`}
+                                                </p>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded text-xs ${
+                                                hearing.hearing_status === 'held' ? 'bg-green-100 text-green-700' :
+                                                hearing.hearing_status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {hearing.hearing_status === 'held' ? 'منعقدة' :
+                                                 hearing.hearing_status === 'scheduled' ? 'مجدولة' : hearing.hearing_status}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Stage History */}
+                        {caseAppeal.stage_history?.length > 0 && (
+                            <div className="border-t pt-4 dark:border-gray-700">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سجل المراحل:</p>
+                                <div className="space-y-2">
+                                    {caseAppeal.stage_history.slice(0, 5).map((h, i) => (
+                                        <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
+                                            <span>{new Date(h.created_at).toLocaleDateString('ar-EG')}</span>
+                                            <span>•</span>
+                                            <span>{h.reason || 'تغيير المرحلة'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CollapsibleSection>
             )}

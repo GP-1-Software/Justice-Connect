@@ -412,8 +412,9 @@ const CreateCase = () => {
                 />
               </div>
 
+
               {/* Client ID Number */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <User className="w-4 h-4" />
                   {t('createCase.clientIdNumber')}
@@ -426,7 +427,10 @@ const CreateCase = () => {
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder={t('createCase.clientIdNumberPlaceholder')}
                 />
-              </div>
+              </div> */}
+
+
+
             </div>
           </div>
 
