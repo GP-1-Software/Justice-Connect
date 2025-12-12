@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  FileText, 
-  Upload, 
-  Send, 
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  FileText,
+  Upload,
+  Send,
   AlertCircle,
   CheckCircle,
   Building2,
   Scale,
   Moon,
-  Sun
+  Sun,
+  Link,
+  Users
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { submitFiling, uploadFilingAttachments } from '../../services/courtClerkApi';
@@ -21,15 +23,19 @@ import { submitFiling, uploadFilingAttachments } from '../../services/courtClerk
 
 const FileCaseLawyer = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [lawyer, setLawyer] = useState(null);
+
+  // Linked case info (when coming from an existing case)
+  const [linkedCase, setLinkedCase] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
     // Court Information
     city: '',
     courtType: '',
-    
+
     // Filing Information
     filingType: '',
     caseType: '',
@@ -37,7 +43,7 @@ const FileCaseLawyer = () => {
     relationship: '',
     caseSubject: '',
     legalRequests: '',
-    
+
     // Plaintiff Information
     plaintiffName: '',
     plaintiffId: '',
@@ -48,13 +54,13 @@ const FileCaseLawyer = () => {
     plaintiffPhone: '',
     plaintiffEmail: '',
     emailNotifications: false,
-    
+
     // Defendant Information
     defendantType: '',
     defendantName: '',
     defendantIdOrReg: '',
     defendantAddress: '',
-    
+
     // Declaration
     declaration: false
   });
@@ -63,7 +69,7 @@ const FileCaseLawyer = () => {
   const [selectedCourt, setSelectedCourt] = useState('');
   const [courtHint, setCourtHint] = useState('');
   const [feeHint, setFeeHint] = useState('');
-  
+
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
@@ -176,6 +182,35 @@ const FileCaseLawyer = () => {
     setLawyer(storedUser);
   }, [navigate]);
 
+  // Check for linked case from URL params
+  useEffect(() => {
+    const caseId = searchParams.get('caseId');
+    const clientId = searchParams.get('clientId');
+    const title = searchParams.get('title');
+    const caseType = searchParams.get('caseType');
+    const description = searchParams.get('description');
+
+    if (caseId) {
+      setLinkedCase({
+        caseId,
+        clientId,
+        title,
+        caseType,
+        description
+      });
+
+      // Pre-fill form data from linked case
+      setFormData(prev => ({
+        ...prev,
+        caseSubject: title || prev.caseSubject,
+        caseType: caseType || prev.caseType,
+        legalRequests: description || prev.legalRequests
+      }));
+
+      toast.success('تم ربط اللائحة بالقضية الموجودة');
+    }
+  }, [searchParams]);
+
   // Update Selected Court
   useEffect(() => {
     if (formData.city && formData.courtType) {
@@ -230,8 +265,8 @@ const FileCaseLawyer = () => {
   // Validate Required Fields
   const validateForm = () => {
     const required = [
-      'city', 'courtType', 'filingType', 'caseType', 'caseSubject', 
-      'legalRequests', 'plaintiffName', 'plaintiffPhone', 
+      'city', 'courtType', 'filingType', 'caseType', 'caseSubject',
+      'legalRequests', 'plaintiffName', 'plaintiffPhone',
       'defendantType', 'defendantName', 'defendantAddress'
     ];
 
@@ -285,14 +320,24 @@ const FileCaseLawyer = () => {
         lawyerId: lawyer.lawyer_id || lawyer.user_id || lawyer.id,
         selectedCourt,
         ...formData,
-        attachments: uploadedAttachments
+        attachments: uploadedAttachments,
+        // Include linked case info if available
+        ...(linkedCase && {
+          caseId: linkedCase.caseId,
+          clientId: linkedCase.clientId
+        })
       };
 
       // Submit to backend
       const response = await submitFiling(data);
       if (response.success) {
         toast.success('تم تقديم اللائحة بنجاح إلى قلم المحكمة');
-        navigate('/lawyer/cases'); // Navigate to cases list
+        // Navigate to linked case if coming from one, otherwise to cases list
+        if (linkedCase?.caseId) {
+          navigate(`/lawyer/cases/${linkedCase.caseId}`);
+        } else {
+          navigate('/lawyer/cases');
+        }
       }
 
     } catch (error) {
@@ -316,7 +361,7 @@ const FileCaseLawyer = () => {
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          
+
           <div className="flex items-center justify-center gap-3 mb-2">
             <Scale className="w-10 h-10" />
             <h1 className="text-3xl font-bold">تقديم دعوى إلكترونية جديدة</h1>
@@ -325,6 +370,30 @@ const FileCaseLawyer = () => {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-b-2xl shadow-lg transition-colors">
+          {/* Linked Case Banner */}
+          {linkedCase && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-b border-green-200 dark:border-green-800 p-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg">
+                  <Link className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                    هذه اللائحة مرتبطة بقضية موجودة
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    رقم القضية: #{linkedCase.caseId}
+                    {linkedCase.title && ` • ${linkedCase.title}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/50 px-3 py-1.5 rounded-lg">
+                  <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="text-xs font-medium text-green-700 dark:text-green-300">مرتبطة بعميل</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 1. Court Information */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-blue-900 dark:text-blue-400 mb-4 flex items-center gap-2 border-b-2 border-blue-500 pb-2">
@@ -371,13 +440,12 @@ const FileCaseLawyer = () => {
             </div>
 
             {/* Selected Court Display */}
-            <div className={`p-4 rounded-lg text-center font-bold ${
-              selectedCourt.includes('تحذير') 
-                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400' 
-                : selectedCourt.includes('محكمة')
+            <div className={`p-4 rounded-lg text-center font-bold ${selectedCourt.includes('تحذير')
+              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400'
+              : selectedCourt.includes('محكمة')
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-            }`}>
+              }`}>
               {selectedCourt}
             </div>
             {courtHint && (
