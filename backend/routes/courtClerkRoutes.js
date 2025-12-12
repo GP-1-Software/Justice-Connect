@@ -74,6 +74,7 @@ router.post("/filings/submit", async (req, res) => {
         const {
             lawyerId,
             clientId = null,
+            caseId = null, // NEW: If provided, link to existing case instead of creating new
             selectedCourt,
             city,
             courtType,
@@ -119,28 +120,69 @@ router.post("/filings/submit", async (req, res) => {
             }
         }
 
-        // 1. Create a Case FIRST (so it appears in lawyer's "قضاياي" and client's cases)
-        const { data: newCase, error: caseError } = await supabase
-            .from("cases")
-            .insert({
-                assigned_lawyer_id: lawyerId,
-                client_id: foundClientId, // Link to found client
-                title: caseSubject || `دعوى ${caseType}`,
-                case_type: caseType,
-                description: legalRequests,
-                status: 'pending', // Will update to 'active' after registration
-                priority: 'normal',
-                court_name: selectedCourt,
-                case_number: caseNumber,
-                client_id_number: plaintiffId,
-                case_stage: 'submitted' // New 14-stage system
-            })
-            .select()
-            .single();
+        let targetCase;
 
-        if (caseError) {
-            console.error("Case creation error:", caseError);
-            throw new Error("فشل في إنشاء القضية");
+        // Check if we're linking to an existing case or creating new
+        if (caseId) {
+            // EXISTING CASE: Update the case to link it to court system
+            console.log(`Linking filing to existing case: ${caseId}`);
+
+            const { data: existingCase, error: fetchError } = await supabase
+                .from("cases")
+                .select("*")
+                .eq("case_id", caseId)
+                .single();
+
+            if (fetchError || !existingCase) {
+                throw new Error("القضية غير موجودة");
+            }
+
+            // Update the existing case with court information
+            const { data: updatedCase, error: updateError } = await supabase
+                .from("cases")
+                .update({
+                    court_name: selectedCourt,
+                    case_stage: 'submitted', // Start the court stages
+                    updated_at: new Date()
+                })
+                .eq("case_id", caseId)
+                .select()
+                .single();
+
+            if (updateError) {
+                console.error("Case update error:", updateError);
+                throw new Error("فشل في تحديث القضية");
+            }
+
+            targetCase = updatedCase;
+            console.log(`Updated existing case ${caseId} to case_stage: submitted`);
+
+        } else {
+            // NEW CASE: Create a new case
+            const { data: newCase, error: caseError } = await supabase
+                .from("cases")
+                .insert({
+                    assigned_lawyer_id: lawyerId,
+                    client_id: foundClientId,
+                    title: caseSubject || `دعوى ${caseType}`,
+                    case_type: caseType,
+                    description: legalRequests,
+                    status: 'pending',
+                    priority: 'normal',
+                    court_name: selectedCourt,
+                    case_number: caseNumber,
+                    client_id_number: plaintiffId,
+                    case_stage: 'submitted'
+                })
+                .select()
+                .single();
+
+            if (caseError) {
+                console.error("Case creation error:", caseError);
+                throw new Error("فشل في إنشاء القضية");
+            }
+
+            targetCase = newCase;
         }
 
         // 2. Insert filing with case_id
@@ -149,7 +191,7 @@ router.post("/filings/submit", async (req, res) => {
             .insert({
                 filing_number: filingNumber,
                 lawyer_id: lawyerId,
-                case_id: newCase.case_id, // Link to the created case
+                case_id: targetCase.case_id, // Link to the case (new or existing)
                 client_id: clientId,
                 court_name: selectedCourt,
                 city: city,
@@ -172,10 +214,12 @@ router.post("/filings/submit", async (req, res) => {
         // 3. Add Timeline Event for the case
         try {
             await supabase.from("timeline_events").insert({
-                case_id: newCase.case_id,
+                case_id: targetCase.case_id,
                 event_type: 'filing_submitted',
-                title: 'تم تقديم لائحة الدعوى',
-                description: `تم تقديم لائحة الدعوى إلى ${selectedCourt} - رقم اللائحة: ${filingNumber}`,
+                title: caseId ? 'تم تقديم الدعوى رسمياً' : 'تم تقديم لائحة الدعوى',
+                description: caseId
+                    ? `تم تقديم القضية رسمياً إلى ${selectedCourt} - رقم اللائحة: ${filingNumber}`
+                    : `تم تقديم لائحة الدعوى إلى ${selectedCourt} - رقم اللائحة: ${filingNumber}`,
                 created_by_id: lawyerId,
                 created_by_type: 'lawyer'
             });
@@ -239,7 +283,7 @@ router.post("/filings/submit", async (req, res) => {
                 relatedId: null, // UUID - stored in actionUrl instead
                 relatedType: 'case',
                 priority: NOTIFICATION_PRIORITY.NORMAL,
-                actionUrl: `/lawyer/cases/${newCase.case_id}`
+                actionUrl: `/lawyer/cases/${targetCase.case_id}`
             });
         } catch (notifError) {
             console.error("Lawyer notification error (non-blocking):", notifError);
@@ -257,7 +301,7 @@ router.post("/filings/submit", async (req, res) => {
                     relatedId: null, // UUID - stored in actionUrl instead
                     relatedType: 'case',
                     priority: NOTIFICATION_PRIORITY.HIGH,
-                    actionUrl: `/client/cases/${newCase.case_id}`
+                    actionUrl: `/client/cases/${targetCase.case_id}`
                 });
             } catch (notifError) {
                 console.error("Client notification error (non-blocking):", notifError);
@@ -266,12 +310,12 @@ router.post("/filings/submit", async (req, res) => {
 
         res.json({
             success: true,
-            message: "تم تقديم الدعوى بنجاح",
+            message: caseId ? "تم تقديم الدعوى رسمياً للمحكمة" : "تم تقديم الدعوى بنجاح",
             data: {
                 filing,
-                case: newCase,
+                case: targetCase,
                 filingNumber,
-                caseNumber
+                caseNumber: targetCase.case_number || caseNumber
             }
         });
 

@@ -81,6 +81,66 @@ body {
   background: linear-gradient(to bottom, #2563eb, #7c3aed);
 }
 
+.appeal-modal {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+
+.appeal-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.appeal-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.appeal-modal::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.8);
+  border-radius: 999px;
+}
+
+.appeal-modal:hover::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.8);
+}
+
+.dark .appeal-modal::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.dark .appeal-modal:hover::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.8);
+}
+
+.stage-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.6) transparent;
+}
+
+.stage-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.stage-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stage-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #2563eb, #06b6d4);
+  border-radius: 999px;
+}
+
+.stage-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+}
+
+.dark .stage-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #60a5fa, #34d399);
+}
+
+.dark .stage-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+}
+
 @layer utilities {
   .gradient-text {
     @apply bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent;

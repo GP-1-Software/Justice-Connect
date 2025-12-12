@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../../supabaseClient';
 import {
@@ -28,7 +29,8 @@ import {
     Award,
     X,
     Paperclip,
-    Users
+    Users,
+    ExternalLink
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import FilingUpdateResponse from './FilingUpdateResponse';
@@ -39,6 +41,7 @@ import { getAuthHeaders } from '../../../../utils/authHelpers';
  * Real-time updates with lawyer action buttons
  */
 const CourtFilingTracker = ({ caseId, caseData }) => {
+    const navigate = useNavigate();
     const [filing, setFiling] = useState(null);
     const [hearings, setHearings] = useState([]);
     const [decisions, setDecisions] = useState([]);
@@ -46,18 +49,18 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     const [loading, setLoading] = useState(true);
     const [expandedSection, setExpandedSection] = useState('status');
     const [actionLoading, setActionLoading] = useState(null);
-    
+
     // Modal states
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadType, setUploadType] = useState(''); // 'defense_memo' or 'new_documents'
     const [uploadFiles, setUploadFiles] = useState([]);
     const [uploadNotes, setUploadNotes] = useState('');
     const [uploading, setUploading] = useState(false);
-    
+
     const [showPostponeModal, setShowPostponeModal] = useState(false);
     const [postponeReason, setPostponeReason] = useState('');
     const [postponeSubmitting, setPostponeSubmitting] = useState(false);
-    
+
     // Appeal Modal states
     const [showAppealModal, setShowAppealModal] = useState(false);
     const [appealData, setAppealData] = useState({
@@ -67,7 +70,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     });
     const [appealSubmitting, setAppealSubmitting] = useState(false);
     const appealFileInputRef = useRef(null);
-    
+
     // Appeal Status & Update states
     const [caseAppeal, setCaseAppeal] = useState(null);
     const [loadingAppeal, setLoadingAppeal] = useState(false);
@@ -78,7 +81,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     });
     const [appealUpdateSubmitting, setAppealUpdateSubmitting] = useState(false);
     const appealUpdateFileRef = useRef(null);
-    
+
     const fileInputRef = useRef(null);
 
     // 14 Stages Configuration (+ rejected for filing)
@@ -170,30 +173,30 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'contact_court_clerk', label: 'مراسلة قلم المحكمة', icon: MessageSquare, variant: 'secondary' }
             ]
         },
-        'submitted': { 
+        'submitted': {
             order: 1,
-            label: 'تم التقديم', 
-            icon: FileText, 
+            label: 'تم التقديم',
+            icon: FileText,
             color: '#9e9e9e',
             bgColor: 'bg-gray-100',
             textColor: 'text-gray-700',
             description: 'تم تقديم اللائحة وتنتظر المراجعة',
             actions: []
         },
-        'under_review': { 
+        'under_review': {
             order: 2,
-            label: 'قيد المراجعة', 
-            icon: Clock, 
+            label: 'قيد المراجعة',
+            icon: Clock,
             color: '#ff9800',
             bgColor: 'bg-orange-100',
             textColor: 'text-orange-700',
             description: 'المحكمة تدرس الدعوى',
             actions: []
         },
-        'update_required': { 
+        'update_required': {
             order: 3,
-            label: 'مطلوب تعديل', 
-            icon: AlertTriangle, 
+            label: 'مطلوب تعديل',
+            icon: AlertTriangle,
             color: '#ff5252',
             bgColor: 'bg-red-100',
             textColor: 'text-red-700',
@@ -202,30 +205,30 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'contact_court_clerk', label: 'مراسلة قلم المحكمة', icon: MessageSquare, variant: 'secondary' }
             ]
         },
-        'ready_for_registration': { 
+        'ready_for_registration': {
             order: 4,
-            label: 'جاهزة للتسجيل', 
-            icon: CheckCircle, 
+            label: 'جاهزة للتسجيل',
+            icon: CheckCircle,
             color: '#64b5f6',
             bgColor: 'bg-blue-100',
             textColor: 'text-blue-700',
             description: 'تمت الموافقة - بانتظار دفع الرسوم وإصدار فاتورة',
             actions: []
         },
-        'awaiting_fees': { 
+        'awaiting_fees': {
             order: 5,
-            label: 'بانتظار دفع الرسوم', 
-            icon: Clock, 
+            label: 'بانتظار دفع الرسوم',
+            icon: Clock,
             color: '#ff9800',
             bgColor: 'bg-orange-100',
             textColor: 'text-orange-700',
             description: 'تم إصدار فاتورة الرسوم - يجب على العميل دفع الرسوم',
             actions: []
         },
-        'registered': { 
+        'registered': {
             order: 6,
-            label: 'مسجلة رسمياً', 
-            icon: Star, 
+            label: 'مسجلة رسمياً',
+            icon: Star,
             color: '#2e7d32',
             bgColor: 'bg-green-100',
             textColor: 'text-green-700',
@@ -235,10 +238,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'download_registration_receipt', label: 'تحميل إيصال التسجيل المختوم PDF', icon: Download, variant: 'primary' }
             ]
         },
-        'service_in_progress': { 
+        'service_in_progress': {
             order: 7,
-            label: 'قيد التبليغ', 
-            icon: Truck, 
+            label: 'قيد التبليغ',
+            icon: Truck,
             color: '#1e88e5',
             bgColor: 'bg-blue-100',
             textColor: 'text-blue-700',
@@ -248,20 +251,20 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'request_service_speedup', label: 'طلب تسريع التبليغ', icon: Zap, variant: 'secondary' }
             ]
         },
-        'service_completed': { 
+        'service_completed': {
             order: 8,
-            label: 'تم التبليغ', 
-            icon: CheckCircle, 
+            label: 'تم التبليغ',
+            icon: CheckCircle,
             color: '#43a047',
             bgColor: 'bg-green-100',
             textColor: 'text-green-700',
             description: 'تم تبليغ جميع الأطراف بنجاح',
             actions: []
         },
-        'awaiting_response': { 
+        'awaiting_response': {
             order: 9,
-            label: 'بانتظار الرد', 
-            icon: Timer, 
+            label: 'بانتظار الرد',
+            icon: Timer,
             color: '#fb8c00',
             bgColor: 'bg-orange-100',
             textColor: 'text-orange-700',
@@ -271,10 +274,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'remind_defendant', label: 'تذكير المدعى عليه', icon: Bell, variant: 'secondary' }
             ]
         },
-        'first_hearing_scheduled': { 
+        'first_hearing_scheduled': {
             order: 10,
-            label: 'أول جلسة مجدولة', 
-            icon: Calendar, 
+            label: 'أول جلسة مجدولة',
+            icon: Calendar,
             color: '#1565c0',
             bgColor: 'bg-blue-100',
             textColor: 'text-blue-800',
@@ -285,10 +288,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'request_postponement', label: 'طلب تأجيل الجلسة', icon: Clock, variant: 'secondary' }
             ]
         },
-        'hearings_ongoing': { 
+        'hearings_ongoing': {
             order: 11,
-            label: 'جلسات جارية', 
-            icon: Scale, 
+            label: 'جلسات جارية',
+            icon: Scale,
             color: '#42a5f5',
             bgColor: 'bg-blue-100',
             textColor: 'text-blue-700',
@@ -298,23 +301,23 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'request_postponement', label: 'طلب تأجيل الجلسة القادمة', icon: Clock, variant: 'secondary' }
             ]
         },
-        'judgment_issued': { 
+        'judgment_issued': {
             order: 12,
-            label: 'صدر الحكم', 
-            icon: Gavel, 
+            label: 'صدر الحكم',
+            icon: Gavel,
             color: '#2e7d32',
             bgColor: 'bg-green-100',
             textColor: 'text-green-700',
             description: 'صدر الحكم في القضية',
             actions: [
-                { id: 'download_judgment', label: 'تحميل الحكم PDF', icon: Download, variant: 'primary' },
+                // { id: 'download_judgment', label: 'تحميل الحكم PDF', icon: Download, variant: 'primary' },
                 { id: 'submit_appeal', label: 'تقديم استئناف إلكتروني', icon: AlertTriangle, variant: 'danger' }
             ]
         },
-        'appeal_period': { 
+        'appeal_period': {
             order: 13,
-            label: 'فترة الاستئناف', 
-            icon: AlertCircle, 
+            label: 'فترة الاستئناف',
+            icon: AlertCircle,
             color: '#ffeb3b',
             bgColor: 'bg-yellow-100',
             textColor: 'text-yellow-800',
@@ -324,10 +327,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'submit_appeal', label: 'تقديم استئناف إلكتروني الآن', icon: Send, variant: 'danger' }
             ]
         },
-        'in_execution': { 
+        'in_execution': {
             order: 14,
-            label: 'قيد التنفيذ', 
-            icon: Shield, 
+            label: 'قيد التنفيذ',
+            icon: Shield,
             color: '#7b1fa2',
             bgColor: 'bg-purple-100',
             textColor: 'text-purple-700',
@@ -338,10 +341,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                 { id: 'track_execution', label: 'متابعة إجراءات التنفيذ', icon: RefreshCw, variant: 'secondary' }
             ]
         },
-        'fully_executed': { 
+        'fully_executed': {
             order: 15,
-            label: 'منفذة بالكامل', 
-            icon: Award, 
+            label: 'منفذة بالكامل',
+            icon: Award,
             color: '#00e676',
             bgColor: 'bg-green-100',
             textColor: 'text-green-700',
@@ -374,7 +377,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     // Load filing data
     const loadFilingData = async () => {
         if (!caseId) return;
-        
+
         try {
             const { data: filingData, error: filingError } = await supabase
                 .from('court_clerk_filings')
@@ -424,7 +427,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
         // Real-time subscriptions
         const filingChannel = supabase
             .channel(`filing-updates-${caseId}`)
-            .on('postgres_changes', 
+            .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'court_clerk_filings', filter: `case_id=eq.${caseId}` },
                 (payload) => {
                     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
@@ -487,59 +490,59 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     // Handle action button click
     const handleAction = async (actionId) => {
         setActionLoading(actionId);
-        
+
         try {
             switch (actionId) {
                 case 'upload_defense_memo':
                     setUploadType('defense_memo');
                     setShowUploadModal(true);
                     break;
-                    
+
                 case 'upload_new_documents':
                     setUploadType('new_documents');
                     setShowUploadModal(true);
                     break;
-                    
+
                 case 'contact_court_clerk':
                     toast('سيتم فتح نافذة المراسلة', { icon: '💬' });
                     break;
-                    
+
                 case 'download_registration_receipt':
                 case 'download_judgment':
                 case 'download_execution_notice':
                     toast('جاري تحميل الملف...', { icon: '📥' });
                     break;
-                    
+
                 case 'track_service_status':
                 case 'track_execution':
                     setExpandedSection('services');
                     break;
-                    
+
                 case 'request_service_speedup':
                 case 'remind_defendant':
                     toast.success('تم إرسال الطلب بنجاح');
                     break;
-                    
+
                 case 'request_postponement':
                     setShowPostponeModal(true);
                     break;
-                    
+
                 case 'submit_appeal':
                     setShowAppealModal(true);
                     break;
-                    
+
                 case 'open_execution_file':
                     toast('سيتم فتح نموذج ملف التنفيذ', { icon: '📋' });
                     break;
-                    
+
                 case 'submit_execution_request':
                     toast('سيتم فتح نموذج الطلب التنفيذي', { icon: '📝' });
                     break;
-                    
+
                 case 'close_case':
                     toast.success('تم إغلاق القضية من طرفك');
                     break;
-                    
+
                 default:
                     toast('الإجراء قيد التطوير');
             }
@@ -555,7 +558,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     const handleAppealFileSelect = (e) => {
         const files = Array.from(e.target.files);
         const maxSize = 10 * 1024 * 1024; // 10MB
-        
+
         const validFiles = files.filter(file => {
             if (file.size > maxSize) {
                 toast.error(`الملف ${file.name} أكبر من 10 ميجابايت`);
@@ -563,7 +566,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             }
             return true;
         });
-        
+
         setAppealData(prev => ({
             ...prev,
             documents: [...prev.documents, ...validFiles]
@@ -730,7 +733,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files);
         const maxSize = 10 * 1024 * 1024; // 10MB
-        
+
         const validFiles = files.filter(file => {
             if (file.size > maxSize) {
                 toast.error(`الملف ${file.name} أكبر من 10 ميجابايت`);
@@ -738,7 +741,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             }
             return true;
         });
-        
+
         setUploadFiles(prev => [...prev, ...validFiles]);
     };
 
@@ -759,10 +762,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
 
         try {
             const uploadedFiles = [];
-            
+
             for (const file of uploadFiles) {
                 const fileName = `${caseId}/${uploadType}/${Date.now()}-${file.name}`;
-                
+
                 const { data, error } = await supabase.storage
                     .from('case-documents')
                     .upload(fileName, file, { cacheControl: '3600', upsert: false });
@@ -938,14 +941,57 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     }
 
     if (!filing && !caseData?.case_stage) {
+        // Build query params for file-case page
+        const handleNavigateToFileCasePage = () => {
+            const params = new URLSearchParams();
+            params.set('caseId', caseId);
+            if (caseData?.client_id) params.set('clientId', caseData.client_id);
+            if (caseData?.title) params.set('title', caseData.title);
+            if (caseData?.case_type) params.set('caseType', caseData.case_type);
+            if (caseData?.description) params.set('description', caseData.description);
+            navigate(`/lawyer/file-case?${params.toString()}`);
+        };
+
         return (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-8 text-center">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-600">
+                <div className="bg-blue-100 dark:bg-blue-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3">
                     لا توجد لائحة مقدمة
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                    لم يتم تقديم لائحة دعوى لهذه القضية بعد
+                <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    لم يتم تقديم لائحة دعوى رسمية لهذه القضية بعد. يمكنك تقديم الدعوى إلكترونياً لقلم المحكمة.
+                </p>
+
+                {/* Case Info Summary */}
+                {caseData?.client_id && (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6 max-w-md mx-auto border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center gap-3 text-right">
+                            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg">
+                                <Users className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">القضية مرتبطة بعميل</p>
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    سيتم ربط الدعوى تلقائياً بالقضية #{caseData.case_number || caseId}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <button
+                    onClick={handleNavigateToFileCasePage}
+                    className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                    <Scale className="w-6 h-6" />
+                    <span>تقديم دعوى رسمية</span>
+                    <ExternalLink className="w-5 h-5" />
+                </button>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                    سيتم توجيهك لصفحة تقديم الدعوى الإلكترونية
                 </p>
             </div>
         );
@@ -979,7 +1025,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             <p className="text-white/80 text-sm mt-1">{currentStage.description}</p>
                         </div>
                     </div>
-                    
+
                     <div className="text-left">
                         {filing?.filing_number && (
                             <div>
@@ -1040,13 +1086,12 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                     key={action.id}
                                     onClick={() => handleAction(action.id)}
                                     disabled={actionLoading === action.id}
-                                    className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
-                                        action.variant === 'danger' 
-                                            ? 'bg-red-600 hover:bg-red-700 text-white' 
-                                            : action.variant === 'primary'
+                                    className={`flex items-center gap-3 p-4 rounded-xl transition-all ${action.variant === 'danger'
+                                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                                        : action.variant === 'primary'
                                             ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
-                                    } ${actionLoading === action.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        } ${actionLoading === action.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {actionLoading === action.id ? (
                                         <RefreshCw className="w-5 h-5 animate-spin" />
@@ -1073,7 +1118,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                         <Scale className="w-5 h-5 text-purple-600" />
                         مراحل الاستئناف (10 مراحل)
                     </h3>
-                    
+
                     <div className="relative overflow-x-auto">
                         <div className="flex gap-2 min-w-max pb-4">
                             {Object.entries(APPEAL_STAGES_CONFIG).map(([key, stage], index) => {
@@ -1082,30 +1127,27 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                 const currentOrder = APPEAL_STAGES_CONFIG[currentStage]?.order || 1;
                                 const isActive = currentStage === key;
                                 const isPast = stage.order < currentOrder;
-                                
+
                                 return (
                                     <div key={key} className="flex flex-col items-center relative">
                                         {index > 0 && (
-                                            <div className={`absolute top-5 right-full w-2 h-0.5 ${
-                                                isPast ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'
-                                            }`} />
+                                            <div className={`absolute top-5 right-full w-2 h-0.5 ${isPast ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'
+                                                }`} />
                                         )}
-                                        
-                                        <div 
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                                                isActive ? 'ring-4 ring-opacity-30' : ''
-                                            } ${isPast ? 'bg-purple-500 text-white' : isActive ? '' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}
-                                            style={isActive ? { 
-                                                backgroundColor: stage.color, 
+
+                                        <div
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive ? 'ring-4 ring-opacity-30' : ''
+                                                } ${isPast ? 'bg-purple-500 text-white' : isActive ? '' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}
+                                            style={isActive ? {
+                                                backgroundColor: stage.color,
                                                 color: 'white',
                                                 boxShadow: `0 0 0 4px ${stage.color}40`
                                             } : {}}
                                         >
                                             <StepIcon className="w-5 h-5" />
                                         </div>
-                                        <span className={`text-[10px] mt-2 text-center max-w-[60px] leading-tight ${
-                                            isActive ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-500 dark:text-gray-400'
-                                        }`}>
+                                        <span className={`text-[10px] mt-2 text-center max-w-[60px] leading-tight ${isActive ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-500 dark:text-gray-400'
+                                            }`}>
                                             {stage.label}
                                         </span>
                                     </div>
@@ -1113,7 +1155,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             })}
                         </div>
                     </div>
-                    
+
                     {/* Current Appeal Stage Description */}
                     <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -1127,8 +1169,8 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             <div className="flex items-center gap-2 mb-2">
                                 <Calendar className="text-indigo-600" size={18} />
                                 <span className="font-medium text-indigo-800 dark:text-indigo-300">
-                                    {caseAppeal.hearings.filter(h => h.hearing_status === 'scheduled').length > 0 
-                                        ? 'الجلسة القادمة' 
+                                    {caseAppeal.hearings.filter(h => h.hearing_status === 'scheduled').length > 0
+                                        ? 'الجلسة القادمة'
                                         : `جلسات الاستئناف (${caseAppeal.hearings.length})`}
                                 </span>
                             </div>
@@ -1182,12 +1224,11 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                 <span className="font-medium text-green-800 dark:text-green-300">حكم الاستئناف</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    caseAppeal.appeal_decision_type === 'upheld' ? 'bg-gray-200 text-gray-700' :
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${caseAppeal.appeal_decision_type === 'upheld' ? 'bg-gray-200 text-gray-700' :
                                     caseAppeal.appeal_decision_type === 'modified' ? 'bg-yellow-200 text-yellow-700' :
-                                    caseAppeal.appeal_decision_type === 'overturned' ? 'bg-green-200 text-green-700' :
-                                    'bg-blue-200 text-blue-700'
-                                }`}>
+                                        caseAppeal.appeal_decision_type === 'overturned' ? 'bg-green-200 text-green-700' :
+                                            'bg-blue-200 text-blue-700'
+                                    }`}>
                                     {caseAppeal.appeal_decision_type === 'upheld' && 'تأييد الحكم'}
                                     {caseAppeal.appeal_decision_type === 'modified' && 'تعديل الحكم'}
                                     {caseAppeal.appeal_decision_type === 'overturned' && 'إلغاء الحكم'}
@@ -1233,38 +1274,35 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                     <Scale className="w-5 h-5 text-blue-500" />
                     مراحل الدعوى (15 مرحلة)
                 </h3>
-                
-                <div className="relative overflow-x-auto">
-                    <div className="flex gap-2 min-w-max pb-4">
+
+                <div className="relative overflow-x-auto stage-scrollbar">
+                    <div className="flex gap-2 min-w-max pb-6">
                         {Object.entries(STAGES_CONFIG).map(([key, stage], index) => {
                             const StepIcon = stage.icon;
                             const currentOrder = STAGES_CONFIG[currentStageKey]?.order || 1;
                             const isActive = currentStageKey === key;
                             const isPast = stage.order < currentOrder;
-                            
+
                             return (
                                 <div key={key} className="flex flex-col items-center relative">
                                     {index > 0 && (
-                                        <div className={`absolute top-5 right-full w-2 h-0.5 ${
-                                            isPast ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
-                                        }`} />
+                                        <div className={`absolute top-5 right-full w-2 h-0.5 ${isPast ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                                            }`} />
                                     )}
-                                    
-                                    <div 
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                                            isActive ? 'ring-4 ring-opacity-30' : ''
-                                        } ${isPast ? 'bg-green-500 text-white' : isActive ? '' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}
-                                        style={isActive ? { 
-                                            backgroundColor: stage.color, 
+
+                                    <div
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive ? 'ring-4 ring-opacity-30' : ''
+                                            } ${isPast ? 'bg-green-500 text-white' : isActive ? '' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}
+                                        style={isActive ? {
+                                            backgroundColor: stage.color,
                                             color: 'white',
                                             boxShadow: `0 0 0 4px ${stage.color}40`
                                         } : {}}
                                     >
                                         <StepIcon className="w-5 h-5" />
                                     </div>
-                                    <span className={`text-[10px] mt-2 text-center max-w-[60px] leading-tight ${
-                                        isActive ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-500 dark:text-gray-400'
-                                    }`}>
+                                    <span className={`text-[10px] mt-2 text-center max-w-[60px] leading-tight ${isActive ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-500 dark:text-gray-400'
+                                        }`}>
                                         {stage.label}
                                     </span>
                                 </div>
@@ -1292,15 +1330,15 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                         <InfoRow label="تاريخ التقديم" value={formatDate(filing.submitted_at)} />
                         <InfoRow label="حالة اللائحة" value={
                             filing.filing_status === 'submitted' ? 'مقدمة' :
-                            filing.filing_status === 'under_review' ? 'قيد المراجعة' :
-                            filing.filing_status === 'rejected' ? 'مرفوضة' :
-                            filing.filing_status === 'requested_update' ? 'بحاجة لتعديل' :
-                            filing.filing_status === 'ready_for_registration' ? 'جاهزة للتسجيل' :
-                            filing.filing_status === 'registered' ? 'مسجلة' :
-                            filing.filing_status
+                                filing.filing_status === 'under_review' ? 'قيد المراجعة' :
+                                    filing.filing_status === 'rejected' ? 'مرفوضة' :
+                                        filing.filing_status === 'requested_update' ? 'بحاجة لتعديل' :
+                                            filing.filing_status === 'ready_for_registration' ? 'جاهزة للتسجيل' :
+                                                filing.filing_status === 'registered' ? 'مسجلة' :
+                                                    filing.filing_status
                         } />
                     </div>
-                    
+
                     {/* Parties Section */}
                     <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                         <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
@@ -1324,11 +1362,11 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Filing Content */}
                     <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                         <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">محتوى اللائحة</h4>
-                        
+
                         {filing.filing_summary && (
                             <div className="mb-4">
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ملخص اللائحة:</p>
@@ -1337,7 +1375,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                 </p>
                             </div>
                         )}
-                        
+
                         {filing.legal_requests && (
                             <div className="mb-4">
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الطلبات:</p>
@@ -1346,7 +1384,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                 </p>
                             </div>
                         )}
-                        
+
                         {filing.jurisdiction_info && (
                             <div className="mb-4">
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الاختصاص القضائي:</p>
@@ -1356,7 +1394,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Registration Info - Only show if registered */}
                     {(filing.registry_number || filing.official_case_number) && (
                         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
@@ -1380,7 +1418,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             </div>
                         </div>
                     )}
-                    
+
                     {/* Review Notes - Show when update requested */}
                     {filing.requested_changes && (
                         <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border-t border-orange-200 dark:border-orange-800">
@@ -1391,7 +1429,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             <p className="text-orange-700 dark:text-orange-300 whitespace-pre-wrap">{filing.requested_changes}</p>
                         </div>
                     )}
-                    
+
                     {/* Lawyer Response - Show if exists */}
                     {filing.lawyer_response && (
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-800">
@@ -1405,7 +1443,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             )}
                         </div>
                     )}
-                    
+
                     {filing.rejection_reason && (
                         <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800">
                             <h4 className="text-red-800 dark:text-red-400 font-semibold mb-2 flex items-center gap-2">
@@ -1415,7 +1453,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             <p className="text-red-700 dark:text-red-300">{filing.rejection_reason}</p>
                         </div>
                     )}
-                    
+
                     {filing.review_notes && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
                             <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-2 flex items-center gap-2">
@@ -1442,12 +1480,11 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             <div key={hearing.hearing_id} className="p-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                            hearing.hearing_status === 'held' ? 'bg-green-100 text-green-600' :
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hearing.hearing_status === 'held' ? 'bg-green-100 text-green-600' :
                                             hearing.hearing_status === 'scheduled' ? 'bg-blue-100 text-blue-600' :
-                                            hearing.hearing_status === 'postponed' ? 'bg-yellow-100 text-yellow-600' :
-                                            'bg-gray-100 text-gray-600'
-                                        }`}>
+                                                hearing.hearing_status === 'postponed' ? 'bg-yellow-100 text-yellow-600' :
+                                                    'bg-gray-100 text-gray-600'
+                                            }`}>
                                             <Calendar className="w-5 h-5" />
                                         </div>
                                         <div>
@@ -1459,16 +1496,15 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                             </p>
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                        hearing.hearing_status === 'held' ? 'bg-green-100 text-green-800' :
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${hearing.hearing_status === 'held' ? 'bg-green-100 text-green-800' :
                                         hearing.hearing_status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                                        hearing.hearing_status === 'postponed' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }`}>
+                                            hearing.hearing_status === 'postponed' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                        }`}>
                                         {hearing.hearing_status === 'held' ? 'منعقدة' :
-                                         hearing.hearing_status === 'scheduled' ? 'مجدولة' :
-                                         hearing.hearing_status === 'postponed' ? 'مؤجلة' :
-                                         hearing.hearing_status === 'cancelled' ? 'ملغاة' : hearing.hearing_status}
+                                            hearing.hearing_status === 'scheduled' ? 'مجدولة' :
+                                                hearing.hearing_status === 'postponed' ? 'مؤجلة' :
+                                                    hearing.hearing_status === 'cancelled' ? 'ملغاة' : hearing.hearing_status}
                                     </span>
                                 </div>
                                 {hearing.hearing_summary && (
@@ -1503,18 +1539,17 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             <div key={decision.decision_id} className={`p-4 ${decision.decision_type === 'final_judgment' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                            decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-600' :
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-600' :
                                             'bg-blue-100 text-blue-600'
-                                        }`}>
+                                            }`}>
                                             <Gavel className="w-5 h-5" />
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900 dark:text-white">
                                                 {decision.decision_title || (
                                                     decision.decision_type === 'final_judgment' ? 'حكم نهائي' :
-                                                    decision.decision_type === 'preliminary' ? 'قرار تمهيدي' :
-                                                    decision.decision_type
+                                                        decision.decision_type === 'preliminary' ? 'قرار تمهيدي' :
+                                                            decision.decision_type
                                                 )}
                                             </p>
                                             <p className="text-sm text-gray-500">
@@ -1523,10 +1558,9 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                            decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${decision.decision_type === 'final_judgment' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
                                             'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                        }`}>
+                                            }`}>
                                             {decision.decision_type === 'final_judgment' ? 'حكم نهائي' : 'قرار تمهيدي'}
                                         </span>
                                         {decision.is_appealable && (
@@ -1536,7 +1570,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         )}
                                     </div>
                                 </div>
-                                
+
                                 {/* Decision Summary */}
                                 {decision.decision_summary && (
                                     <div className="mb-3 mr-13">
@@ -1546,7 +1580,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         </p>
                                     </div>
                                 )}
-                                
+
                                 {/* Ruling (منطوق الحكم) */}
                                 {decision.ruling && (
                                     <div className="mb-3 mr-13">
@@ -1556,24 +1590,23 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         </p>
                                     </div>
                                 )}
-                                
+
                                 {/* In Favor Of */}
                                 {decision.in_favor_of && (
                                     <div className="mb-3 mr-13">
                                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">الحكم لصالح:</p>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                            decision.in_favor_of === 'plaintiff' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${decision.in_favor_of === 'plaintiff' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                                             decision.in_favor_of === 'defendant' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                        }`}>
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                            }`}>
                                             {decision.in_favor_of === 'plaintiff' ? 'المدعي' :
-                                             decision.in_favor_of === 'defendant' ? 'المدعى عليه' :
-                                             decision.in_favor_of === 'partial' ? 'حكم جزئي' :
-                                             decision.in_favor_of}
+                                                decision.in_favor_of === 'defendant' ? 'المدعى عليه' :
+                                                    decision.in_favor_of === 'partial' ? 'حكم جزئي' :
+                                                        decision.in_favor_of}
                                         </span>
                                     </div>
                                 )}
-                                
+
                                 {/* Appeal Deadline */}
                                 {decision.is_appealable && decision.appeal_deadline && (
                                     <div className="mb-3 mr-13">
@@ -1583,7 +1616,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         </span>
                                     </div>
                                 )}
-                                
+
                                 {/* Download File */}
                                 {decision.decision_file_url && (
                                     <a href={decision.decision_file_url} target="_blank" rel="noopener noreferrer"
@@ -1615,15 +1648,14 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                     <Scale className="text-purple-600" size={20} />
                                     <span className="font-bold text-gray-900 dark:text-white">{caseAppeal.appeal_number}</span>
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                    caseAppeal.appeal_stage === 'appeal_update_required' 
-                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                                        : caseAppeal.appeal_stage === 'appeal_accepted'
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${caseAppeal.appeal_stage === 'appeal_update_required'
+                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                                    : caseAppeal.appeal_stage === 'appeal_accepted'
                                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                         : caseAppeal.appeal_stage === 'appeal_rejected'
-                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                }`}>
+                                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                    }`}>
                                     {caseAppeal.appeal_stage === 'appeal_submitted' && 'تم التقديم'}
                                     {caseAppeal.appeal_stage === 'appeal_under_review' && 'قيد المراجعة'}
                                     {caseAppeal.appeal_stage === 'appeal_update_required' && 'مطلوب تعديل'}
@@ -1682,12 +1714,11 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             {caseAppeal.appeal_decision_type && (
                                 <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
                                     <p className="font-medium text-green-800 dark:text-green-300 mb-1">حكم الاستئناف:</p>
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                        caseAppeal.appeal_decision_type === 'upheld' ? 'bg-gray-200 text-gray-700' :
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${caseAppeal.appeal_decision_type === 'upheld' ? 'bg-gray-200 text-gray-700' :
                                         caseAppeal.appeal_decision_type === 'modified' ? 'bg-yellow-200 text-yellow-700' :
-                                        caseAppeal.appeal_decision_type === 'overturned' ? 'bg-green-200 text-green-700' :
-                                        'bg-blue-200 text-blue-700'
-                                    }`}>
+                                            caseAppeal.appeal_decision_type === 'overturned' ? 'bg-green-200 text-green-700' :
+                                                'bg-blue-200 text-blue-700'
+                                        }`}>
                                         {caseAppeal.appeal_decision_type === 'upheld' && 'تأييد الحكم'}
                                         {caseAppeal.appeal_decision_type === 'modified' && 'تعديل الحكم'}
                                         {caseAppeal.appeal_decision_type === 'overturned' && 'إلغاء الحكم'}
@@ -1746,13 +1777,12 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                                     {hearing.assigned_judge && ` • القاضي: ${hearing.assigned_judge}`}
                                                 </p>
                                             </div>
-                                            <span className={`px-2 py-1 rounded text-xs ${
-                                                hearing.hearing_status === 'held' ? 'bg-green-100 text-green-700' :
+                                            <span className={`px-2 py-1 rounded text-xs ${hearing.hearing_status === 'held' ? 'bg-green-100 text-green-700' :
                                                 hearing.hearing_status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-gray-100 text-gray-700'
-                                            }`}>
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
                                                 {hearing.hearing_status === 'held' ? 'منعقدة' :
-                                                 hearing.hearing_status === 'scheduled' ? 'مجدولة' : hearing.hearing_status}
+                                                    hearing.hearing_status === 'scheduled' ? 'مجدولة' : hearing.hearing_status}
                                             </span>
                                         </div>
                                     ))}
@@ -1798,23 +1828,22 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         </p>
                                         <p className="text-sm text-gray-500">
                                             {service.service_method === 'bailiff' ? 'محضر' :
-                                             service.service_method === 'mail' ? 'بريد' :
-                                             service.service_method === 'publication' ? 'نشر' :
-                                             service.service_method === 'electronic' ? 'إلكتروني' :
-                                             service.service_method} - {formatDate(service.attempt_date)}
+                                                service.service_method === 'mail' ? 'بريد' :
+                                                    service.service_method === 'publication' ? 'نشر' :
+                                                        service.service_method === 'electronic' ? 'إلكتروني' :
+                                                            service.service_method} - {formatDate(service.attempt_date)}
                                         </p>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                        service.attempt_result === 'served' ? 'bg-green-100 text-green-800' :
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${service.attempt_result === 'served' ? 'bg-green-100 text-green-800' :
                                         service.attempt_result === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        service.attempt_result === 'not_served' ? 'bg-red-100 text-red-800' :
-                                        service.attempt_result === 'refused' ? 'bg-red-100 text-red-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }`}>
+                                            service.attempt_result === 'not_served' ? 'bg-red-100 text-red-800' :
+                                                service.attempt_result === 'refused' ? 'bg-red-100 text-red-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                        }`}>
                                         {service.attempt_result === 'served' ? 'تم التبليغ' :
-                                         service.attempt_result === 'pending' ? 'قيد التبليغ' :
-                                         service.attempt_result === 'not_served' ? 'لم يتم' :
-                                         service.attempt_result === 'refused' ? 'رُفض' : service.attempt_result}
+                                            service.attempt_result === 'pending' ? 'قيد التبليغ' :
+                                                service.attempt_result === 'not_served' ? 'لم يتم' :
+                                                    service.attempt_result === 'refused' ? 'رُفض' : service.attempt_result}
                                     </span>
                                 </div>
                             </div>
@@ -2045,7 +2074,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+                            className="bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto appeal-modal"
                             dir="rtl"
                         >
                             <div className="p-6 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
@@ -2053,7 +2082,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                     <Scale className="text-blue-600" />
                                     تقديم استئناف
                                 </h2>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setShowAppealModal(false);
                                         setAppealData({ appeal_type: 'full_appeal', appeal_reasons: '', documents: [] });
@@ -2083,11 +2112,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => setAppealData(prev => ({ ...prev, appeal_type: 'full_appeal' }))}
-                                            className={`p-4 rounded-lg border-2 text-center transition ${
-                                                appealData.appeal_type === 'full_appeal'
-                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
-                                            }`}
+                                            className={`p-4 rounded-lg border-2 text-center transition ${appealData.appeal_type === 'full_appeal'
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
+                                                }`}
                                         >
                                             <Scale className="mx-auto mb-2 text-blue-600" size={28} />
                                             <p className="font-medium">استئناف كامل</p>
@@ -2095,11 +2123,10 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         </button>
                                         <button
                                             onClick={() => setAppealData(prev => ({ ...prev, appeal_type: 'partial_appeal' }))}
-                                            className={`p-4 rounded-lg border-2 text-center transition ${
-                                                appealData.appeal_type === 'partial_appeal'
-                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
-                                            }`}
+                                            className={`p-4 rounded-lg border-2 text-center transition ${appealData.appeal_type === 'partial_appeal'
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
+                                                }`}
                                         >
                                             <FileText className="mx-auto mb-2 text-orange-600" size={28} />
                                             <p className="font-medium">استئناف جزئي</p>
@@ -2142,7 +2169,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         <Upload size={20} />
                                         إضافة مستندات
                                     </button>
-                                    
+
                                     {/* Uploaded files list */}
                                     {appealData.documents.length > 0 && (
                                         <div className="mt-3 space-y-2">
@@ -2230,7 +2257,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                     <AlertTriangle className="text-orange-600" />
                                     تقديم التعديلات المطلوبة
                                 </h2>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setShowAppealUpdateModal(false);
                                         setAppealUpdateData({ update_response: '', additional_documents: [] });
@@ -2284,7 +2311,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                                         <Upload size={20} />
                                         إضافة مستندات
                                     </button>
-                                    
+
                                     {appealUpdateData.additional_documents.length > 0 && (
                                         <div className="mt-3 space-y-2">
                                             {appealUpdateData.additional_documents.map((file, i) => (
@@ -2356,7 +2383,7 @@ const CollapsibleSection = ({ title, icon: Icon, iconColor, isExpanded, onToggle
             </div>
             {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </button>
-        
+
         <AnimatePresence>
             {isExpanded && (
                 <motion.div
