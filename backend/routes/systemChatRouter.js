@@ -26,7 +26,7 @@ async function callGemini(prompt, systemPrompt = "") {
   }
 
   const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
-  
+
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${ENV.GEMINI_API_KEY}`,
     {
@@ -267,15 +267,15 @@ router.post("/conversations/:conversationId/messages", async (req, res) => {
     try {
       const systemPrompt = SYSTEM_PROMPT + "\n\n" + SYSTEM_SCHEMA_TEXT;
       const sqlResponse = await callGemini(message, systemPrompt);
-      
+
       sqlQuery = sqlResponse.trim();
-      
+
       // Clean up SQL query (remove markdown code blocks if present)
       sqlQuery = sqlQuery
         .replace(/```sql\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();
-      
+
       // Remove trailing semicolon (Supabase exec_sql doesn't accept it)
       sqlQuery = sqlQuery.replace(/;+\s*$/g, "");
 
@@ -321,7 +321,7 @@ ${queryError ? `\nError during execution: ${queryError}` : ""}
       aiAnalysis = aiAnalysis.trim();
     } catch (aiError) {
       console.error("❌ Gemini Analysis Error:", aiError);
-      aiAnalysis = queryError 
+      aiAnalysis = queryError
         ? `حدث خطأ أثناء تنفيذ الاستعلام: ${queryError}`
         : "تم تنفيذ الاستعلام بنجاح ولكن فشل التحليل.";
     }

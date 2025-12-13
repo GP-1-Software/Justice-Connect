@@ -9,14 +9,14 @@ const supabase = createClient(
 export const NOTIFICATION_TYPES = {
     // Messages
     NEW_MESSAGE: 'new_message',
-    
+
     // Cases
     CASE_CREATED: 'case_created',
     CASE_UPDATED: 'case_updated',
     CASE_STATUS_CHANGED: 'case_status_changed',
     CASE_ASSIGNED: 'case_assigned',
     CASE_REQUEST: 'case_request',
-    
+
     // Appointments
     APPOINTMENT_CREATED: 'appointment_created',
     APPOINTMENT_UPDATED: 'appointment_updated',
@@ -25,19 +25,19 @@ export const NOTIFICATION_TYPES = {
     APPOINTMENT_REMINDER_1H: 'appointment_reminder_1h',
     APPOINTMENT_REMINDER_24H: 'appointment_reminder_24h',
     APPOINTMENT_NOW: 'appointment_now',
-    
+
     // Payments
     PAYMENT_RECEIVED: 'payment_received',
     PAYMENT_PENDING: 'payment_pending',
     INVOICE_CREATED: 'invoice_created',
-    
+
     // System
     SYSTEM_ANNOUNCEMENT: 'system_announcement',
     ACCOUNT_VERIFIED: 'account_verified',
-    
+
     // Support
     SUPPORT_TICKET_REPLY: 'support_ticket_reply',
-    
+
     // Court Clerk System
     FILING_RECEIVED: 'filing_received',
     FILING_UNDER_REVIEW: 'filing_under_review',
@@ -52,7 +52,10 @@ export const NOTIFICATION_TYPES = {
     HEARING_REMINDER_24H: 'hearing_reminder_24h',
     HEARING_REMINDER_1H: 'hearing_reminder_1h',
     DECISION_ISSUED: 'decision_issued',
-    
+
+    // Defendant Notification
+    DEFENDANT_NOTIFIED: 'defendant_notified',
+
     // New Stage System (14 Stages)
     CASE_STAGE_UPDATE: 'case_stage_update',
     EXECUTION_UPDATE: 'execution_update',
@@ -62,7 +65,7 @@ export const NOTIFICATION_TYPES = {
     JUDGMENT_ISSUED: 'judgment_issued',
     CASE_FULLY_EXECUTED: 'case_fully_executed',
     RESPONSE_DEADLINE_WARNING: 'response_deadline_warning',
-    
+
     // Court Fees
     FEE_ISSUED: 'fee_issued',
     FEE_PAID: 'fee_paid',
@@ -98,7 +101,7 @@ const NOTIFICATION_ICONS = {
     [NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT]: 'megaphone',
     [NOTIFICATION_TYPES.ACCOUNT_VERIFIED]: 'check-circle',
     [NOTIFICATION_TYPES.SUPPORT_TICKET_REPLY]: 'help-circle',
-    
+
     // Court Clerk Icons
     [NOTIFICATION_TYPES.FILING_RECEIVED]: 'inbox',
     [NOTIFICATION_TYPES.FILING_UNDER_REVIEW]: 'eye',
@@ -112,7 +115,8 @@ const NOTIFICATION_ICONS = {
     [NOTIFICATION_TYPES.HEARING_UPDATED]: 'calendar-edit',
     [NOTIFICATION_TYPES.HEARING_REMINDER_24H]: 'bell',
     [NOTIFICATION_TYPES.HEARING_REMINDER_1H]: 'clock',
-    [NOTIFICATION_TYPES.DECISION_ISSUED]: 'gavel'
+    [NOTIFICATION_TYPES.DECISION_ISSUED]: 'gavel',
+    [NOTIFICATION_TYPES.DEFENDANT_NOTIFIED]: 'alert-triangle'
 };
 
 /**
@@ -131,7 +135,7 @@ export const createNotification = async ({
 }) => {
     try {
         const icon = NOTIFICATION_ICONS[type] || 'bell';
-        
+
         const { data, error } = await supabase
             .from('notifications')
             .insert({
@@ -150,7 +154,7 @@ export const createNotification = async ({
             .single();
 
         if (error) throw error;
-        
+
         console.log(`✅ Notification created for ${userType} ${userId}: ${title}`);
         return data;
     } catch (error) {
@@ -175,7 +179,7 @@ export const createBulkNotifications = async (notifications) => {
             .select();
 
         if (error) throw error;
-        
+
         console.log(`✅ ${data.length} notifications created`);
         return data;
     } catch (error) {
@@ -355,7 +359,7 @@ export const scheduleNotification = async ({
             .single();
 
         if (error) throw error;
-        
+
         console.log(`✅ Notification scheduled for ${scheduledTime}`);
         return data;
     } catch (error) {

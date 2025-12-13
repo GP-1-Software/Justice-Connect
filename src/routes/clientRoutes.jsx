@@ -14,6 +14,7 @@ import LawyerProfile from '../pages/client/LawyerProfile';
 import CreateCase from '../pages/client/CreateCase';
 import MyCases from '../pages/client/MyCases';
 import CaseDetails from '../pages/client/CaseDetails';
+import CaseAgainstMeDetails from '../pages/client/CaseAgainstMeDetails';
 import ClientInvoices from '../pages/client/ClientInvoices';
 import PayInvoice from '../pages/client/PayInvoice';
 import InvoiceDetails from '../pages/client/InvoiceDetails';
@@ -85,12 +86,13 @@ const ClientRoutes = () => {
         <Route path="create-case" element={<CreateCase />} />
         <Route path="cases" element={<MyCases />} />
         <Route path="cases/:caseId" element={<CaseDetails />} />
+        <Route path="cases-against-me/:caseId" element={<CaseAgainstMeDetails />} />
 
         {/* Invoices */}
         <Route path="invoices" element={<ClientInvoices />} />
         <Route path="invoices/:invoiceId" element={<InvoiceDetails />} />
         <Route path="invoices/:invoiceId/pay" element={<PayInvoice />} />
-        
+
         {/* Court Fees */}
         <Route path="court-fees" element={<ClientCourtFees />} />
 

@@ -336,9 +336,9 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             textColor: 'text-purple-700',
             description: 'جاري تنفيذ الحكم',
             actions: [
-                { id: 'open_execution_file', label: 'فتح ملف تنفيذ إلكتروني', icon: FileText, variant: 'primary' },
-                { id: 'submit_execution_request', label: 'رفع طلبات تنفيذية', icon: Upload, variant: 'secondary' },
-                { id: 'track_execution', label: 'متابعة إجراءات التنفيذ', icon: RefreshCw, variant: 'secondary' }
+                { id: 'open_execution_file', label: 'فتح ملف تنفيذ إلكتروني', icon: FileText, variant: 'primary' }
+                // { id: 'submit_execution_request', label: 'رفع طلبات تنفيذية', icon: Upload, variant: 'secondary' },
+                // { id: 'track_execution', label: 'متابعة إجراءات التنفيذ', icon: RefreshCw, variant: 'secondary' }
             ]
         },
         'fully_executed': {

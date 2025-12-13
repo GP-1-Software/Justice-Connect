@@ -403,7 +403,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-blue-600" />
               <span className="text-sm text-gray-600 dark:text-gray-300">
-                {caseData.filing_date ? new Date(caseData.filing_date).toLocaleDateString('ar-EG') : '—'}
+                {(caseData.filing_date || caseData.created_at) ? new Date(caseData.filing_date || caseData.created_at).toLocaleDateString('ar-EG') : '—'}
               </span>
             </div>
           )}
@@ -430,7 +430,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
           )}
         </div>
       </div>
-      
+
     </div>
   );
 };
