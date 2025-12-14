@@ -1050,6 +1050,61 @@ router.post("/cases/:case_id/services", verifyCourtClerk, validateServiceOfProce
             service_id: service.service_id
         });
 
+        // ============================================
+        // NOTIFY DEFENDANT - تبليغ المدعى عليه
+        // ============================================
+        try {
+            // Get filing to find defendant ID number
+            const { data: filing } = await supabase
+                .from("court_clerk_filings")
+                .select("defendant_id_number, defendant_name, filing_summary, case_id, plaintiff_name")
+                .eq("case_id", case_id)
+                .single();
+
+            // Find defendant user by id_number
+            if (filing?.defendant_id_number) {
+                const { data: defendantUser } = await supabase
+                    .from("users")
+                    .select("user_id")
+                    .eq("id_number", filing.defendant_id_number)
+                    .single();
+
+                if (defendantUser) {
+                    // Check if we already sent a notification for this case
+                    const { data: existingNotification } = await supabase
+                        .from("notifications")
+                        .select("notification_id")
+                        .eq("user_id", defendantUser.user_id)
+                        .eq("related_id", parseInt(case_id))
+                        .eq("type", NOTIFICATION_TYPES.DEFENDANT_NOTIFIED)
+                        .single();
+
+                    // Only send notification if we haven't already
+                    if (!existingNotification) {
+                        await createNotification({
+                            userId: defendantUser.user_id,
+                            userType: 'client',
+                            title: 'تم رفع دعوى قضائية ضدك',
+                            message: `تم تسجيل دعوى قضائية ضدك من ${filing.plaintiff_name || 'مدعي'}. الموضوع: ${filing.filing_summary || 'غير محدد'}. يرجى مراجعة التفاصيل.`,
+                            type: NOTIFICATION_TYPES.DEFENDANT_NOTIFIED,
+                            relatedId: parseInt(case_id),
+                            relatedType: 'case',
+                            priority: NOTIFICATION_PRIORITY.HIGH,
+                            actionUrl: `/client/cases-against-me/${case_id}`
+                        });
+                        console.log(`✅ Sent notification to defendant user_id: ${defendantUser.user_id}`);
+                    } else {
+                        console.log(`ℹ️ Defendant already notified for case ${case_id}`);
+                    }
+                } else {
+                    console.log(`ℹ️ Defendant with id_number ${filing.defendant_id_number} not registered in system`);
+                }
+            }
+        } catch (notifError) {
+            // Non-blocking - don't fail the service creation if notification fails
+            console.error("Defendant notification error (non-blocking):", notifError);
+        }
+
         res.json({
             success: true,
             message: "Service record added successfully",
