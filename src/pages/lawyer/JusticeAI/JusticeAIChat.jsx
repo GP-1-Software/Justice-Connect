@@ -54,7 +54,7 @@ export default function JusticeAIChat() {
                     setMessages(parsed);
                 }
             }
-        } catch {}
+        } catch { }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [conversationId]);
 
@@ -62,7 +62,7 @@ export default function JusticeAIChat() {
     useEffect(() => {
         try {
             localStorage.setItem(getLocalKey(conversationId), JSON.stringify(messages));
-        } catch {}
+        } catch { }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages, conversationId]);
 
@@ -85,13 +85,13 @@ export default function JusticeAIChat() {
                         const existing = await getConversationMessages(latest.id);
                         if (existing && existing.length) {
                             setMessages(existing.map(m => ({ role: m.role, content: m.content })));
-                            try { localStorage.setItem(getLocalKey(latest.id), JSON.stringify(existing.map(m => ({ role: m.role, content: m.content })))); } catch {}
+                            try { localStorage.setItem(getLocalKey(latest.id), JSON.stringify(existing.map(m => ({ role: m.role, content: m.content })))); } catch { }
                         } else {
                             // إن لم توجد رسائل، أضف التحية لحفظ اتساق التجربة
                             const greeting = { role: 'assistant', content: messages[0].content };
                             setMessages([greeting]);
-                            try { await addMessage(latest.id, greeting); } catch {}
-                            try { localStorage.setItem(getLocalKey(latest.id), JSON.stringify([greeting])); } catch {}
+                            try { await addMessage(latest.id, greeting); } catch { }
+                            try { localStorage.setItem(getLocalKey(latest.id), JSON.stringify([greeting])); } catch { }
                         }
                         return;
                     }
@@ -106,7 +106,7 @@ export default function JusticeAIChat() {
                     const existing = await getConversationMessages(storedId);
                     if (existing && existing.length) {
                         setMessages(existing.map(m => ({ role: m.role, content: m.content })));
-                        try { localStorage.setItem(getLocalKey(storedId), JSON.stringify(existing.map(m => ({ role: m.role, content: m.content })))); } catch {}
+                        try { localStorage.setItem(getLocalKey(storedId), JSON.stringify(existing.map(m => ({ role: m.role, content: m.content })))); } catch { }
                         return;
                     }
                 }
@@ -120,7 +120,7 @@ export default function JusticeAIChat() {
 
                 // save greeting message
                 await addMessage(conv.id, { role: "assistant", content: messages[0].content });
-                try { localStorage.setItem(getLocalKey(conv.id), JSON.stringify([{ role: 'assistant', content: messages[0].content }])); } catch {}
+                try { localStorage.setItem(getLocalKey(conv.id), JSON.stringify([{ role: 'assistant', content: messages[0].content }])); } catch { }
             } catch (e) {
                 console.warn("AI chat init (storage) warning:", e?.message || e);
             }
@@ -164,7 +164,7 @@ export default function JusticeAIChat() {
             localStorage.setItem('justice_ai_lawyer_conversation_id', id);
             const mapped = msgs.length ? msgs.map(m => ({ role: m.role, content: m.content })) : [{ role: 'assistant', content: messages[0].content }];
             setMessages(mapped);
-            try { localStorage.setItem(getLocalKey(id), JSON.stringify(mapped)); } catch {}
+            try { localStorage.setItem(getLocalKey(id), JSON.stringify(mapped)); } catch { }
             setShowPanel(false);
         } catch (e) {
             console.warn('Open conversation failed', e?.message || e);
@@ -183,10 +183,10 @@ export default function JusticeAIChat() {
             const greeting = { role: 'assistant', content: messages[0].content };
             setMessages([greeting]);
             await addMessage(conv.id, greeting);
-            try { localStorage.setItem(getLocalKey(conv.id), JSON.stringify([greeting])); } catch {}
+            try { localStorage.setItem(getLocalKey(conv.id), JSON.stringify([greeting])); } catch { }
             // refresh list if panel open
             if (showPanel) {
-                try { setConversations(await listConversations(lawyer.lawyer_id, "lawyer")); } catch {}
+                try { setConversations(await listConversations(lawyer.lawyer_id, "lawyer")); } catch { }
             }
         } catch (e) {
             console.warn('Create new conversation failed', e?.message || e);
@@ -199,7 +199,7 @@ export default function JusticeAIChat() {
         if (!ok) return;
         try {
             await deleteConversation(id);
-            try { localStorage.removeItem(getLocalKey(id)); } catch {}
+            try { localStorage.removeItem(getLocalKey(id)); } catch { }
 
             // Refresh list
             const updatedList = await listConversations(lawyer.lawyer_id, "lawyer");
@@ -237,7 +237,7 @@ export default function JusticeAIChat() {
             if (conversationId) {
                 await addMessage(conversationId, { role: "assistant", content: fullText });
             }
-        } catch {}
+        } catch { }
     };
 
     const sendMessage = async () => {
@@ -253,17 +253,17 @@ export default function JusticeAIChat() {
                 await updateConversationTitle(conversationId, userMessage.content.slice(0, 50));
                 // Refresh list silently
                 if (showPanel && lawyer?.lawyer_id) {
-                    try { setConversations(await listConversations(lawyer.lawyer_id, "lawyer")); } catch {}
+                    try { setConversations(await listConversations(lawyer.lawyer_id, "lawyer")); } catch { }
                 }
             }
-        } catch {}
+        } catch { }
 
         // persist user message
         try {
             if (conversationId) {
                 await addMessage(conversationId, userMessage);
             }
-        } catch {}
+        } catch { }
 
         // Temporary empty message for streaming animation
         setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
@@ -297,27 +297,21 @@ export default function JusticeAIChat() {
     };
 
     return (
-        <div className="flex flex-col h-[100vh] bg-[#e6ffff] dark:bg-gray-900" dir="rtl">
+        <div className="flex flex-col h-full min-h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 -m-4 sm:-m-6 lg:-m-8" dir="rtl">
 
             {/* Header */}
-            <div className="sticky top-[64px] z-40 bg-white dark:bg-gray-800">
-                <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl p-6 sm:p-8 text-white shadow-lg">
-                    <div className="max-w-5xl mx-auto flex items-center justify-between">
-                        <div className="flex items-center gap-2 font-semibold text-lg sm:text-xl">
-                            <button
-                                onClick={() => setShowPanel(v => !v)}
-                                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full transition text-sm shadow"
-                                title="عرض محادثاتي"
-                            >
-                                <MessageSquare className="h-4 w-4" />
-                                {/*<span className="hidden sm:inline">محادثاتي</span>*/}
-                            </button>
-                            <span className="text-2xl">⚖️</span>
-                            <span>JusticeAI – الذكاء القانوني</span>
-                        </div>
-
-
-
+            <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-cyan-500 p-4 sm:p-6 text-white shadow-lg rounded-b-2xl mx-2 sm:mx-4">
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-3 font-semibold text-lg sm:text-xl">
+                        <button
+                            onClick={() => setShowPanel(v => !v)}
+                            className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full transition text-sm shadow"
+                            title="عرض محادثاتي"
+                        >
+                            <MessageSquare className="h-4 w-4" />
+                        </button>
+                        <span className="text-2xl">⚖️</span>
+                        <span>JusticeAI – الذكاء القانوني</span>
                     </div>
                 </div>
             </div>
@@ -330,19 +324,23 @@ export default function JusticeAIChat() {
             />
             {/* Sliding panel */}
             <div
-                className={`fixed top-[64px] right-0 bottom-0 w-64 sm:w-72 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-xl z-50 flex flex-col transform-gpu transition-transform duration-300 ${showPanel ? 'translate-x-0' : 'translate-x-full'}`}
+                className={`fixed top-[80px] right-4 bottom-4 w-72 sm:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl z-50 flex flex-col rounded-2xl overflow-hidden transform-gpu transition-all duration-300 ${showPanel ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
                 dir="rtl"
             >
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                {/* Header */}
+                <div className="p-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
+                    <h3 className="font-bold text-lg mb-3">المحادثات</h3>
                     <button
                         onClick={startNewConversation}
-                        className="w-full py-2.5 px-3 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"
+                        className="w-full py-2.5 px-3 rounded-xl bg-white/20 hover:bg-white/30 transition flex items-center justify-center gap-2 text-sm font-medium"
                     >
                         <Pencil className="h-4 w-4" />
                         <span>محادثة جديدة</span>
                     </button>
                 </div>
-                <div className="flex-1 overflow-y-auto py-2">
+
+                {/* Conversations list */}
+                <div className="flex-1 overflow-y-auto py-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                     {panelLoading && <div className="text-center text-xs text-gray-500 dark:text-gray-400 py-3">تحميل...</div>}
                     {!panelLoading && conversations.length === 0 && (
                         <div className="text-center text-xs text-gray-500 dark:text-gray-400 py-6">لا توجد محادثات</div>
@@ -352,11 +350,11 @@ export default function JusticeAIChat() {
                         return (
                             <div
                                 key={c.id}
-                                className={`group relative mx-2 mb-1 rounded-lg ${active ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700'} transition`}
+                                className={`group relative mx-3 mb-2 rounded-xl ${active ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700'} transition`}
                             >
                                 <button
                                     onClick={() => openConversation(c.id)}
-                                    className="w-full text-right px-3 py-2.5 flex items-start gap-2.5 transform-gpu transition hover:-translate-x-0.5"
+                                    className="w-full text-right px-3 py-3 flex items-start gap-2.5 transform-gpu transition hover:-translate-x-0.5"
                                 >
                                     <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                                     <div className="flex-1 min-w-0">
@@ -370,7 +368,7 @@ export default function JusticeAIChat() {
                                 </button>
                                 <button
                                     onClick={(e) => handleDeleteConversation(c.id, e)}
-                                    className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition"
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                                     title="حذف"
                                 >
                                     <Trash2 className="h-3.5 w-3.5 text-red-500" />
@@ -379,10 +377,12 @@ export default function JusticeAIChat() {
                         );
                     })}
                 </div>
-                <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+
+                {/* Footer */}
+                <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                     <button
                         onClick={() => setShowPanel(false)}
-                        className="w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition py-2"
+                        className="w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
                         إغلاق القائمة
                     </button>
@@ -469,24 +469,21 @@ function MessageBubble({ role, content }) {
 
     return (
         <div
-            className={`flex items-start gap-3 ${
-                isUser ? "flex-row-reverse" : "flex-row"
-            } animate-slideUp`}
+            className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"
+                } animate-slideUp`}
         >
             {/* Avatar */}
             <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center shadow ${
-                    isUser ? "bg-gradient-to-l from-blue-400 to-blue-500 text-white" : "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-gray-700"
-                }`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center shadow ${isUser ? "bg-gradient-to-l from-blue-400 to-blue-500 text-white" : "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-gray-700"
+                    }`}
             >
                 {isUser ? "👤" : <Bot className="h-5 w-5" />}
             </div>
 
             {/* Message */}
             <div
-                className={`relative max-w-[75%] p-4 sm:p-5 rounded-3xl leading-8 shadow whitespace-pre-wrap break-words text-right select-text ${
-                    isUser ? "bg-gradient-to-l from-blue-400 to-blue-500 text-white shadow-blue-200/40" : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-md"
-                }`}
+                className={`relative max-w-[75%] p-4 sm:p-5 rounded-3xl leading-8 shadow whitespace-pre-wrap break-words text-right select-text ${isUser ? "bg-gradient-to-l from-blue-400 to-blue-500 text-white shadow-blue-200/40" : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-md"
+                    }`}
             >
                 <button
                     onClick={handleCopy}

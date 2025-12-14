@@ -169,7 +169,7 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 overflow-y-auto py-4">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
             <div className="space-y-1 px-2">
               {visibleItems.map((item, index) => {
                 const Icon = item.icon;
@@ -245,8 +245,10 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
             </div>
           </nav>
 
+
+
           {/* Footer */}
-          {!collapsed && (
+          {/* {!collapsed && (
             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
               <div className="bg-gradient-to-r from-green-50 to-cyan-50 dark:from-green-900/20 dark:to-cyan-900/20 rounded-lg p-3">
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
@@ -260,7 +262,9 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
                 </button>
               </div>
             </div>
-          )}
+          )} */}
+
+
         </div>
       </aside>
     </>
