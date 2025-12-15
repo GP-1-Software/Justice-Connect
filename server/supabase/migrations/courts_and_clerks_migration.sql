@@ -38,11 +38,7 @@ CREATE TABLE IF NOT EXISTS court_clerks (
     clerk_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     court_id INTEGER NOT NULL REFERENCES courts(court_id) ON DELETE RESTRICT,
-    clerk_role VARCHAR(50) DEFAULT 'clerk' CHECK (clerk_role IN (
-        'clerk',              -- كاتب عادي
-        'senior_clerk',       -- كاتب أول
-        'head_clerk'          -- رئيس قلم المحكمة
-    )),
+    clerk_role VARCHAR(50) DEFAULT 'court_clerk', -- يتوافق مع users.user_type و user_roles.role
     employee_number VARCHAR(50),          -- رقم الموظف (اختياري)
     assigned_at TIMESTAMPTZ DEFAULT NOW(),
     is_active BOOLEAN DEFAULT true,

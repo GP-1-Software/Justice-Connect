@@ -34,17 +34,67 @@ const supabase = createClient(
 
 /**
  * GET /api/court-clerk/dashboard
- * Get dashboard statistics for court clerk
+ * Get dashboard statistics for court clerk (filtered by assigned courts)
  */
 router.get("/dashboard", verifyCourtClerk, async (req, res) => {
     try {
-        // Use the pre-built view
-        const { data: stats, error } = await supabase
-            .from("clerk_dashboard_stats")
-            .select("*")
-            .single();
+        const clerkUserId = req.clerk.user_id;
+
+        // Get clerk's assigned courts
+        const { data: clerkCourts } = await supabase
+            .from("court_clerks")
+            .select("court_id")
+            .eq("user_id", clerkUserId)
+            .eq("is_active", true);
+
+        const courtIds = clerkCourts?.map(c => c.court_id) || [];
+
+        let stats = {
+            new_filings: 0,
+            under_review: 0,
+            ready_for_registration: 0,
+            update_required: 0,
+            registered: 0,
+            rejected: 0
+        };
+
+        // Build query based on clerk's courts
+        let query = supabase.from("court_clerk_filings").select("filing_status");
+
+        if (courtIds.length > 0) {
+            query = query.in("court_id", courtIds);
+        }
+        // If no assigned courts, show all (backward compatibility)
+
+        const { data: filings, error } = await query;
 
         if (error) throw error;
+
+        // Count by status
+        if (filings) {
+            filings.forEach(f => {
+                switch (f.filing_status) {
+                    case 'submitted':
+                        stats.new_filings++;
+                        break;
+                    case 'under_review':
+                        stats.under_review++;
+                        break;
+                    case 'ready_for_registration':
+                        stats.ready_for_registration++;
+                        break;
+                    case 'update_required':
+                        stats.update_required++;
+                        break;
+                    case 'registered':
+                        stats.registered++;
+                        break;
+                    case 'rejected':
+                        stats.rejected++;
+                        break;
+                }
+            });
+        }
 
         res.json({
             success: true,
@@ -55,6 +105,123 @@ router.get("/dashboard", verifyCourtClerk, async (req, res) => {
         console.error("Error fetching dashboard stats:", error);
         res.status(500).json({
             error: "Failed to fetch dashboard statistics",
+            details: error.message
+        });
+    }
+});
+
+// ============================================
+// COURTS API - المحاكم
+// ============================================
+
+/**
+ * GET /api/court-clerk/courts
+ * Get all active courts (for lawyer filing form)
+ */
+router.get("/courts", async (req, res) => {
+    try {
+        const { data: courts, error } = await supabase
+            .from("courts")
+            .select("*")
+            .eq("is_active", true)
+            .order("court_type")
+            .order("city");
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: courts || []
+        });
+
+    } catch (error) {
+        console.error("Error fetching courts:", error);
+        res.status(500).json({
+            error: "Failed to fetch courts",
+            details: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/court-clerk/courts/by-location
+ * Get court_id by city and court_type
+ */
+router.get("/courts/by-location", async (req, res) => {
+    try {
+        const { city, court_type } = req.query;
+
+        if (!city || !court_type) {
+            return res.status(400).json({
+                error: "city and court_type are required"
+            });
+        }
+
+        const { data: court, error } = await supabase
+            .from("courts")
+            .select("court_id, court_name")
+            .eq("city", city)
+            .eq("court_type", court_type)
+            .eq("is_active", true)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+
+        res.json({
+            success: true,
+            data: court || null
+        });
+
+    } catch (error) {
+        console.error("Error fetching court by location:", error);
+        res.status(500).json({
+            error: "Failed to fetch court",
+            details: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/court-clerk/my-courts
+ * Get clerk's assigned courts (for header display)
+ */
+router.get("/my-courts", verifyCourtClerk, async (req, res) => {
+    try {
+        const clerkUserId = req.clerk.user_id;
+
+        const { data: assignments, error } = await supabase
+            .from("court_clerks")
+            .select(`
+                clerk_id,
+                clerk_role,
+                court_id,
+                courts (
+                    court_id,
+                    court_name,
+                    court_type,
+                    city
+                )
+            `)
+            .eq("user_id", clerkUserId)
+            .eq("is_active", true);
+
+        if (error) throw error;
+
+        // Extract court info from assignments
+        const courts = assignments?.map(a => a.courts).filter(Boolean) || [];
+
+        res.json({
+            success: true,
+            data: {
+                courts,
+                primary_court: courts[0] || null
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching clerk's courts:", error);
+        res.status(500).json({
+            error: "Failed to fetch clerk's courts",
             details: error.message
         });
     }
@@ -78,6 +245,7 @@ router.post("/filings/submit", async (req, res) => {
             selectedCourt,
             city,
             courtType,
+            courtId = null, // NEW: court_id from courts table
             filingType,
             caseType,
             claimValue,
@@ -104,6 +272,23 @@ router.post("/filings/submit", async (req, res) => {
         const timestamp = Date.now();
         const filingNumber = `FILING-${timestamp}`;
         const caseNumber = `CASE-${timestamp}`;
+
+        // Get court_id if not provided (lookup by city and courtType)
+        let resolvedCourtId = courtId;
+        if (!resolvedCourtId && city && courtType) {
+            const { data: courtData } = await supabase
+                .from("courts")
+                .select("court_id")
+                .eq("city", city)
+                .eq("court_type", courtType)
+                .eq("is_active", true)
+                .single();
+
+            if (courtData) {
+                resolvedCourtId = courtData.court_id;
+                console.log(`Resolved court_id: ${resolvedCourtId} for ${city} - ${courtType}`);
+            }
+        }
 
         // Find client by id_number (plaintiff's ID)
         let foundClientId = clientId;
@@ -185,7 +370,7 @@ router.post("/filings/submit", async (req, res) => {
             targetCase = newCase;
         }
 
-        // 2. Insert filing with case_id
+        // 2. Insert filing with case_id and court_id
         const { data: filing, error: filingError } = await supabase
             .from("court_clerk_filings")
             .insert({
@@ -193,6 +378,7 @@ router.post("/filings/submit", async (req, res) => {
                 lawyer_id: lawyerId,
                 case_id: targetCase.case_id, // Link to the case (new or existing)
                 client_id: clientId,
+                court_id: resolvedCourtId, // NEW: Link to specific court
                 court_name: selectedCourt,
                 city: city,
                 case_type: caseType,
@@ -527,15 +713,37 @@ router.delete("/filings/drafts/:draftId", async (req, res) => {
 /**
  * GET /api/court-clerk/filings
  * Get all filings with filters (Inbox page)
+ * Filters by clerk's assigned courts from court_clerks table
  */
 router.get("/filings", verifyCourtClerk, async (req, res) => {
     try {
         const { status, page = 1, limit = 20, search } = req.query;
+        const clerkUserId = req.clerk.user_id;
+
+        // Get clerk's assigned courts from court_clerks table
+        const { data: clerkCourts, error: clerksError } = await supabase
+            .from("court_clerks")
+            .select("court_id")
+            .eq("user_id", clerkUserId)
+            .eq("is_active", true);
+
+        // Extract court_ids
+        const courtIds = clerkCourts?.map(c => c.court_id) || [];
+        console.log(`Clerk ${clerkUserId} assigned courts:`, courtIds);
 
         let query = supabase
             .from("court_clerk_filings")
             .select("*", { count: "exact" })
             .order("submitted_at", { ascending: false });
+
+        // Filter by clerk's courts (only if clerk has assigned courts)
+        if (courtIds.length > 0) {
+            query = query.in("court_id", courtIds);
+        } else {
+            // If clerk has no assigned courts, show all filings (backward compatibility)
+            // You can change this to show nothing: query = query.eq("court_id", -1);
+            console.log("Clerk has no assigned courts - showing all filings");
+        }
 
         // Filter by status
         if (status) {
@@ -1629,11 +1837,38 @@ router.post("/cases/:case_id/decisions", verifyCourtClerk, validateDecision, asy
 
 /**
  * GET /api/court-clerk/cases
- * Get all cases with filters
+ * Get all cases with filters (filtered by clerk's assigned courts via filings)
  */
 router.get("/cases", verifyCourtClerk, async (req, res) => {
     try {
         const { stage, page = 1, limit = 20, search } = req.query;
+        const clerkUserId = req.clerk.user_id;
+
+        // Get clerk's assigned courts
+        const { data: clerkCourts } = await supabase
+            .from("court_clerks")
+            .select("court_id")
+            .eq("user_id", clerkUserId)
+            .eq("is_active", true);
+
+        const courtIds = clerkCourts?.map(c => c.court_id) || [];
+
+        // First get case_ids from filings for this clerk's courts
+        let caseIdsQuery = supabase
+            .from("court_clerk_filings")
+            .select("case_id");
+
+        if (courtIds.length > 0) {
+            caseIdsQuery = caseIdsQuery.in("court_id", courtIds);
+        }
+
+        const { data: filings } = await caseIdsQuery;
+        const caseIds = [...new Set(filings?.map(f => f.case_id).filter(Boolean) || [])];
+
+        // If no cases found and clerk has courts, return empty
+        if (courtIds.length > 0 && caseIds.length === 0) {
+            return res.json({ success: true, data: [] });
+        }
 
         let query = supabase
             .from("cases")
@@ -1643,6 +1878,11 @@ router.get("/cases", verifyCourtClerk, async (req, res) => {
                 lawyer:lawyers(lawyer_id, first_name, last_name, email)
             `)
             .order("created_at", { ascending: false });
+
+        // Filter by case_ids from filings (if clerk has assigned courts)
+        if (courtIds.length > 0) {
+            query = query.in("case_id", caseIds);
+        }
 
         if (stage) {
             query = query.eq("case_stage", stage);

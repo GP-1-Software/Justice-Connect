@@ -5,12 +5,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-    Bell, 
-    Moon, 
-    Sun, 
-    Menu, 
-    X, 
+import {
+    Bell,
+    Moon,
+    Sun,
+    Menu,
+    X,
     Home,
     Inbox,
     FileText,
@@ -21,17 +21,19 @@ import {
     LogOut,
     ChevronDown,
     Gavel,
-    FolderOpen
+    FolderOpen,
+    Building2
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import { getAuthHeaders } from '../../utils/authHelpers';
 
 const CourtClerkHeader = ({ title, subtitle }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('darkMode') === 'true' || 
-                   document.documentElement.classList.contains('dark');
+            return localStorage.getItem('darkMode') === 'true' ||
+                document.documentElement.classList.contains('dark');
         }
         return false;
     });
@@ -41,6 +43,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [clerkInfo, setClerkInfo] = useState(null);
+    const [assignedCourt, setAssignedCourt] = useState(null);
     const notificationRef = useRef(null);
     const userMenuRef = useRef(null);
 
@@ -68,6 +71,29 @@ const CourtClerkHeader = ({ title, subtitle }) => {
         }
     }, []);
 
+    // Fetch assigned court
+    useEffect(() => {
+        const fetchAssignedCourt = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/court-clerk/my-courts', {
+                    headers: getAuthHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data?.primary_court) {
+                        setAssignedCourt(data.data.primary_court);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching assigned court:', error);
+            }
+        };
+
+        if (clerkInfo?.user_id) {
+            fetchAssignedCourt();
+        }
+    }, [clerkInfo]);
+
     // Toggle dark mode
     const toggleDarkMode = () => {
         const newMode = !darkMode;
@@ -83,16 +109,16 @@ const CourtClerkHeader = ({ title, subtitle }) => {
     // Load notifications
     useEffect(() => {
         if (!clerkInfo?.user_id) return;
-        
+
         loadNotifications();
-        
+
         // Subscribe to new notifications for this clerk
         const channel = supabase
             .channel(`clerk-notifications-${clerkInfo.user_id}`)
-            .on('postgres_changes', 
-                { 
-                    event: 'INSERT', 
-                    schema: 'public', 
+            .on('postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
                     table: 'notifications',
                     filter: `user_id=eq.${clerkInfo.user_id}`
                 },
@@ -114,7 +140,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
 
     const loadNotifications = async () => {
         if (!clerkInfo?.user_id) return;
-        
+
         try {
             const { data, error } = await supabase
                 .from('notifications')
@@ -139,7 +165,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                 .update({ is_read: true })
                 .eq('notification_id', notificationId);
 
-            setNotifications(prev => 
+            setNotifications(prev =>
                 prev.map(n => n.notification_id === notificationId ? { ...n, is_read: true } : n)
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
@@ -150,7 +176,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
 
     const markAllAsRead = async () => {
         if (!clerkInfo?.user_id) return;
-        
+
         try {
             await supabase
                 .from('notifications')
@@ -207,7 +233,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
             <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        
+
                         {/* Logo & Title */}
                         <div className="flex items-center gap-3">
                             <button
@@ -216,14 +242,21 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                             >
                                 {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
                             </button>
-                            
+
                             <div className="flex items-center gap-2">
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
                                     <Gavel className="w-6 h-6 text-white" />
                                 </div>
                                 <div className="hidden sm:block">
                                     <h1 className="text-lg font-bold text-gray-900 dark:text-white">قلم المحكمة</h1>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">نظام إدارة القضايا</p>
+                                    {assignedCourt ? (
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                            <Building2 size={12} />
+                                            {assignedCourt.court_name}
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">نظام إدارة القضايا</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -237,11 +270,10 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                     <button
                                         key={item.path}
                                         onClick={() => navigate(item.path)}
-                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                            isActive 
-                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        }`}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive
+                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            }`}
                                     >
                                         <Icon size={18} />
                                         <span>{item.label}</span>
@@ -252,7 +284,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
 
                         {/* Right Side Actions */}
                         <div className="flex items-center gap-2">
-                            
+
                             {/* Dark Mode Toggle */}
                             <button
                                 onClick={toggleDarkMode}
@@ -293,7 +325,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                                 </button>
                                             )}
                                         </div>
-                                        
+
                                         <div className="max-h-96 overflow-y-auto">
                                             {notifications.length === 0 ? (
                                                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -305,14 +337,12 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                                     <div
                                                         key={notification.notification_id}
                                                         onClick={() => markAsRead(notification.notification_id)}
-                                                        className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition ${
-                                                            !notification.is_read ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
-                                                        }`}
+                                                        className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition ${!notification.is_read ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
+                                                            }`}
                                                     >
                                                         <div className="flex items-start gap-3">
-                                                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                                                                !notification.is_read ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                                                            }`} />
+                                                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notification.is_read ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                                                                }`} />
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-medium text-gray-900 dark:text-white text-sm">
                                                                     {notification.title}
@@ -329,7 +359,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                                 ))
                                             )}
                                         </div>
-                                        
+
                                         <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                                             <button
                                                 onClick={() => {
@@ -370,7 +400,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                                 {clerkInfo?.email || 'موظف قلم المحكمة'}
                                             </p>
                                         </div>
-                                        
+
                                         <div className="py-2">
                                             <button
                                                 onClick={() => {
@@ -411,11 +441,10 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                             navigate(item.path);
                                             setShowMobileMenu(false);
                                         }}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                                            isActive 
-                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        }`}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive
+                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            }`}
                                     >
                                         <Icon size={20} />
                                         <span>{item.label}</span>

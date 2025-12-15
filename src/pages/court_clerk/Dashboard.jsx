@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
+import { getAuthHeaders } from '../../utils/authHelpers';
 
 const CourtClerkDashboard = () => {
     const navigate = useNavigate();
@@ -46,14 +47,8 @@ const CourtClerkDashboard = () => {
 
     const fetchDashboardStats = async () => {
         try {
-            const user = localStorage.getItem('user');
-            const token = user ? btoa(user) : '';
-
             const response = await fetch('http://localhost:5000/api/court-clerk/dashboard', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'x-user-data': user || ''
-                }
+                headers: getAuthHeaders()
             });
 
             if (response.ok) {

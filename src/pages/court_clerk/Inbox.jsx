@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
+import { getAuthHeaders } from '../../utils/authHelpers';
 
 const CourtClerkInbox = () => {
     const navigate = useNavigate();
@@ -57,16 +58,10 @@ const CourtClerkInbox = () => {
                 params.append('search', searchTerm);
             }
 
-            const user = localStorage.getItem('user');
-            const token = user ? btoa(user) : '';
-            
             const response = await fetch(
                 `http://localhost:5000/api/court-clerk/filings?${params}`,
                 {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'x-user-data': user || ''
-                    }
+                    headers: getAuthHeaders()
                 }
             );
 
@@ -102,7 +97,7 @@ const CourtClerkInbox = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
             {/* Header */}
-            <CourtClerkHeader 
+            <CourtClerkHeader
                 title="صندوق الوارد"
                 subtitle="استقبال ومراجعة اللوائح المقدمة من المحامين"
             />
@@ -131,11 +126,10 @@ const CourtClerkInbox = () => {
                                 <button
                                     key={status.value}
                                     onClick={() => setStatusFilter(status.value)}
-                                    className={`px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 transition ${
-                                        statusFilter === status.value
+                                    className={`px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-2 transition ${statusFilter === status.value
                                             ? `bg-${status.color}-500 text-white`
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    }`}
+                                        }`}
                                 >
                                     <status.icon size={16} />
                                     {status.label}

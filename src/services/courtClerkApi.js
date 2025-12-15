@@ -9,6 +9,29 @@ import { getAuthHeaders } from '../utils/authHelpers';
 const API_BASE_URL = 'http://localhost:5000/api/court-clerk';
 
 // ============================================
+// COURTS API - المحاكم
+// ============================================
+
+/**
+ * Get all active courts
+ */
+export const getCourts = async () => {
+    const response = await fetch(`${API_BASE_URL}/courts`);
+    if (!response.ok) throw new Error('Failed to fetch courts');
+    return response.json();
+};
+
+/**
+ * Get court by city and court_type
+ */
+export const getCourtByLocation = async (city, courtType) => {
+    const params = new URLSearchParams({ city, court_type: courtType });
+    const response = await fetch(`${API_BASE_URL}/courts/by-location?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch court');
+    return response.json();
+};
+
+// ============================================
 // LAWYER FILING SUBMISSIONS
 // ============================================
 

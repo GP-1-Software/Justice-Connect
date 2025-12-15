@@ -171,45 +171,64 @@ const Navbar = () => {
                       </>
                     )}
 
-                    <button
-                      onClick={() => {
-                        // Navigate based on user type
-                        if (userData?.user_type === 'client') {
-                          navigate('/client/dashboard');
-                        } else if (userData?.user_type === 'lawyer') {
-                          navigate('/lawyer/dashboard');
-                        } else {
-                          navigate('/profile');
-                        }
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
-                    >
-                      <User className="h-5 w-5" />
-                      <span>الملف الشخصي</span>
-                    </button>
+                    {/* Court Clerk Dashboard Link */}
+                    {userData?.user_type === 'court_clerk' && (
+                      <button
+                        onClick={() => {
+                          navigate('/court-clerk/dashboard');
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-blue-600 dark:text-blue-400 font-semibold"
+                      >
+                        <LayoutDashboard className="h-5 w-5" />
+                        <span>لوحة قلم المحكمة</span>
+                      </button>
+                    )}
 
-                    <button
-                      onClick={() => {
-                        navigate('/settings');
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
-                    >
-                      <Settings className="h-5 w-5" />
-                      <span>الإعدادات</span>
-                    </button>
+                    {/* Hide these items for court_clerk */}
+                    {userData?.user_type !== 'court_clerk' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            // Navigate based on user type
+                            if (userData?.user_type === 'client') {
+                              navigate('/client/dashboard');
+                            } else if (userData?.user_type === 'lawyer') {
+                              navigate('/lawyer/dashboard');
+                            } else {
+                              navigate('/profile');
+                            }
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <User className="h-5 w-5" />
+                          <span>الملف الشخصي</span>
+                        </button>
 
-                    <button
-                      onClick={() => {
-                        navigate('/support');
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
-                    >
-                      <MessageSquare className="h-5 w-5" />
-                      <span>الدعم الفني</span>
-                    </button>
+                        <button
+                          onClick={() => {
+                            navigate('/settings');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <Settings className="h-5 w-5" />
+                          <span>الإعدادات</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            navigate('/support');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <MessageSquare className="h-5 w-5" />
+                          <span>الدعم الفني</span>
+                        </button>
+                      </>
+                    )}
 
                     <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
@@ -315,42 +334,60 @@ const Navbar = () => {
                     </>
                   )}
 
-                  <button
-                    onClick={() => {
-                      if (userData?.user_type === 'client') {
-                        navigate('/client/dashboard');
-                      } else if (userData?.user_type === 'lawyer') {
-                        navigate('/lawyer/dashboard');
-                      } else {
-                        navigate('/profile');
-                      }
-                      setIsOpen(false);
-                    }}
-                    className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  >
-                    الملف الشخصي
-                  </button>
+                  {/* Court Clerk Dashboard Link (Mobile) */}
+                  {userData?.user_type === 'court_clerk' && (
+                    <button
+                      onClick={() => {
+                        navigate('/court-clerk/dashboard');
+                        setIsOpen(false);
+                      }}
+                      className="w-full text-right px-4 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg"
+                    >
+                      لوحة قلم المحكمة
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => {
-                      navigate('/settings');
-                      setIsOpen(false);
-                    }}
-                    className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  >
-                    الإعدادات
-                  </button>
+                  {/* Hide these for court_clerk (Mobile) */}
+                  {userData?.user_type !== 'court_clerk' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (userData?.user_type === 'client') {
+                            navigate('/client/dashboard');
+                          } else if (userData?.user_type === 'lawyer') {
+                            navigate('/lawyer/dashboard');
+                          } else {
+                            navigate('/profile');
+                          }
+                          setIsOpen(false);
+                        }}
+                        className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        الملف الشخصي
+                      </button>
 
-                  <button
-                    onClick={() => {
-                      navigate('/support');
-                      setIsOpen(false);
-                    }}
-                    className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg flex items-center gap-2"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    <span>الدعم الفني</span>
-                  </button>
+                      <button
+                        onClick={() => {
+                          navigate('/settings');
+                          setIsOpen(false);
+                        }}
+                        className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        الإعدادات
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          navigate('/support');
+                          setIsOpen(false);
+                        }}
+                        className="w-full text-right px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg flex items-center gap-2"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>الدعم الفني</span>
+                      </button>
+                    </>
+                  )}
 
                   <button
                     onClick={handleLogout}
