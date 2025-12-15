@@ -219,8 +219,8 @@ const InvoiceDetails = () => {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-4">
-          {canPay && (
+        {canPay && (
+          <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(`/client/invoices/${invoice.invoice_id}/pay`)}
               className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -228,16 +228,8 @@ const InvoiceDetails = () => {
               <CreditCard className="w-5 h-5" />
               <span>دفع الفاتورة</span>
             </button>
-          )}
-
-          <button
-            onClick={() => alert('سيتم تنفيذ تحميل PDF قريباً')}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            <span>تحميل PDF</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

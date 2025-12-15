@@ -63,10 +63,10 @@ const InvoiceCard = ({
   return (
     <div
       className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border ${updatedRecently
-          ? 'border-orange-300 dark:border-orange-600 shadow-orange-100 dark:shadow-orange-900/20'
-          : isUpdated
-            ? 'border-amber-300 dark:border-amber-600 shadow-amber-50 dark:shadow-amber-900/20'
-            : 'border-gray-200 dark:border-gray-700'
+        ? 'border-orange-300 dark:border-orange-600 shadow-orange-100 dark:shadow-orange-900/20'
+        : isUpdated
+          ? 'border-amber-300 dark:border-amber-600 shadow-amber-50 dark:shadow-amber-900/20'
+          : 'border-gray-200 dark:border-gray-700'
         } ${className}`}
     >
       <div className="p-6">
@@ -146,7 +146,7 @@ const InvoiceCard = ({
             {additionalActions}
 
             {/* Download Button */}
-            {onDownload && (
+            {/* {onDownload && (
               <button
                 onClick={() => onDownload(invoice)}
                 className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -154,7 +154,7 @@ const InvoiceCard = ({
               >
                 <Download className="w-4 h-4" />
               </button>
-            )}
+            )} */}
 
             {/* Edit Button (Lawyer only) */}
             {canEdit && onEdit && (

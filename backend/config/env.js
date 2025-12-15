@@ -14,7 +14,6 @@ export const ENV = {
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 };
 
 // One-time debug log to verify env load

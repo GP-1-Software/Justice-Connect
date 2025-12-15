@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar, UserPlus } from 'lucide-react';
 import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
 import { getAllTicketsForAdmin, updateTicketStatus, addReplyToTicket } from '../services/supportApi';
+import { notifyDeletionRequestApproved, notifyDeletionRequestRejected } from '../services/notificationService';
 import { toast } from 'react-hot-toast';
 
 const AdminDashboard = () => {
@@ -397,7 +398,12 @@ const AdminDashboard = () => {
       );
 
       if (result.success) {
-        alert('تمت الموافقة على حذف الحساب بنجاح');
+        // Send notification to the user
+        const userId = selectedRequest.user_id || selectedRequest.lawyer_id;
+        const userType = selectedRequest.user_type;
+        await notifyDeletionRequestApproved(userId, userType);
+
+        toast.success('تمت الموافقة على حذف الحساب بنجاح');
         setSelectedRequest(null);
         setAdminNotes('');
         fetchDeletionRequests();
@@ -428,7 +434,12 @@ const AdminDashboard = () => {
       );
 
       if (result.success) {
-        alert('تم رفض الطلب بنجاح');
+        // Send notification to the user with rejection reason
+        const userId = selectedRequest.user_id || selectedRequest.lawyer_id;
+        const userType = selectedRequest.user_type;
+        await notifyDeletionRequestRejected(userId, userType, adminNotes);
+
+        toast.success('تم رفض الطلب بنجاح');
         setSelectedRequest(null);
         setAdminNotes('');
         fetchDeletionRequests();

@@ -39,7 +39,7 @@ const Settings = () => {
 
   const checkDeletionRequestStatus = async () => {
     if (!userProfile?.user_id) return;
-    
+
     const result = await getUserDeletionRequest(userProfile.user_id, 'client');
     if (result.success && result.data) {
       setDeletionRequestStatus(result.data);
@@ -66,7 +66,7 @@ const Settings = () => {
     }
 
     const result = await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
-    
+
     if (result.success) {
       setMessage('تم تغيير كلمة المرور بنجاح');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -150,11 +150,10 @@ const Settings = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`${
-                  activeTab === tab.id
+                className={`${activeTab === tab.id
                     ? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                } whitespace-nowrap py-3 sm:py-4 px-3 sm:px-4 border-b-2 font-semibold text-xs sm:text-sm flex items-center space-x-2 space-x-reverse rounded-t-lg transition-all`}
+                  } whitespace-nowrap py-3 sm:py-4 px-3 sm:px-4 border-b-2 font-semibold text-xs sm:text-sm flex items-center space-x-2 space-x-reverse rounded-t-lg transition-all`}
               >
                 {tab.icon}
                 <span>{tab.name}</span>
@@ -187,7 +186,7 @@ const Settings = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">تغيير كلمة المرور</h3>
             </div>
-            
+
             <div className="space-y-6">
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center space-x-2 space-x-reverse">
@@ -198,7 +197,7 @@ const Settings = () => {
                   <input
                     type="password"
                     value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                     className="w-full px-4 py-3 pr-12 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                     required
                     placeholder="أدخل كلمة المرور الحالية"
@@ -209,7 +208,7 @@ const Settings = () => {
                     </svg>
                   </div>
                 </div>
-                
+
               </div>
 
               <div className="group">
@@ -220,13 +219,13 @@ const Settings = () => {
                 <input
                   type="password"
                   value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   required
                   minLength={6}
                   placeholder="أدخل كلمة المرور الجديدة"
                 />
-                
+
               </div>
 
               <div className="group">
@@ -237,13 +236,13 @@ const Settings = () => {
                 <input
                   type="password"
                   value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   required
                   minLength={6}
                   placeholder="أعد إدخال كلمة المرور"
                 />
-               
+
               </div>
             </div>
 
@@ -278,7 +277,7 @@ const Settings = () => {
               <Bell className="h-6 w-6 text-blue-600" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">إعدادات الإشعارات</h3>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -289,7 +288,7 @@ const Settings = () => {
                   <input
                     type="checkbox"
                     checked={notificationSettings.emailNotifications}
-                    onChange={(e) => setNotificationSettings({...notificationSettings, emailNotifications: e.target.checked})}
+                    onChange={(e) => setNotificationSettings({ ...notificationSettings, emailNotifications: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -305,7 +304,7 @@ const Settings = () => {
                   <input
                     type="checkbox"
                     checked={notificationSettings.smsNotifications}
-                    onChange={(e) => setNotificationSettings({...notificationSettings, smsNotifications: e.target.checked})}
+                    onChange={(e) => setNotificationSettings({ ...notificationSettings, smsNotifications: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -321,7 +320,7 @@ const Settings = () => {
                   <input
                     type="checkbox"
                     checked={notificationSettings.appointmentReminders}
-                    onChange={(e) => setNotificationSettings({...notificationSettings, appointmentReminders: e.target.checked})}
+                    onChange={(e) => setNotificationSettings({ ...notificationSettings, appointmentReminders: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -337,7 +336,7 @@ const Settings = () => {
                   <input
                     type="checkbox"
                     checked={notificationSettings.caseUpdates}
-                    onChange={(e) => setNotificationSettings({...notificationSettings, caseUpdates: e.target.checked})}
+                    onChange={(e) => setNotificationSettings({ ...notificationSettings, caseUpdates: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -353,7 +352,7 @@ const Settings = () => {
                   <input
                     type="checkbox"
                     checked={notificationSettings.marketingEmails}
-                    onChange={(e) => setNotificationSettings({...notificationSettings, marketingEmails: e.target.checked})}
+                    onChange={(e) => setNotificationSettings({ ...notificationSettings, marketingEmails: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -378,7 +377,7 @@ const Settings = () => {
               <Trash2 className="h-6 w-6 text-red-600" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">إدارة الحساب</h3>
             </div>
-            
+
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
               <div className="flex items-start space-x-3 space-x-reverse">
                 <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
@@ -389,15 +388,30 @@ const Settings = () => {
                   <p className="text-sm text-red-700 dark:text-red-300 mb-4">
                     حذف حسابك سيؤدي إلى إزالة جميع بياناتك بشكل دائم. هذا الإجراء لا يمكن التراجع عنه.
                   </p>
-                  
+
                   {deletionRequestStatus ? (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-3 mb-4">
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>حالة الطلب:</strong> {deletionRequestStatus.status === 'pending' ? 'قيد المراجعة' : deletionRequestStatus.status}
+                    <div className={`${deletionRequestStatus.status === 'rejected' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'} border rounded p-3 mb-4`}>
+                      <p className={`text-sm ${deletionRequestStatus.status === 'rejected' ? 'text-red-800 dark:text-red-200' : 'text-yellow-800 dark:text-yellow-200'}`}>
+                        <strong>حالة الطلب:</strong> {deletionRequestStatus.status === 'pending' ? 'قيد المراجعة' : deletionRequestStatus.status === 'rejected' ? 'مرفوض' : deletionRequestStatus.status}
                       </p>
-                      <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                        تاريخ الطلب: {new Date(deletionRequestStatus.created_at).toLocaleDateString('ar-EG')}
+                      <p className={`text-xs ${deletionRequestStatus.status === 'rejected' ? 'text-red-700 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'} mt-1`}>
+                        تاريخ الطلب: {new Date(deletionRequestStatus.requested_at).toLocaleDateString('ar-EG')}
                       </p>
+                      {deletionRequestStatus.status === 'rejected' && deletionRequestStatus.admin_notes && (
+                        <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/40 rounded">
+                          <p className="text-sm text-red-800 dark:text-red-200">
+                            <strong>سبب الرفض:</strong> {deletionRequestStatus.admin_notes}
+                          </p>
+                        </div>
+                      )}
+                      {deletionRequestStatus.status === 'rejected' && (
+                        <button
+                          onClick={() => setDeletionRequestStatus(null)}
+                          className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                        >
+                          إعادة تقديم الطلب
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <button

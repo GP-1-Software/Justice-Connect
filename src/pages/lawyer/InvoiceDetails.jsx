@@ -221,40 +221,22 @@ const InvoiceDetails = () => {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => alert('سيتم تنفيذ تحميل PDF قريباً')}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            <span>تحميل PDF</span>
-          </button>
-
-          {(invoice.status === 'pending' || invoice.status === 'overdue') && (
-            <>
-              <button
-                onClick={() => navigate(`/lawyer/invoices/edit/${invoice.invoice_id}`)}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <Edit className="w-5 h-5" />
-                <span>تعديل</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) {
-                    // TODO: Implement delete
-                    alert('سيتم تنفيذ الحذف قريباً');
-                  }
-                }}
-                className="flex items-center gap-2 px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-              >
-                <Trash2 className="w-5 h-5" />
-                <span>حذف</span>
-              </button>
-            </>
-          )}
-        </div>
+        {(invoice.status === 'pending' || invoice.status === 'overdue') && (
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) {
+                  // TODO: Implement delete
+                  alert('سيتم تنفيذ الحذف قريباً');
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
+              <span>حذف</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
