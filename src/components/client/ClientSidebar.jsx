@@ -108,7 +108,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
         path: 'ai-chatbot'
       },  */
     {
-      title: 'الذكاء القانوني',
+      title: 'المساعد القانوني',
       icon: Bot,
       path: 'justice-ai'
     },

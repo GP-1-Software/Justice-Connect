@@ -202,7 +202,7 @@ const CourtClerkSettings = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+        <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900" dir="rtl">
             <CourtClerkHeader
                 title="الإعدادات"
                 subtitle="إدارة الملف الشخصي والتفضيلات"
@@ -210,307 +210,310 @@ const CourtClerkSettings = () => {
                 backPath="/court-clerk/dashboard"
             />
 
-            <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-                {/* Tabs */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
-                    <div className="flex border-b border-gray-200 dark:border-gray-700">
-                        {tabs.map(tab => {
-                            const Icon = tab.icon;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex-1 px-6 py-4 text-sm font-medium transition flex items-center justify-center gap-2 ${activeTab === tab.id
-                                        ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                                        }`}
-                                >
-                                    <Icon size={18} />
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Tab Content */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    {/* Profile Tab */}
-                    {activeTab === 'profile' && (
-                        <form onSubmit={handleProfileUpdate} className="space-y-6">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                                معلومات الملف الشخصي
-                            </h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        رقم الهوية
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={profileForm.id_number}
-                                        disabled
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                                    />
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        رقم الهوية غير قابل للتعديل
-                                    </p>
-                                </div>
-
-                                <div></div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        الاسم الأول
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={profileForm.first_name}
-                                        onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        الاسم الأخير
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={profileForm.last_name}
-                                        onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                        <Mail size={16} />
-                                        البريد الإلكتروني
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={profileForm.email}
-                                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                        <Phone size={16} />
-                                        رقم الهاتف
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={profileForm.phone}
-                                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                        <MapPin size={16} />
-                                        المدينة
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={profileForm.city}
-                                        onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                                >
-                                    <Save size={18} />
-                                    حفظ التغييرات
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* Password Tab */}
-                    {activeTab === 'password' && (
-                        <form onSubmit={handlePasswordChange} className="space-y-6">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                                تغيير كلمة المرور
-                            </h3>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        كلمة المرور الحالية
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPasswords.current ? 'text' : 'password'}
-                                            value={passwordForm.current_password}
-                                            onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                                        >
-                                            {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        كلمة المرور الجديدة
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPasswords.new ? 'text' : 'password'}
-                                            value={passwordForm.new_password}
-                                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                                        >
-                                            {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        يجب أن تكون كلمة المرور 8 أحرف على الأقل
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        تأكيد كلمة المرور الجديدة
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPasswords.confirm ? 'text' : 'password'}
-                                            value={passwordForm.confirm_password}
-                                            onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                                        >
-                                            {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                                >
-                                    <Lock size={18} />
-                                    تغيير كلمة المرور
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* Notifications Tab */}
-                    {activeTab === 'notifications' && (
-                        <div className="space-y-6">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                                تفضيلات الإشعارات
-                            </h3>
-
-                            <div className="space-y-4">
-                                <NotificationToggle
-                                    label="إشعارات البريد الإلكتروني"
-                                    description="استلام إشعارات عبر البريد الإلكتروني"
-                                    checked={notificationPrefs.email_notifications}
-                                    onChange={() => handleNotificationPrefChange('email_notifications')}
-                                />
-
-                                <NotificationToggle
-                                    label="إشعارات اللوائح الجديدة"
-                                    description="إشعار عند تقديم لائحة جديدة"
-                                    checked={notificationPrefs.filing_notifications}
-                                    onChange={() => handleNotificationPrefChange('filing_notifications')}
-                                />
-
-                                <NotificationToggle
-                                    label="إشعارات الجلسات"
-                                    description="إشعار عند اقتراب موعد جلسة"
-                                    checked={notificationPrefs.hearing_notifications}
-                                    onChange={() => handleNotificationPrefChange('hearing_notifications')}
-                                />
-
-                                <NotificationToggle
-                                    label="إشعارات القرارات"
-                                    description="إشعار عند إصدار قرار جديد"
-                                    checked={notificationPrefs.decision_notifications}
-                                    onChange={() => handleNotificationPrefChange('decision_notifications')}
-                                />
-
-                                <NotificationToggle
-                                    label="الأصوات"
-                                    description="تفعيل الأصوات للإشعارات"
-                                    checked={notificationPrefs.sound_enabled}
-                                    onChange={() => handleNotificationPrefChange('sound_enabled')}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Appearance Tab */}
-                    {activeTab === 'appearance' && (
-                        <div className="space-y-6">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                                إعدادات المظهر
-                            </h3>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        {darkMode ? <Moon size={24} className="text-blue-600" /> : <Sun size={24} className="text-yellow-600" />}
-                                        <div>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {darkMode ? 'الوضع الليلي' : 'الوضع النهاري'}
-                                            </p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {darkMode ? 'تم تفعيل الوضع الليلي' : 'تم تفعيل الوضع النهاري'}
-                                            </p>
-                                        </div>
-                                    </div>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+                <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+                    {/* Tabs */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
+                            {tabs.map(tab => {
+                                const Icon = tab.icon;
+                                return (
                                     <button
-                                        onClick={toggleDarkMode}
-                                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition ${darkMode ? 'bg-blue-600' : 'bg-gray-300'
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex-1 px-6 py-4 text-sm font-medium transition flex items-center justify-center gap-2 ${activeTab === tab.id
+                                            ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                                             }`}
                                     >
-                                        <span
-                                            className={`inline-block h-6 w-6 transform rounded-full bg-white transition ${darkMode ? 'translate-x-1' : 'translate-x-7'
-                                                }`}
+                                        <Icon size={18} />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        {/* Profile Tab */}
+                        {activeTab === 'profile' && (
+                            <form onSubmit={handleProfileUpdate} className="space-y-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                                    معلومات الملف الشخصي
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            رقم الهوية
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileForm.id_number}
+                                            disabled
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                                         />
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            رقم الهوية غير قابل للتعديل
+                                        </p>
+                                    </div>
+
+                                    <div></div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            الاسم الأول
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileForm.first_name}
+                                            onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            الاسم الأخير
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileForm.last_name}
+                                            onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                                            <Mail size={16} />
+                                            البريد الإلكتروني
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={profileForm.email}
+                                            onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                                            <Phone size={16} />
+                                            رقم الهاتف
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={profileForm.phone}
+                                            onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                                            <MapPin size={16} />
+                                            المدينة
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileForm.city}
+                                            onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                                    >
+                                        <Save size={18} />
+                                        حفظ التغييرات
                                     </button>
                                 </div>
+                            </form>
+                        )}
+
+                        {/* Password Tab */}
+                        {activeTab === 'password' && (
+                            <form onSubmit={handlePasswordChange} className="space-y-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                                    تغيير كلمة المرور
+                                </h3>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            كلمة المرور الحالية
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPasswords.current ? 'text' : 'password'}
+                                                value={passwordForm.current_password}
+                                                onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                                            >
+                                                {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            كلمة المرور الجديدة
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPasswords.new ? 'text' : 'password'}
+                                                value={passwordForm.new_password}
+                                                onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                                            >
+                                                {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            يجب أن تكون كلمة المرور 8 أحرف على الأقل
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            تأكيد كلمة المرور الجديدة
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPasswords.confirm ? 'text' : 'password'}
+                                                value={passwordForm.confirm_password}
+                                                onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                                            >
+                                                {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                                    >
+                                        <Lock size={18} />
+                                        تغيير كلمة المرور
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Notifications Tab */}
+                        {activeTab === 'notifications' && (
+                            <div className="space-y-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                                    تفضيلات الإشعارات
+                                </h3>
+
+                                <div className="space-y-4">
+                                    <NotificationToggle
+                                        label="إشعارات البريد الإلكتروني"
+                                        description="استلام إشعارات عبر البريد الإلكتروني"
+                                        checked={notificationPrefs.email_notifications}
+                                        onChange={() => handleNotificationPrefChange('email_notifications')}
+                                    />
+
+                                    <NotificationToggle
+                                        label="إشعارات اللوائح الجديدة"
+                                        description="إشعار عند تقديم لائحة جديدة"
+                                        checked={notificationPrefs.filing_notifications}
+                                        onChange={() => handleNotificationPrefChange('filing_notifications')}
+                                    />
+
+                                    <NotificationToggle
+                                        label="إشعارات الجلسات"
+                                        description="إشعار عند اقتراب موعد جلسة"
+                                        checked={notificationPrefs.hearing_notifications}
+                                        onChange={() => handleNotificationPrefChange('hearing_notifications')}
+                                    />
+
+                                    <NotificationToggle
+                                        label="إشعارات القرارات"
+                                        description="إشعار عند إصدار قرار جديد"
+                                        checked={notificationPrefs.decision_notifications}
+                                        onChange={() => handleNotificationPrefChange('decision_notifications')}
+                                    />
+
+                                    <NotificationToggle
+                                        label="الأصوات"
+                                        description="تفعيل الأصوات للإشعارات"
+                                        checked={notificationPrefs.sound_enabled}
+                                        onChange={() => handleNotificationPrefChange('sound_enabled')}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* Appearance Tab */}
+                        {activeTab === 'appearance' && (
+                            <div className="space-y-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                                    إعدادات المظهر
+                                </h3>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            {darkMode ? <Moon size={24} className="text-blue-600" /> : <Sun size={24} className="text-yellow-600" />}
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">
+                                                    {darkMode ? 'الوضع الليلي' : 'الوضع النهاري'}
+                                                </p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {darkMode ? 'تم تفعيل الوضع الليلي' : 'تم تفعيل الوضع النهاري'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={toggleDarkMode}
+                                            className={`relative inline-flex h-8 w-14 items-center rounded-full transition ${darkMode ? 'bg-blue-600' : 'bg-gray-300'
+                                                }`}
+                                        >
+                                            <span
+                                                className={`inline-block h-6 w-6 transform rounded-full bg-white transition ${darkMode ? 'translate-x-1' : 'translate-x-7'
+                                                    }`}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

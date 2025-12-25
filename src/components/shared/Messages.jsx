@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { Menu, MessageCircle, MoreVertical, Search, Send, User, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useMessages } from '../../hooks/useMessages';
-import { searchUsers, getOrCreateConversation, blockUser, unblockUser, checkIfBlocked, deleteConversation } from '../../services/messageService';
-import { useTranslation } from 'react-i18next';
-import { Send, Search, User, MessageCircle, X, Phone, Video, MoreVertical, Menu } from 'lucide-react';
+import { blockUser, checkIfBlocked, deleteConversation, getOrCreateConversation, searchUsers, unblockUser } from '../../services/messageService';
 import { supabase } from '../../supabaseClient';
 
 const Messages = ({ userId, userType }) => {
@@ -51,7 +51,7 @@ const Messages = ({ userId, userType }) => {
                 setIsSidebarOpen(true);
             }
         };
-        
+
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -60,13 +60,13 @@ const Messages = ({ userId, userType }) => {
     useEffect(() => {
         const checkBlockStatus = async () => {
             if (!activeConversation || !activeConvDetails) return;
-            
-            const otherUserId = activeConvDetails.other_participant?.id || 
-                              (activeConvDetails.participant1_id === parseInt(userId) 
-                                  ? activeConvDetails.participant2_id 
-                                  : activeConvDetails.participant1_id);
+
+            const otherUserId = activeConvDetails.other_participant?.id ||
+                (activeConvDetails.participant1_id === parseInt(userId)
+                    ? activeConvDetails.participant2_id
+                    : activeConvDetails.participant1_id);
             const otherUserType = activeConvDetails.other_participant_type;
-            
+
             try {
                 const result = await checkIfBlocked(userId, userType, otherUserId, otherUserType);
                 console.log('Block status result:', result);
@@ -77,19 +77,93 @@ const Messages = ({ userId, userType }) => {
                 console.error('Error checking block status:', error);
             }
         };
-        
+
         checkBlockStatus();
     }, [activeConversation, activeConvDetails, userId, userType]);
 
-    // Real-time subscription for block status changes
+    // Real-time subscription for block status changes and new messages
     useEffect(() => {
         if (!userId || !userType) return;
 
-        console.log('Setting up block status real-time subscription for user:', userId, userType);
+        console.log('Setting up real-time subscriptions for user:', userId, userType);
 
         // Subscribe to ALL blocked_users changes involving this user
         const blockChannel = supabase
-            .channel(`block-status-user-${userId}-${userType}`)
+            .channel(`block-messages-${userId}-${userType}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages'
+                },
+                async (payload) => {
+                    console.log('New message in system, reloading conversations');
+                    // Reload conversations to show newly restored conversations
+                    loadConversations();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'deleted_conversations'
+                },
+                async (payload) => {
+                    console.log('Conversation restored, reloading conversations');
+                    loadConversations();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'conversations'
+                },
+                async (payload) => {
+                    console.log('🔔 Conversation updated:', payload);
+                    const updatedConv = payload.new;
+
+                    // Check if this conversation involves current user
+                    const involvesMe =
+                        (updatedConv.participant1_id == userId && updatedConv.participant1_type === userType) ||
+                        (updatedConv.participant2_id == userId && updatedConv.participant2_type === userType);
+
+                    console.log('🔔 Involves me:', involvesMe, 'userId:', userId, 'userType:', userType);
+                    console.log('🔔 Participants:', updatedConv.participant1_id, updatedConv.participant1_type, updatedConv.participant2_id, updatedConv.participant2_type);
+
+                    if (involvesMe) {
+                        // Check if conversation was deleted for current user
+                        const deletedFor = updatedConv.deleted_for || [];
+                        console.log('🔔 Deleted for:', JSON.stringify(deletedFor));
+
+                        const isDeletedForMe = deletedFor.some(d =>
+                            d.user_id == userId && d.user_type === userType
+                        );
+
+                        console.log('🔔 Is deleted for me:', isDeletedForMe);
+
+                        if (isDeletedForMe) {
+                            console.log('🔔 Removing conversation from list:', updatedConv.conversation_id);
+                            setConversations(prev =>
+                                prev.filter(c => c.conversation_id !== updatedConv.conversation_id)
+                            );
+
+                            // If this was the active conversation, clear it
+                            if (activeConversation === updatedConv.conversation_id) {
+                                setActiveConversation(null);
+                                setMessages([]);
+                            }
+                        } else {
+                            // Conversation was updated but not deleted, reload
+                            console.log('🔔 Conversation updated, reloading list');
+                            loadConversations();
+                        }
+                    }
+                }
+            )
             .on(
                 'postgres_changes',
                 {
@@ -99,20 +173,20 @@ const Messages = ({ userId, userType }) => {
                 },
                 async (payload) => {
                     console.log('Block table changed:', payload);
-                    
+
                     // Check if this change involves the current user
                     const record = payload.new || payload.old;
-                    const involvesCurrentUser = 
+                    const involvesCurrentUser =
                         (record.blocker_id == userId && record.blocker_type === userType) ||
                         (record.blocked_id == userId && record.blocked_type === userType);
-                    
+
                     if (involvesCurrentUser && activeConversation && activeConvDetails) {
-                        const otherUserId = activeConvDetails.other_participant?.id || 
-                                          (activeConvDetails.participant1_id === parseInt(userId) 
-                                              ? activeConvDetails.participant2_id 
-                                              : activeConvDetails.participant1_id);
+                        const otherUserId = activeConvDetails.other_participant?.id ||
+                            (activeConvDetails.participant1_id === parseInt(userId)
+                                ? activeConvDetails.participant2_id
+                                : activeConvDetails.participant1_id);
                         const otherUserType = activeConvDetails.other_participant_type;
-                        
+
                         // Refresh block status for active conversation
                         try {
                             const result = await checkIfBlocked(userId, userType, otherUserId, otherUserType);
@@ -177,7 +251,7 @@ const Messages = ({ userId, userType }) => {
     const handleStartConversation = async (otherUser) => {
         try {
             console.log('Starting conversation with:', otherUser);
-            
+
             // Create or get existing conversation (this will remove from deleted_conversations)
             const conversation = await getOrCreateConversation(
                 userId,
@@ -185,9 +259,9 @@ const Messages = ({ userId, userType }) => {
                 otherUser.id,
                 otherUser.role
             );
-            
+
             console.log('Got conversation:', conversation);
-            
+
             // Add to conversations list if not already there
             setConversations(prev => {
                 const exists = prev.find(c => c.conversation_id === conversation.conversation_id);
@@ -202,12 +276,12 @@ const Messages = ({ userId, userType }) => {
                     unread_count: 0
                 }, ...prev];
             });
-            
+
             // Close search
             setShowSearch(false);
             setSearchTerm('');
             setSearchResults([]);
-            
+
             // Select the conversation
             setActiveConversation(conversation.conversation_id);
             setMessages([]);
@@ -219,13 +293,13 @@ const Messages = ({ userId, userType }) => {
     // Handle block/unblock
     const handleToggleBlock = async () => {
         if (!activeConvDetails) return;
-        
-        const otherUserId = activeConvDetails.other_participant?.id || 
-                          (activeConvDetails.participant1_id === parseInt(userId) 
-                              ? activeConvDetails.participant2_id 
-                              : activeConvDetails.participant1_id);
+
+        const otherUserId = activeConvDetails.other_participant?.id ||
+            (activeConvDetails.participant1_id === parseInt(userId)
+                ? activeConvDetails.participant2_id
+                : activeConvDetails.participant1_id);
         const otherUserType = activeConvDetails.other_participant_type;
-        
+
         try {
             if (blockedByMe) {
                 await unblockUser(userId, userType, otherUserId, otherUserType);
@@ -246,12 +320,12 @@ const Messages = ({ userId, userType }) => {
     // Handle delete conversation
     const handleDeleteConversation = async () => {
         if (!activeConversation) return;
-        
+
         if (!confirm('هل أنت متأكد من حذف هذه المحادثة؟')) return;
-        
+
         try {
             await deleteConversation(activeConversation, userId, userType);
-            
+
             // Remove from local state
             setConversations(prev => prev.filter(c => c.conversation_id !== activeConversation));
             setActiveConversation(null);
@@ -292,7 +366,7 @@ const Messages = ({ userId, userType }) => {
         <div className="flex h-[calc(100vh-4rem)] w-full bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
             {/* Sidebar Overlay for mobile */}
             {isSidebarOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
@@ -304,8 +378,8 @@ const Messages = ({ userId, userType }) => {
                 bg-white dark:bg-gray-800 
                 flex flex-col shadow-2xl lg:shadow-none
                 transition-all duration-300 ease-in-out
-                ${isSidebarOpen 
-                    ? 'w-80 lg:w-96 translate-x-0 border-l border-gray-200 dark:border-gray-700' 
+                ${isSidebarOpen
+                    ? 'w-80 lg:w-96 translate-x-0 border-l border-gray-200 dark:border-gray-700'
                     : 'w-0 translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden border-0'
                 }
             `}>
@@ -380,11 +454,10 @@ const Messages = ({ userId, userType }) => {
                                         <div className="flex-1 min-w-0">
                                             <p className="font-medium text-gray-900 dark:text-white text-sm">{user.full_name}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
-                                                <span className={`text-xs px-2 py-0.5 rounded ${
-                                                    user.role === 'lawyer' 
-                                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' 
-                                                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                }`}>
+                                                <span className={`text-xs px-2 py-0.5 rounded ${user.role === 'lawyer'
+                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    }`}>
                                                     {user.role === 'lawyer' ? 'محامي' : 'عميل'}
                                                 </span>
                                                 {user.city && <span className="text-xs text-gray-500">{user.city}</span>}
@@ -419,11 +492,10 @@ const Messages = ({ userId, userType }) => {
                                         setIsSidebarOpen(false);
                                     }
                                 }}
-                                className={`p-4 cursor-pointer transition-all border-b border-gray-100 dark:border-gray-700 ${
-                                    activeConversation === conv.conversation_id
-                                        ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-r-blue-600'
-                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                                }`}
+                                className={`p-4 cursor-pointer transition-all border-b border-gray-100 dark:border-gray-700 ${activeConversation === conv.conversation_id
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-r-blue-600'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                    }`}
                             >
                                 <div className="flex items-center gap-3">
                                     {conv.other_participant?.profile_image_url ? (
@@ -519,8 +591,8 @@ const Messages = ({ userId, userType }) => {
                                         <p className="text-sm text-blue-500 dark:text-blue-400 flex items-center gap-1.5">
                                             <span className="flex gap-1 items-center">
                                                 <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce"></span>
-                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></span>
-                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
                                             </span>
                                             يكتب الآن
                                         </p>
@@ -532,19 +604,19 @@ const Messages = ({ userId, userType }) => {
                                 </div>
                             </div>
                             <div className="relative flex items-center gap-1">
-                                <button 
+                                <button
                                     onClick={() => setShowOptionsMenu(!showOptionsMenu)}
                                     className="p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                 >
                                     <MoreVertical size={20} />
                                 </button>
-                                
+
                                 {/* Dropdown Menu */}
                                 {showOptionsMenu && (
                                     <>
                                         {/* Overlay to close menu */}
-                                        <div 
-                                            className="fixed inset-0 z-40" 
+                                        <div
+                                            className="fixed inset-0 z-40"
                                             onClick={() => setShowOptionsMenu(false)}
                                         />
                                         <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
@@ -587,17 +659,15 @@ const Messages = ({ userId, userType }) => {
                                                 className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
                                             >
                                                 <div
-                                                    className={`max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm ${
-                                                        isSender
-                                                            ? 'bg-blue-600 text-white rounded-br-sm'
-                                                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'
-                                                    }`}
+                                                    className={`max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm ${isSender
+                                                        ? 'bg-blue-600 text-white rounded-br-sm'
+                                                        : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'
+                                                        }`}
                                                 >
                                                     <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                                                     <div
-                                                        className={`text-xs mt-1.5 flex items-center gap-1 justify-end ${
-                                                            isSender ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                                                        }`}
+                                                        className={`text-xs mt-1.5 flex items-center gap-1 justify-end ${isSender ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                                                            }`}
                                                     >
                                                         <span>{formatTime(message.created_at)}</span>
                                                         {isSender && (
@@ -621,7 +691,7 @@ const Messages = ({ userId, userType }) => {
                         {isBlocked ? (
                             <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800 text-center">
                                 <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                                    {blockedByMe 
+                                    {blockedByMe
                                         ? 'لا يمكن إرسال الرسائل. قم بإلغاء الحظر أولاً.'
                                         : 'لا يمكن إرسال الرسائل.'}
                                 </p>
@@ -669,7 +739,7 @@ const Messages = ({ userId, userType }) => {
                         >
                             <Menu size={24} />
                         </button>
-                        
+
                         <div className="text-center text-gray-400 dark:text-gray-500 px-4">
                             <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                                 <MessageCircle size={64} className="text-blue-500 dark:text-blue-400 opacity-60" />

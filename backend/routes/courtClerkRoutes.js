@@ -1853,17 +1853,32 @@ router.get("/cases", verifyCourtClerk, async (req, res) => {
 
         const courtIds = clerkCourts?.map(c => c.court_id) || [];
 
-        // First get case_ids from filings for this clerk's courts
-        let caseIdsQuery = supabase
+        // First get case_ids AND filing_ids from filings for this clerk's courts
+        let filingsQuery = supabase
             .from("court_clerk_filings")
-            .select("case_id");
+            .select("case_id, filing_id, filing_number, filing_status, court_name, city");
 
         if (courtIds.length > 0) {
-            caseIdsQuery = caseIdsQuery.in("court_id", courtIds);
+            filingsQuery = filingsQuery.in("court_id", courtIds);
         }
 
-        const { data: filings } = await caseIdsQuery;
-        const caseIds = [...new Set(filings?.map(f => f.case_id).filter(Boolean) || [])];
+        const { data: allFilings } = await filingsQuery;
+
+        // Create a map of case_id -> filing data
+        const filingsByCase = {};
+        allFilings?.forEach(f => {
+            if (f.case_id) {
+                filingsByCase[f.case_id] = {
+                    filing_id: f.filing_id,
+                    filing_number: f.filing_number,
+                    filing_status: f.filing_status,
+                    court_name: f.court_name,
+                    city: f.city
+                };
+            }
+        });
+
+        const caseIds = Object.keys(filingsByCase);
 
         // If no cases found and clerk has courts, return empty
         if (courtIds.length > 0 && caseIds.length === 0) {
@@ -1899,9 +1914,19 @@ router.get("/cases", verifyCourtClerk, async (req, res) => {
 
         if (error) throw error;
 
+        // Add filing data to each case
+        const casesWithFiling = cases.map(c => ({
+            ...c,
+            filing_id: filingsByCase[c.case_id]?.filing_id || null,
+            filing_number: filingsByCase[c.case_id]?.filing_number || null,
+            filing_status: filingsByCase[c.case_id]?.filing_status || null,
+            court_name: filingsByCase[c.case_id]?.court_name || c.court_name || null,
+            city: filingsByCase[c.case_id]?.city || null
+        }));
+
         res.json({
             success: true,
-            data: cases
+            data: casesWithFiling
         });
 
     } catch (error) {

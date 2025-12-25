@@ -52,8 +52,7 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
     {
       title: 'تقديم دعوى جديدة',
       icon: FilePlus,
-      path: 'file-case',
-      highlight: true
+      path: 'file-case'
     },
     {
       title: 'التقويم',
@@ -103,7 +102,7 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
          path: 'ai-assistant'
        },    */
     {
-      title: 'الذكاء القانوني',
+      title: 'المساعد القانوني',
       icon: Bot,
       path: 'justice-ai'
     },
@@ -220,24 +219,16 @@ const LawyerSidebar = ({ isOpen, onClose }) => {
                     className={`flex items-center space-x-3 space-x-reverse px-3 py-3 rounded-lg transition-all duration-200 group ${active
                       ? 'bg-gradient-to-l from-green-600 to-green-500 text-white shadow-lg'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      } ${item.highlight ? 'ring-2 ring-green-200 dark:ring-green-800' : ''}`}
+                      }`}
                     title={collapsed ? item.title : ''}
                   >
                     <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400'
                       }`} />
 
                     {!collapsed && (
-                      <>
-                        <span className={`font-medium ${active ? 'text-white' : ''}`}>
-                          {item.title}
-                        </span>
-
-                        {item.highlight && (
-                          <span className="ml-auto bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 text-xs px-2 py-1 rounded-full font-semibold">
-                            جديد
-                          </span>
-                        )}
-                      </>
+                      <span className={`font-medium ${active ? 'text-white' : ''}`}>
+                        {item.title}
+                      </span>
                     )}
                   </Link>
                 );

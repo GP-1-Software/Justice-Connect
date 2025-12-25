@@ -235,27 +235,33 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                     <div className="flex items-center justify-between h-16">
 
                         {/* Logo & Title */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Hamburger Menu Button */}
                             <button
                                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                                className="lg:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition active:scale-95"
                             >
-                                {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+                                {showMobileMenu ? (
+                                    <X size={22} className="text-gray-700 dark:text-gray-200" />
+                                ) : (
+                                    <Menu size={22} className="text-gray-700 dark:text-gray-200" />
+                                )}
                             </button>
 
+                            {/* Logo and Title */}
                             <div className="flex items-center gap-2">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                                    <Gavel className="w-6 h-6 text-white" />
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                    <Gavel className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
-                                <div className="hidden sm:block">
-                                    <h1 className="text-lg font-bold text-gray-900 dark:text-white">قلم المحكمة</h1>
+                                <div>
+                                    <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">قلم المحكمة</h1>
                                     {assignedCourt ? (
-                                        <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                            <Building2 size={12} />
-                                            {assignedCourt.court_name}
+                                        <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                            <Building2 size={10} className="sm:w-3 sm:h-3 flex-shrink-0" />
+                                            <span className="truncate max-w-[100px] sm:max-w-none">{assignedCourt.court_name}</span>
                                         </p>
                                     ) : (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">نظام إدارة القضايا</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">نظام إدارة القضايا</p>
                                     )}
                                 </div>
                             </div>

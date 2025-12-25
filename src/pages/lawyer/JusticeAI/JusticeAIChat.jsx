@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Copy, Check, Trash2, Bot, Mic, MessageSquare, Pencil } from "lucide-react";
+import { Copy, Check, Trash2, Bot, Mic, MessageSquare, Pencil, Paperclip, Loader2, FileText, X } from "lucide-react";
 import { deleteConversation } from "../../../services/aiChatStorage.js";
 import { useLawyerAuth } from "../../../hooks/useLawyerAuth.jsx";
 import { useTheme } from "../../../context/ThemeContext.jsx";
@@ -26,8 +26,10 @@ export default function JusticeAIChat() {
     const [showPanel, setShowPanel] = useState(false);
     const [conversations, setConversations] = useState([]);
     const [panelLoading, setPanelLoading] = useState(false);
+    const [pendingFile, setPendingFile] = useState(null); // File waiting to be sent
 
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const getLocalKey = (id) => `justice_ai_lawyer_messages_${id || 'temp'}`;
 
@@ -296,6 +298,75 @@ export default function JusticeAIChat() {
         }
     };
 
+    // Handle PDF file selection (just store, don't send yet)
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== "application/pdf") {
+            alert("فقط ملفات PDF مسموحة");
+            return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+            alert("حجم الملف يجب أن يكون أقل من 20MB");
+            return;
+        }
+
+        setPendingFile(file);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const removePendingFile = () => setPendingFile(null);
+
+    // Send message with optional file
+    const sendMessageWithFile = async () => {
+        if ((!input.trim() && !pendingFile) || loading) return;
+
+        const question = input.trim() || "لخص هذا المستند القانوني بالتفصيل";
+        const file = pendingFile;
+
+        setInput("");
+        setPendingFile(null);
+
+        const userContent = file
+            ? `📄 ${file.name}${input.trim() ? `\n\n${input.trim()}` : ''}`
+            : input.trim();
+        const userMessage = { role: "user", content: userContent };
+        setMessages((prev) => [...prev, userMessage]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+        setLoading(true);
+
+        try {
+            let reply;
+            if (file) {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("question", question);
+                const res = await fetch("http://localhost:5000/api/document-analysis/analyze", { method: "POST", body: formData });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                reply = data.answer || "⚠️ لم أستطع تحليل المستند.";
+            } else {
+                const res = await fetch("http://localhost:5000/api/justice-chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: question }),
+                });
+                const data = await res.json();
+                reply = data.reply || "⚠️ لم أستطع توليد إجابة.";
+            }
+            await streamReply(reply);
+        } catch (err) {
+            setMessages((prev) => [
+                ...prev.slice(0, -1),
+                { role: "assistant", content: `⚠️ ${err.message || "حدث خطأ."}` },
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col h-full min-h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 -m-4 sm:-m-6 lg:-m-8" dir="rtl">
 
@@ -410,24 +481,53 @@ export default function JusticeAIChat() {
 
             {/* Input Area */}
             <div className="px-4 py-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-t dark:border-gray-700 rounded-t-3xl" dir="rtl">
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                />
+
+                {/* Pending File Indicator */}
+                {pendingFile && (
+                    <div className="max-w-4xl mx-auto flex items-center gap-2 mb-3 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <span className="flex-1 text-sm text-blue-700 dark:text-blue-300 truncate">
+                            {pendingFile.name}
+                        </span>
+                        <button
+                            onClick={removePendingFile}
+                            className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800 rounded text-blue-600 dark:text-blue-400"
+                            title="إزالة الملف"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
                 <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
                     <button
-                        disabled
-                        className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                        title="قريباً"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading}
+                        className={`p-3 rounded-full transition-colors disabled:opacity-50 ${pendingFile
+                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
+                            }`}
+                        title="رفع ملف PDF للتحليل"
                     >
-                        <Mic className="h-5 w-5" />
+                        <Paperclip className="h-5 w-5" />
                     </button>
                     <input
                         className="flex-1 px-4 py-3 sm:px-5 sm:py-3.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                        placeholder="اكتب سؤالك القانوني…"
+                        placeholder={pendingFile ? "اكتب سؤالك عن الملف أو اضغط إرسال..." : "اكتب سؤالك القانوني…"}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                        onKeyDown={(e) => e.key === "Enter" && sendMessageWithFile()}
                     />
                     <button
-                        onClick={sendMessage}
-                        disabled={loading}
+                        onClick={sendMessageWithFile}
+                        disabled={loading || (!input.trim() && !pendingFile)}
                         className="px-5 sm:px-6 py-3 bg-gradient-to-l from-blue-600 to-blue-700 text-white rounded-full shadow hover:from-blue-700 hover:to-blue-800 disabled:opacity-50"
                     >
                         إرسال
