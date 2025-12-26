@@ -225,6 +225,9 @@ lawyer_id,integer,PK,,NOT NULL
 ,certificate_verification_status,text,,,NULL
 ,id_card_url,text,,,NULL
 ,id_card_verification_status,text,,,NULL
+total_ratings_sum INTEGER DEFAULT 0;
+ratings_count INTEGER DEFAULT 0;
+
 
 meetings:
 meeting_id,uuid,PK,,NOT NULL

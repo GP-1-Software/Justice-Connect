@@ -89,15 +89,22 @@ ${data.content}
 
         // 6. بناء الـ prompt وتوليد الإجابة مع المصادر
         const prompt = buildPrompt(question, legalText, sources);
-        const answer = await generateAnswer(prompt);
+        const result = await generateAnswer(prompt);
 
         // 7. التأكد من وجود المصادر في الإجابة
-        const finalAnswer = ensureSourcesInAnswer(answer, sources);
-        return finalAnswer;
+        const finalAnswer = ensureSourcesInAnswer(result.answer, sources);
+
+        return {
+            reply: finalAnswer,
+            usage: result.usage
+        };
 
     } catch (error) {
         console.error("[runJusticeAI] خطأ:", error);
-        return "⚠️ حدث خطأ أثناء معالجة سؤالك. يرجى المحاولة مرة أخرى.";
+        return {
+            reply: "⚠️ حدث خطأ أثناء معالجة سؤالك. يرجى المحاولة مرة أخرى.",
+            usage: null
+        };
     }
 }
 
@@ -143,16 +150,24 @@ function classifyQuestion(question) {
 
 async function generateGeneralAnswer(question) {
     const prompt = buildPromptWithoutSources(question);
-    const answer = await generateAnswer(prompt);
+    const result = await generateAnswer(prompt);
 
     // التأكد من وجود المصادر الموصى بها
-    return ensureSourcesInAnswer(answer, []);
+    const finalAnswer = ensureSourcesInAnswer(result.answer, []);
+    return {
+        reply: finalAnswer,
+        usage: result.usage
+    };
 }
 
 async function generateAnswerWithoutSources(question) {
     const prompt = buildPromptWithoutSources(question);
-    const answer = await generateAnswer(prompt);
+    const result = await generateAnswer(prompt);
 
     // التأكد من وجود المصادر الموصى بها
-    return ensureSourcesInAnswer(answer, []);
+    const finalAnswer = ensureSourcesInAnswer(result.answer, []);
+    return {
+        reply: finalAnswer,
+        usage: result.usage
+    };
 }

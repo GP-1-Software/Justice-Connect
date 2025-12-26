@@ -40,7 +40,10 @@ export async function generateAnswer(prompt) {
             ],
         });
 
-        return response.choices[0].message.content;
+        return {
+            answer: response.choices[0].message.content,
+            usage: response.usage // { prompt_tokens, completion_tokens, total_tokens }
+        };
 
     } catch (error) {
         console.error("[generateAnswer] خطأ في OpenAI:", error.message);

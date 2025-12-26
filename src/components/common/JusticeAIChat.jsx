@@ -2,12 +2,20 @@ import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Check, Trash2, Bot, Mic, MessageSquare, Pencil, Paperclip, Loader2, FileText, X } from "lucide-react";
-import { deleteConversation } from "../../../services/aiChatStorage.js";
-import { useLawyerAuth } from "../../../hooks/useLawyerAuth.jsx";
-import { useTheme } from "../../../context/ThemeContext.jsx";
-import { createConversation, addMessage, getConversationMessages, listConversations, updateConversationTitle } from "../../../services/aiChatStorage.js";
+import { deleteConversation } from "../../services/aiChatStorage.js";
+import { useClientAuth } from "../../hooks/useClientAuth.jsx";
+import { useLawyerAuth } from "../../hooks/useLawyerAuth.jsx";
+import { useTheme } from "../../context/ThemeContext.jsx";
+import { createConversation, addMessage, getConversationMessages, listConversations, updateConversationTitle } from "../../services/aiChatStorage.js";
 
-export default function JusticeAIChat() {
+/**
+ * Unified JusticeAI Chat Component
+ * Supports both client and lawyer roles through conditional logic
+ * @param {string} userType - 'client' or 'lawyer'
+ */
+export default function JusticeAIChat({ userType = 'client' }) {
+    // Auth hooks - use appropriate hook based on userType
+    const { userProfile } = useClientAuth();
     const { lawyer } = useLawyerAuth();
 
     const { darkMode } = useTheme();
@@ -16,22 +24,35 @@ export default function JusticeAIChat() {
             role: "assistant",
             content: "مرحبًا 👋، أنا JusticeAI. كيف يمكنني مساعدتك قانونيًا اليوم؟",
         },
-    ])
+    ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    // Lawyer-specific conversation id key namespace
+
+    // Dynamic storage key based on userType
+    const storageKey = userType === 'lawyer' ? 'justice_ai_lawyer_conversation_id' : 'justice_ai_conversation_id';
+
     const [conversationId, setConversationId] = useState(() =>
-        typeof window !== 'undefined' ? localStorage.getItem('justice_ai_lawyer_conversation_id') : null
+        typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
     );
     const [showPanel, setShowPanel] = useState(false);
     const [conversations, setConversations] = useState([]);
     const [panelLoading, setPanelLoading] = useState(false);
     const [pendingFile, setPendingFile] = useState(null); // File waiting to be sent
+    const [tokenUsage, setTokenUsage] = useState(null); // Token usage from last AI response
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    const getLocalKey = (id) => `justice_ai_lawyer_messages_${id || 'temp'}`;
+    // Get user ID based on userType
+    const getUserId = () => {
+        if (userType === 'lawyer') {
+            return lawyer?.lawyer_id;
+        }
+        return userProfile?.user_id;
+    };
+
+    // Dynamic local storage key
+    const getLocalKey = (id) => `justice_ai_${userType}_messages_${id || 'temp'}`;
 
     // 🔽 Auto scroll when messages update
     useEffect(() => {
@@ -41,10 +62,10 @@ export default function JusticeAIChat() {
     // Try to restore conversation id (if was set elsewhere)
     useEffect(() => {
         if (!conversationId) {
-            const id = localStorage.getItem('justice_ai_lawyer_conversation_id');
+            const id = localStorage.getItem(storageKey);
             if (id) setConversationId(id);
         }
-    }, []);
+    }, [storageKey]);
 
     // Optimistic: restore cached messages from localStorage immediately
     useEffect(() => {
@@ -72,17 +93,16 @@ export default function JusticeAIChat() {
     useEffect(() => {
         const init = async () => {
             try {
-                if (!lawyer?.lawyer_id) return; // wait for auth
+                const userId = getUserId();
+                if (!userId) return; // wait for auth
 
                 // 1) الاستئناف عبر الأجهزة: جلب أحدث محادثة من Supabase (الأولوية الأعلى)
                 try {
-
-                    const conversations = await listConversations(lawyer.lawyer_id, "lawyer");
-
-                    if (conversations && conversations.length) {
-                        const latest = conversations[0];
+                    const convList = await listConversations(userId, userType === 'lawyer' ? 'lawyer' : undefined);
+                    if (convList && convList.length) {
+                        const latest = convList[0];
                         setConversationId(latest.id);
-                        localStorage.setItem("justice_ai_lawyer_conversation_id", latest.id);
+                        localStorage.setItem(storageKey, latest.id);
 
                         const existing = await getConversationMessages(latest.id);
                         if (existing && existing.length) {
@@ -102,7 +122,7 @@ export default function JusticeAIChat() {
                 }
 
                 // 2) fallback محلي: إن وُجد معرف محلي صالح برسائل، استخدمه (وضع عدم الاتصال)
-                const storedId = localStorage.getItem("justice_ai_lawyer_conversation_id");
+                const storedId = localStorage.getItem(storageKey);
                 if (storedId) {
                     setConversationId(storedId);
                     const existing = await getConversationMessages(storedId);
@@ -113,12 +133,14 @@ export default function JusticeAIChat() {
                     }
                 }
 
-
                 // Create new conversation and persist greeting
-                const conv = await createConversation({ lawyerUserId: lawyer.lawyer_id, title: "محادثة جديدة" });
+                const convData = userType === 'lawyer'
+                    ? { lawyerUserId: userId, title: "محادثة جديدة" }
+                    : { clientUserId: userId, title: "محادثة جديدة" };
 
+                const conv = await createConversation(convData);
                 setConversationId(conv.id);
-                localStorage.setItem("justice_ai_lawyer_conversation_id", conv.id);
+                localStorage.setItem(storageKey, conv.id);
 
                 // save greeting message
                 await addMessage(conv.id, { role: "assistant", content: messages[0].content });
@@ -129,15 +151,16 @@ export default function JusticeAIChat() {
         };
         init();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lawyer?.lawyer_id]);
+    }, [getUserId()]);
 
     // Load conversations list when panel opens
     useEffect(() => {
         const loadList = async () => {
-            if (!showPanel || !lawyer?.lawyer_id) return;
+            const userId = getUserId();
+            if (!showPanel || !userId) return;
             setPanelLoading(true);
             try {
-                const list = await listConversations(lawyer.lawyer_id, "lawyer");
+                const list = await listConversations(userId, userType === 'lawyer' ? 'lawyer' : undefined);
                 setConversations(list);
             } catch (e) {
                 console.warn('Failed to load conversations list', e?.message || e);
@@ -147,7 +170,7 @@ export default function JusticeAIChat() {
         };
         loadList();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showPanel, lawyer?.lawyer_id]);
+    }, [showPanel, getUserId()]);
 
     // Close panel with ESC
     useEffect(() => {
@@ -163,7 +186,7 @@ export default function JusticeAIChat() {
         try {
             const msgs = await getConversationMessages(id);
             setConversationId(id);
-            localStorage.setItem('justice_ai_lawyer_conversation_id', id);
+            localStorage.setItem(storageKey, id);
             const mapped = msgs.length ? msgs.map(m => ({ role: m.role, content: m.content })) : [{ role: 'assistant', content: messages[0].content }];
             setMessages(mapped);
             try { localStorage.setItem(getLocalKey(id), JSON.stringify(mapped)); } catch { }
@@ -174,21 +197,25 @@ export default function JusticeAIChat() {
     };
 
     const startNewConversation = async () => {
-        if (!lawyer?.lawyer_id) return;
+        const userId = getUserId();
+        if (!userId) return;
         try {
+            const convData = userType === 'lawyer'
+                ? { lawyerUserId: userId, title: 'محادثة جديدة' }
+                : { clientUserId: userId, title: 'محادثة جديدة' };
 
-            const conv = await createConversation({ lawyerUserId: lawyer.lawyer_id, title: 'محادثة جديدة' });
-
-
+            const conv = await createConversation(convData);
             setConversationId(conv.id);
-            localStorage.setItem('justice_ai_lawyer_conversation_id', conv.id);
+            localStorage.setItem(storageKey, conv.id);
             const greeting = { role: 'assistant', content: messages[0].content };
             setMessages([greeting]);
             await addMessage(conv.id, greeting);
             try { localStorage.setItem(getLocalKey(conv.id), JSON.stringify([greeting])); } catch { }
             // refresh list if panel open
             if (showPanel) {
-                try { setConversations(await listConversations(lawyer.lawyer_id, "lawyer")); } catch { }
+                try {
+                    setConversations(await listConversations(userId, userType === 'lawyer' ? 'lawyer' : undefined));
+                } catch { }
             }
         } catch (e) {
             console.warn('Create new conversation failed', e?.message || e);
@@ -204,7 +231,8 @@ export default function JusticeAIChat() {
             try { localStorage.removeItem(getLocalKey(id)); } catch { }
 
             // Refresh list
-            const updatedList = await listConversations(lawyer.lawyer_id, "lawyer");
+            const userId = getUserId();
+            const updatedList = await listConversations(userId, userType === 'lawyer' ? 'lawyer' : undefined);
             setConversations(updatedList);
 
             // If deleted current conversation, start new one
@@ -254,8 +282,11 @@ export default function JusticeAIChat() {
             if (conversationId && conversations.find(c => c.id === conversationId)?.title === 'محادثة جديدة') {
                 await updateConversationTitle(conversationId, userMessage.content.slice(0, 50));
                 // Refresh list silently
-                if (showPanel && lawyer?.lawyer_id) {
-                    try { setConversations(await listConversations(lawyer.lawyer_id, "lawyer")); } catch { }
+                const userId = getUserId();
+                if (showPanel && userId) {
+                    try {
+                        setConversations(await listConversations(userId, userType === 'lawyer' ? 'lawyer' : undefined));
+                    } catch { }
                 }
             }
         } catch { }
@@ -282,6 +313,16 @@ export default function JusticeAIChat() {
 
             const data = await res.json();
             const reply = data.reply || "⚠️ لم أستطع توليد إجابة.";
+
+            // Log token usage to console
+            if (data.usage) {
+                console.log('==================================================');
+                console.log('🔢 Token Usage:');
+                console.log(`  Total Tokens: ${data.usage.total_tokens}`);
+                console.log(`  📤 Prompt Tokens: ${data.usage.prompt_tokens}`);
+                console.log(`  📥 Completion Tokens: ${data.usage.completion_tokens}`);
+                console.log('==================================================');
+            }
 
             // Streaming reply
             await streamReply(reply);
@@ -334,6 +375,28 @@ export default function JusticeAIChat() {
             : input.trim();
         const userMessage = { role: "user", content: userContent };
         setMessages((prev) => [...prev, userMessage]);
+
+        // Auto title if still default
+        try {
+            if (conversationId && conversations.find(c => c.id === conversationId)?.title === 'محادثة جديدة') {
+                await updateConversationTitle(conversationId, userContent.slice(0, 50));
+                // Refresh list silently
+                const userId = getUserId();
+                if (showPanel && userId) {
+                    try {
+                        setConversations(await listConversations(userId, userType === 'lawyer' ? 'lawyer' : undefined));
+                    } catch { }
+                }
+            }
+        } catch { }
+
+        // persist user message
+        try {
+            if (conversationId) {
+                await addMessage(conversationId, userMessage);
+            }
+        } catch { }
+
         setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
         setLoading(true);
 
@@ -355,6 +418,16 @@ export default function JusticeAIChat() {
                 });
                 const data = await res.json();
                 reply = data.reply || "⚠️ لم أستطع توليد إجابة.";
+
+                // Log token usage to console
+                if (data.usage) {
+                    console.log('==================================================');
+                    console.log('🔢 Token Usage:');
+                    console.log(`  Total Tokens: ${data.usage.total_tokens}`);
+                    console.log(`  📤 Prompt Tokens: ${data.usage.prompt_tokens}`);
+                    console.log(`  📥 Completion Tokens: ${data.usage.completion_tokens}`);
+                    console.log('==================================================');
+                }
             }
             await streamReply(reply);
         } catch (err) {
@@ -481,6 +554,7 @@ export default function JusticeAIChat() {
 
             {/* Input Area */}
             <div className="px-4 py-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-t dark:border-gray-700 rounded-t-3xl" dir="rtl">
+                {/* Hidden file input */}
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -507,12 +581,13 @@ export default function JusticeAIChat() {
                 )}
 
                 <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
+                    {/* PDF Upload Button */}
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={loading}
                         className={`p-3 rounded-full transition-colors disabled:opacity-50 ${pendingFile
-                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
+                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                            : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
                             }`}
                         title="رفع ملف PDF للتحليل"
                     >
@@ -582,17 +657,19 @@ function MessageBubble({ role, content }) {
 
             {/* Message */}
             <div
-                className={`relative max-w-[75%] p-4 sm:p-5 rounded-3xl leading-8 shadow whitespace-pre-wrap break-words text-right select-text ${isUser ? "bg-gradient-to-l from-blue-400 to-blue-500 text-white shadow-blue-200/40" : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-md"
+                className={`relative max-w-[75%] p-4 sm:p-5 rounded-3xl leading-relaxed shadow whitespace-pre-wrap break-words text-right select-text ${isUser ? "bg-gradient-to-l from-blue-400 to-blue-500 text-white shadow-blue-200/40" : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-md"
                     }`}
             >
-                <button
-                    onClick={handleCopy}
-                    className={`absolute top-2 ${isUser ? 'left-2' : 'right-2'} z-10 ${isUser ? 'text-white/90 hover:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'} transition`}
-                    aria-label="نسخ"
-                    title={copied ? 'تم النسخ' : 'نسخ'}
-                >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </button>
+                {!isUser && (
+                    <button
+                        onClick={handleCopy}
+                        className={`absolute top-2 right-2 z-10 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition`}
+                        aria-label="نسخ"
+                        title={copied ? 'تم النسخ' : 'نسخ'}
+                    >
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                )}
                 {isUser ? (
                     <span className="font-medium">{content}</span>
                 ) : (
@@ -600,7 +677,7 @@ function MessageBubble({ role, content }) {
                         remarkPlugins={[remarkGfm]}
                         components={{
                             p: ({ node, ...props }) => (
-                                <p className="mb-2 leading-8" {...props} />
+                                <p className="mb-2 leading-relaxed" {...props} />
                             ),
                             ul: ({ node, ...props }) => (
                                 <ul className="list-disc pr-6 space-y-1" {...props} />
@@ -609,7 +686,7 @@ function MessageBubble({ role, content }) {
                                 <ol className="list-decimal pr-6 space-y-1" {...props} />
                             ),
                             li: ({ node, ...props }) => (
-                                <li className="leading-8" {...props} />
+                                <li className="leading-relaxed" {...props} />
                             ),
                             strong: ({ node, ...props }) => (
                                 <strong className="font-bold" {...props} />

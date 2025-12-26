@@ -67,7 +67,7 @@ export const formatSpecialization = (specialization, separator = ' • ') => {
  */
 export const formatCurrency = (amount, currency = '₪') => {
   if (!amount && amount !== 0) return '';
-  
+
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   return `${numAmount.toLocaleString()} ${currency}`;
 };
@@ -79,16 +79,16 @@ export const formatCurrency = (amount, currency = '₪') => {
  */
 export const formatPhoneNumber = (phone) => {
   if (!phone) return '';
-  
+
   // Remove all non-digit characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // Format based on length
   if (cleaned.length === 10) {
     // Format: (0XX) XXX-XXXX
     return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
   }
-  
+
   return phone;
 };
 
@@ -100,9 +100,9 @@ export const formatPhoneNumber = (phone) => {
  */
 export const formatDate = (date, locale = 'ar-EG') => {
   if (!date) return '';
-  
+
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   return dateObj.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
@@ -118,16 +118,16 @@ export const formatDate = (date, locale = 'ar-EG') => {
  */
 export const formatTime = (time, use24Hour = false) => {
   if (!time) return '';
-  
+
   const [hour, minute] = time.split(':').map(Number);
-  
+
   if (use24Hour) {
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
-  
+
   const period = hour >= 12 ? 'م' : 'ص';
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  
+
   return `${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
 };
 
@@ -140,7 +140,7 @@ export const formatTime = (time, use24Hour = false) => {
  */
 export const truncateText = (text, maxLength = 100, suffix = '...') => {
   if (!text || text.length <= maxLength) return text || '';
-  
+
   return text.slice(0, maxLength).trim() + suffix;
 };
 
@@ -192,6 +192,6 @@ export const getStatusColor = (status) => {
       border: 'border-gray-200 dark:border-gray-800'
     }
   };
-  
+
   return statusColors[status] || statusColors.pending;
 };

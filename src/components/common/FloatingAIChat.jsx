@@ -59,6 +59,7 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
     ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const [tokenUsage, setTokenUsage] = useState(null); // Token usage from last AI response
     const [loadingConversations, setLoadingConversations] = useState(false);
     const [pendingFile, setPendingFile] = useState(null); // File waiting to be sent
     const messagesEndRef = useRef(null);
@@ -294,6 +295,16 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
             const data = await res.json();
             const reply = data.reply || "⚠️ لم أستطع توليد إجابة.";
 
+            // Log token usage to console
+            if (data.usage) {
+                console.log('==================================================');
+                console.log('🔢 Token Usage:');
+                console.log(`  Total Tokens: ${data.usage.total_tokens}`);
+                console.log(`  📤 Prompt Tokens: ${data.usage.prompt_tokens}`);
+                console.log(`  📥 Completion Tokens: ${data.usage.completion_tokens}`);
+                console.log('==================================================');
+            }
+
             // Streaming reply
             await streamReply(reply, activeConvId);
         } catch (err) {
@@ -358,6 +369,24 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
         const userMessage = { role: "user", content: userContent };
         setMessages((prev) => [...prev, userMessage]);
 
+        // Auto title if still default
+        try {
+            if (conversationId && conversations.find(c => c.id === conversationId)?.title === 'محادثة جديدة') {
+                await updateConversationTitle(conversationId, userContent.slice(0, 50));
+                // Refresh list silently
+                if (showConversations) {
+                    try { setConversations(await listConversations(getUserId(), userType === 'lawyer' ? 'lawyer' : undefined)); } catch { }
+                }
+            }
+        } catch { }
+
+        // persist user message
+        try {
+            if (conversationId) {
+                await addMessage(conversationId, userMessage);
+            }
+        } catch { }
+
         // Add temporary loading message
         setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
         setLoading(true);
@@ -389,6 +418,16 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
 
                 const data = await res.json();
                 reply = data.reply || "⚠️ لم أستطع توليد إجابة.";
+
+                // Log token usage to console
+                if (data.usage) {
+                    console.log('==================================================');
+                    console.log('🔢 Token Usage:');
+                    console.log(`  Total Tokens: ${data.usage.total_tokens}`);
+                    console.log(`  📤 Prompt Tokens: ${data.usage.prompt_tokens}`);
+                    console.log(`  📥 Completion Tokens: ${data.usage.completion_tokens}`);
+                    console.log('==================================================');
+                }
             }
 
             await streamReply(reply, conversationId);
@@ -561,7 +600,7 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
                     )}
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900 scrollbar-thin">
                         {messages.map((msg, idx) => (
                             <ChatBubble key={idx} role={msg.role} content={msg.content} />
                         ))}

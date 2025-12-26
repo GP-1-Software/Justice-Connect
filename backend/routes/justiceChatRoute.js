@@ -12,9 +12,9 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "message field is required" });
         }
 
-        const reply = await runJusticeAI(message, authHeader);
+        const result = await runJusticeAI(message, authHeader);
 
-        res.json({ reply });
+        res.json(result); // { reply, usage }
     } catch (err) {
         console.error("JusticeAI Error:", err);
         res.status(500).json({ error: "حدث خطأ أثناء توليد الرد القانوني." });

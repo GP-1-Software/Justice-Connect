@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../../hooks/useLawyerAuth';
 import { supabase } from '../../../supabaseClient';
-import { Briefcase, Calendar as CalendarIcon, FileText, Coins } from 'lucide-react';
+import { Briefcase, Calendar as CalendarIcon, FileText, Coins, Star } from 'lucide-react';
 import WelcomeBanner from './components/WelcomeBanner';
 import StatsCard from './components/StatsCard';
 import QuickActions from './components/QuickActions';
@@ -13,7 +13,9 @@ const Dashboard = () => {
     totalCases: 0,
     activeCases: 0,
     upcomingAppointments: 0,
-    completedCases: 0
+    completedCases: 0,
+    averageRating: 0,
+    ratingsCount: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -52,17 +54,24 @@ const Dashboard = () => {
           .eq('status', 'completed');
 
         if (mounted) {
+          // Calculate average rating
+          const avgRating = lawyer.ratings_count > 0
+            ? (lawyer.total_ratings_sum / lawyer.ratings_count).toFixed(1)
+            : 0;
+
           setStats({
             totalCases: totalCases || 0,
             activeCases: activeCases || 0,
             upcomingAppointments: upcomingAppointments || 0,
-            completedCases: completedCases || 0
+            completedCases: completedCases || 0,
+            averageRating: avgRating,
+            ratingsCount: lawyer.ratings_count || 0
           });
         }
       } catch (error) {
         console.warn('Dashboard stats error:', error.message);
         if (mounted) {
-          setStats({ totalCases: 0, activeCases: 0, upcomingAppointments: 0, completedCases: 0 });
+          setStats({ totalCases: 0, activeCases: 0, upcomingAppointments: 0, completedCases: 0, averageRating: 0, ratingsCount: 0 });
         }
       } finally {
         if (mounted) setLoading(false);
@@ -111,6 +120,37 @@ const Dashboard = () => {
           iconColor="text-orange-600"
           loading={loading}
         />
+      </div>
+
+      {/* Rating Card - Compact */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+              <Star className="w-5 h-5 text-yellow-600 fill-yellow-500" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">تقييمك</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-4 h-4 ${star <= Math.round(stats.averageRating)
+                    ? 'text-yellow-500 fill-yellow-500'
+                    : 'text-gray-300 dark:text-gray-600'
+                    }`}
+                />
+              ))}
+            </div>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">
+              {stats.averageRating || '-'}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              ({stats.ratingsCount} تقييم)
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
