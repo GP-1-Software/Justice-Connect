@@ -65,13 +65,26 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Invalid password" });
         }
 
-        // 3. Return success with available roles
+        // 3. Check if user is banned
+        if (user.account_status === 'banned') {
+            return res.status(403).json({
+                error: "تم تعليق حسابك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
+                banned: true,
+                ban_reason: user.ban_reason || null
+            });
+        }
+
+        // 4. Return success with available roles
+        // For admins, use the actual role from admins table (could be 'admin' or 'super_admin')
+        const actualRole = (validRole === 'admin' && user.role) ? user.role : validRole;
+
         res.json({
             success: true,
             roles: roles.map(r => r.role),
             user: {
                 ...user,
-                user_type: validRole // The role that matched credentials
+                user_type: validRole, // The role that matched credentials
+                role: actualRole // Actual role (super_admin or admin)
             }
         });
 

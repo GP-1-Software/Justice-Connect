@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar, UserPlus } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar, UserPlus, Scale, Building2, Plus, Edit, X, Search } from 'lucide-react';
 import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
 import { getAllTicketsForAdmin, updateTicketStatus, addReplyToTicket } from '../services/supportApi';
 import { notifyDeletionRequestApproved, notifyDeletionRequestRejected } from '../services/notificationService';
@@ -10,11 +10,11 @@ import { toast } from 'react-hot-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [mainTab, setMainTab] = useState('users'); // 'users', 'lawyers', 'admins', 'super_admins', 'deletion_requests'
+  const [mainTab, setMainTab] = useState('users'); // 'users', 'lawyers', 'admins', 'super_admins', 'deletion_requests', 'court_clerks', 'courts'
   const [userStatusTab, setUserStatusTab] = useState('pending'); // 'pending', 'approved', 'rejected'
   const [displayData, setDisplayData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusCounts, setStatusCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
+  const [statusCounts, setStatusCounts] = useState({ pending: 0, approved: 0, rejected: 0, banned: 0 });
   const [selectedUser, setSelectedUser] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState(null);
@@ -34,6 +34,25 @@ const AdminDashboard = () => {
   // Role Assignment State
   const [showAssignRoleModal, setShowAssignRoleModal] = useState(false);
   const [assignRoleData, setAssignRoleData] = useState({ idNumber: '', role: 'lawyer' });
+
+  // Court Clerks state
+  const [courtClerks, setCourtClerks] = useState([]);
+  const [courts, setCourts] = useState([]);
+  const [showAddClerkModal, setShowAddClerkModal] = useState(false);
+  const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+  const [showEditCourtModal, setShowEditCourtModal] = useState(false);
+  const [selectedCourt, setSelectedCourt] = useState(null);
+  const [newClerkData, setNewClerkData] = useState({ idNumber: '', courtId: '' });
+  const [newCourtData, setNewCourtData] = useState({ court_name: '', court_type: '', city: '', is_active: true });
+  const [approvedUsers, setApprovedUsers] = useState([]);
+
+  // Ban/Suspend State
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [userToBan, setUserToBan] = useState(null);
+  const [banReason, setBanReason] = useState('');
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleAssignRole = async (e) => {
     e.preventDefault();
@@ -83,6 +102,8 @@ const AdminDashboard = () => {
     }
 
     setCurrentAdmin(userData);
+    console.log('🔍 Current Admin:', userData); // Debug
+    console.log('🔍 Admin Role:', userData.role); // Debug
     fetchData();
 
     // Fetch deletion requests if on that tab
@@ -90,6 +111,12 @@ const AdminDashboard = () => {
       fetchDeletionRequests();
     } else if (mainTab === 'support_tickets') {
       fetchSupportTickets();
+    } else if (mainTab === 'court_clerks') {
+      fetchCourtClerks();
+      fetchCourts();
+      fetchApprovedUsers();
+    } else if (mainTab === 'courts') {
+      fetchCourts();
     }
   }, [navigate, mainTab, userStatusTab]);
 
@@ -119,24 +146,31 @@ const AdminDashboard = () => {
           .from(table)
           .select('*', { count: 'exact', head: true })
           .eq('account_status', 'rejected');
+        const countBanned = supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq('account_status', 'banned');
 
-        const [listRes, pendRes, apprRes, rejRes] = await Promise.all([
+        const [listRes, pendRes, apprRes, rejRes, banRes] = await Promise.all([
           listPromise,
           countPending,
           countApproved,
-          countRejected
+          countRejected,
+          countBanned
         ]);
 
         if (listRes.error) throw listRes.error;
         if (pendRes.error) throw pendRes.error;
         if (apprRes.error) throw apprRes.error;
         if (rejRes.error) throw rejRes.error;
+        if (banRes.error) throw banRes.error;
 
         setDisplayData(listRes.data || []);
         setStatusCounts({
           pending: pendRes.count || 0,
           approved: apprRes.count || 0,
-          rejected: rejRes.count || 0
+          rejected: rejRes.count || 0,
+          banned: banRes.count || 0
         });
       } else if (mainTab === 'admins') {
         const { data, error } = await supabase
@@ -162,6 +196,238 @@ const AdminDashboard = () => {
       alert('حدث خطأ أثناء جلب البيانات');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Court Clerks Functions
+  const fetchCourtClerks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('court_clerks')
+        .select(`
+          *,
+          users:user_id (user_id, first_name, last_name, email, phone, id_number),
+          courts:court_id (court_id, court_name, court_type, city)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCourtClerks(data || []);
+    } catch (error) {
+      console.error('Error fetching court clerks:', error);
+    }
+  };
+
+  const fetchCourts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courts')
+        .select('*')
+        .order('court_name', { ascending: true });
+
+      if (error) throw error;
+      setCourts(data || []);
+    } catch (error) {
+      console.error('Error fetching courts:', error);
+    }
+  };
+
+  const fetchApprovedUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('user_id, first_name, last_name, id_number, email')
+        .eq('account_status', 'approved')
+        .order('first_name', { ascending: true });
+
+      if (error) throw error;
+      setApprovedUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching approved users:', error);
+    }
+  };
+
+  const handleAddCourtClerk = async () => {
+    if (!newClerkData.idNumber || !newClerkData.courtId) {
+      toast.error('يرجى إدخال جميع البيانات المطلوبة');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      // Find user by id_number
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('id_number', newClerkData.idNumber)
+        .single();
+
+      if (userError || !userData) {
+        toast.error('المستخدم غير موجود');
+        setProcessing(false);
+        return;
+      }
+
+      // Check if already a court clerk
+      const { data: existingClerk } = await supabase
+        .from('court_clerks')
+        .select('clerk_id')
+        .eq('user_id', userData.user_id)
+        .single();
+
+      if (existingClerk) {
+        toast.error('هذا المستخدم مسجل كموظف قلم محكمة بالفعل');
+        setProcessing(false);
+        return;
+      }
+
+      // Insert into court_clerks
+      const { error: insertError } = await supabase
+        .from('court_clerks')
+        .insert({
+          user_id: userData.user_id,
+          court_id: parseInt(newClerkData.courtId),
+          is_active: true
+        });
+
+      if (insertError) throw insertError;
+
+      // Add role to user_roles
+      await supabase
+        .from('user_roles')
+        .insert({
+          id_number: newClerkData.idNumber,
+          role: 'court_clerk'
+        });
+
+      // Update user's user_type
+      await supabase
+        .from('users')
+        .update({ user_type: 'court_clerk' })
+        .eq('user_id', userData.user_id);
+
+      toast.success('تم إضافة موظف قلم المحكمة بنجاح');
+      setShowAddClerkModal(false);
+      setNewClerkData({ idNumber: '', courtId: '' });
+      fetchCourtClerks();
+    } catch (error) {
+      console.error('Error adding court clerk:', error);
+      toast.error('حدث خطأ أثناء إضافة الموظف');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRemoveCourtClerk = async (clerkId, userId, idNumber) => {
+    if (!window.confirm('هل أنت متأكد من إزالة هذا الموظف من قلم المحكمة؟')) {
+      return;
+    }
+
+    try {
+      // Delete from court_clerks
+      const { error } = await supabase
+        .from('court_clerks')
+        .delete()
+        .eq('clerk_id', clerkId);
+
+      if (error) throw error;
+
+      // Remove role from user_roles
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('id_number', idNumber)
+        .eq('role', 'court_clerk');
+
+      // Update user's user_type back to client
+      await supabase
+        .from('users')
+        .update({ user_type: 'client' })
+        .eq('user_id', userId);
+
+      toast.success('تم إزالة الموظف بنجاح');
+      fetchCourtClerks();
+    } catch (error) {
+      console.error('Error removing court clerk:', error);
+      toast.error('حدث خطأ أثناء إزالة الموظف');
+    }
+  };
+
+  const handleAddCourt = async () => {
+    if (!newCourtData.court_name || !newCourtData.court_type || !newCourtData.city) {
+      toast.error('يرجى إدخال جميع البيانات المطلوبة');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('courts')
+        .insert({
+          court_name: newCourtData.court_name,
+          court_type: newCourtData.court_type,
+          city: newCourtData.city,
+          is_active: newCourtData.is_active
+        });
+
+      if (error) throw error;
+
+      toast.success('تم إضافة المحكمة بنجاح');
+      setShowAddCourtModal(false);
+      setNewCourtData({ court_name: '', court_type: '', city: '', is_active: true });
+      fetchCourts();
+    } catch (error) {
+      console.error('Error adding court:', error);
+      toast.error('حدث خطأ أثناء إضافة المحكمة');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleUpdateCourt = async () => {
+    if (!selectedCourt) return;
+
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('courts')
+        .update({
+          court_name: newCourtData.court_name,
+          court_type: newCourtData.court_type,
+          city: newCourtData.city,
+          is_active: newCourtData.is_active
+        })
+        .eq('court_id', selectedCourt.court_id);
+
+      if (error) throw error;
+
+      toast.success('تم تحديث المحكمة بنجاح');
+      setShowEditCourtModal(false);
+      setSelectedCourt(null);
+      setNewCourtData({ court_name: '', court_type: '', city: '', is_active: true });
+      fetchCourts();
+    } catch (error) {
+      console.error('Error updating court:', error);
+      toast.error('حدث خطأ أثناء تحديث المحكمة');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleToggleCourtStatus = async (court) => {
+    try {
+      const { error } = await supabase
+        .from('courts')
+        .update({ is_active: !court.is_active })
+        .eq('court_id', court.court_id);
+
+      if (error) throw error;
+
+      toast.success(court.is_active ? 'تم تعطيل المحكمة' : 'تم تفعيل المحكمة');
+      fetchCourts();
+    } catch (error) {
+      console.error('Error toggling court status:', error);
+      toast.error('حدث خطأ');
     }
   };
 
@@ -220,6 +486,99 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error rejecting user:', error);
       alert('حدث خطأ أثناء رفض المستخدم');
+    }
+  };
+
+  // Ban User
+  const handleBanUser = async () => {
+    if (!userToBan) return;
+
+    try {
+      setProcessing(true);
+
+      // Determine table and ID column based on tab
+      let table, idColumn, userId;
+      if (mainTab === 'users') {
+        table = 'users';
+        idColumn = 'user_id';
+        userId = userToBan.user_id;
+      } else if (mainTab === 'lawyers') {
+        table = 'lawyers';
+        idColumn = 'lawyer_id';
+        userId = userToBan.lawyer_id;
+      } else if (mainTab === 'admins' || mainTab === 'super_admins') {
+        table = 'admins';
+        idColumn = 'admin_id';
+        userId = userToBan.admin_id;
+      }
+
+      const { error } = await supabase
+        .from(table)
+        .update({
+          account_status: 'banned',
+          ban_reason: banReason || null,
+          banned_at: new Date().toISOString()
+        })
+        .eq(idColumn, userId);
+
+      if (error) throw error;
+
+      toast.success('تم حظر المستخدم بنجاح');
+      setShowBanModal(false);
+      setUserToBan(null);
+      setBanReason('');
+      fetchData();
+    } catch (error) {
+      console.error('Error banning user:', error);
+      toast.error('حدث خطأ أثناء حظر المستخدم');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Unban User
+  const handleUnbanUser = async (user) => {
+    if (!window.confirm(`هل أنت متأكد من إلغاء حظر ${user.first_name} ${user.last_name}؟`)) {
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      // Determine table and ID column based on tab
+      let table, idColumn, userId;
+      if (mainTab === 'users') {
+        table = 'users';
+        idColumn = 'user_id';
+        userId = user.user_id;
+      } else if (mainTab === 'lawyers') {
+        table = 'lawyers';
+        idColumn = 'lawyer_id';
+        userId = user.lawyer_id;
+      } else if (mainTab === 'admins' || mainTab === 'super_admins') {
+        table = 'admins';
+        idColumn = 'admin_id';
+        userId = user.admin_id;
+      }
+
+      const { error } = await supabase
+        .from(table)
+        .update({
+          account_status: 'approved',
+          ban_reason: null,
+          banned_at: null
+        })
+        .eq(idColumn, userId);
+
+      if (error) throw error;
+
+      toast.success('تم إلغاء حظر المستخدم بنجاح');
+      fetchData();
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+      toast.error('حدث خطأ أثناء إلغاء الحظر');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -454,6 +813,26 @@ const AdminDashboard = () => {
     }
   };
 
+  // Filter users based on search query
+  const filterUsers = (users) => {
+    if (!searchQuery.trim()) return users;
+
+    const query = searchQuery.toLowerCase();
+    return users.filter(user => {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      const phone = (user.phone || '').toLowerCase();
+      const idNumber = (user.id_number || '').toLowerCase();
+      const city = (user.city || '').toLowerCase();
+
+      return fullName.includes(query) ||
+        email.includes(query) ||
+        phone.includes(query) ||
+        idNumber.includes(query) ||
+        city.includes(query);
+    });
+  };
+
   const UserCard = ({ user }) => {
     // Determine user type display
     const getUserTypeDisplay = () => {
@@ -548,6 +927,17 @@ const AdminDashboard = () => {
                 <span>ترقية إلى مسؤول</span>
               </button>
             )}
+            {/* Ban Button */}
+            <button
+              onClick={() => {
+                setUserToBan(user);
+                setShowBanModal(true);
+              }}
+              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition font-semibold"
+            >
+              <XCircle className="h-5 w-5" />
+              <span>حظر</span>
+            </button>
           </div>
         )}
 
@@ -558,15 +948,50 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Banned Users */}
+        {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'banned' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-gray-800 dark:bg-gray-900 text-white rounded-lg font-semibold">
+              <XCircle className="h-5 w-5" />
+              <span>محظور</span>
+            </div>
+            {user.ban_reason && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                السبب: {user.ban_reason}
+              </p>
+            )}
+            <button
+              onClick={() => handleUnbanUser(user)}
+              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+            >
+              <CheckCircle className="h-5 w-5" />
+              <span>إلغاء الحظر</span>
+            </button>
+          </div>
+        )}
+
         {/* Admin/Super Admin Actions */}
         {(mainTab === 'admins' || mainTab === 'super_admins') && currentAdmin?.role === 'super_admin' && user.role !== 'super_admin' && (
-          <button
-            onClick={() => handleDemoteAdmin(user)}
-            className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold"
-          >
-            <ArrowUp className="h-5 w-5 rotate-180" />
-            <span>تخفيض إلى مستخدم</span>
-          </button>
+          <>
+            <button
+              onClick={() => handleDemoteAdmin(user)}
+              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold"
+            >
+              <ArrowUp className="h-5 w-5 rotate-180" />
+              <span>تخفيض إلى مستخدم</span>
+            </button>
+            {/* Ban Admin Button */}
+            <button
+              onClick={() => {
+                setUserToBan(user);
+                setShowBanModal(true);
+              }}
+              className="w-full flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition font-semibold mt-2"
+            >
+              <XCircle className="h-5 w-5" />
+              <span>حظر</span>
+            </button>
+          </>
         )}
       </div>
     );
@@ -637,13 +1062,16 @@ const AdminDashboard = () => {
                 إدارة طلبات الانضمام والمستخدمين المقبولين
               </p>
             </div>
-            <button
-              onClick={() => setShowAssignRoleModal(true)}
-              className="flex items-center justify-center space-x-2 space-x-reverse px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-bold"
-            >
-              <UserPlus className="h-5 w-5" />
-              <span>تعيين دور جديد</span>
-            </button>
+            {/* Only show for super_admin */}
+            {currentAdmin?.role === 'super_admin' && (
+              <button
+                onClick={() => setShowAssignRoleModal(true)}
+                className="flex items-center justify-center space-x-2 space-x-reverse px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-bold"
+              >
+                <UserPlus className="h-5 w-5" />
+                <span>تعيين دور جديد</span>
+              </button>
+            )}
           </div>
 
           {/* Main Tabs */}
@@ -710,6 +1138,26 @@ const AdminDashboard = () => {
               >
                 <MessageSquare className="h-5 w-5" />
                 <span>الدعم الفني</span>
+              </button>
+              <button
+                onClick={() => setMainTab('court_clerks')}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'court_clerks'
+                  ? 'bg-gradient-to-r from-amber-600 to-yellow-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+              >
+                <Scale className="h-5 w-5" />
+                <span>قلم المحكمة</span>
+              </button>
+              <button
+                onClick={() => setMainTab('courts')}
+                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'courts'
+                  ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+              >
+                <Building2 className="h-5 w-5" />
+                <span>المحاكم</span>
               </button>
               <Link
                 to="/admin/analytics"
@@ -799,6 +1247,21 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </button>
+                <button
+                  onClick={() => setUserStatusTab('banned')}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'banned' ? 'ring-4 ring-gray-600 ring-opacity-50' : ''
+                    }`}
+                >
+                  <div className="flex items-center space-x-3 space-x-reverse">
+                    <div className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full">
+                      <XCircle className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">محظور</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.banned}</p>
+                    </div>
+                  </div>
+                </button>
               </>
             )}
 
@@ -864,6 +1327,69 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {mainTab === 'court_clerks' && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                  <div className="flex items-center space-x-3 space-x-reverse">
+                    <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                      <Scale className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">موظفين قلم المحكمة</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {courtClerks.length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAddClerkModal(true)}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition flex items-center justify-center space-x-3 space-x-reverse border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-amber-500"
+                >
+                  <Plus className="h-6 w-6 text-amber-600" />
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">إضافة موظف جديد</span>
+                </button>
+              </>
+            )}
+
+            {mainTab === 'courts' && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                  <div className="flex items-center space-x-3 space-x-reverse">
+                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+                      <Building2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">عدد المحاكم</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {courts.length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                  <div className="flex items-center space-x-3 space-x-reverse">
+                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">محاكم نشطة</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {courts.filter(c => c.is_active).length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAddCourtModal(true)}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition flex items-center justify-center space-x-3 space-x-reverse border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-500"
+                >
+                  <Plus className="h-6 w-6 text-indigo-600" />
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">إضافة محكمة جديدة</span>
+                </button>
+              </>
             )}
           </div>
 
@@ -1002,26 +1528,176 @@ const AdminDashboard = () => {
                 ))}
               </div>
             )
+          ) : mainTab === 'court_clerks' ? (
+            // Court Clerks Content
+            loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
+              </div>
+            ) : courtClerks.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                <Scale className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-xl text-gray-600 dark:text-gray-300">
+                  لا يوجد موظفين قلم محكمة
+                </p>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                  قم بإضافة موظف جديد للبدء
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {courtClerks.map((clerk) => (
+                  <div key={clerk.clerk_id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3 space-x-reverse">
+                        <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                          <Scale className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {clerk.users?.first_name} {clerk.users?.last_name}
+                          </h3>
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            موظف قلم محكمة
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+                        <Mail className="h-4 w-4" />
+                        <span className="text-sm">{clerk.users?.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+                        <Phone className="h-4 w-4" />
+                        <span className="text-sm">{clerk.users?.phone}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+                        <Building2 className="h-4 w-4" />
+                        <span className="text-sm font-semibold">{clerk.courts?.court_name || 'غير محدد'}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${clerk.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {clerk.is_active ? 'نشط' : 'غير نشط'}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveCourtClerk(clerk.clerk_id, clerk.user_id, clerk.users?.id_number)}
+                        className="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition text-sm font-semibold flex items-center space-x-1 space-x-reverse"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>إزالة</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : mainTab === 'courts' ? (
+            // Courts Content
+            loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
+              </div>
+            ) : courts.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-xl text-gray-600 dark:text-gray-300">
+                  لا توجد محاكم مسجلة
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {courts.map((court) => (
+                  <div key={court.court_id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3 space-x-reverse">
+                        <div className={`p-3 rounded-full ${court.is_active ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                          <Building2 className={`h-6 w-6 ${court.is_active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400'}`} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{court.court_name}</h3>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${court.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {court.is_active ? 'نشطة' : 'غير نشطة'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+                        <Scale className="h-4 w-4" />
+                        <span className="text-sm">{court.court_type}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
+                        <MapPin className="h-4 w-4" />
+                        <span className="text-sm">{court.city}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => handleToggleCourtStatus(court)}
+                        className={`px-3 py-1 rounded text-sm font-semibold transition ${court.is_active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
+                      >
+                        {court.is_active ? 'تعطيل' : 'تفعيل'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCourt(court);
+                          setNewCourtData({ court_name: court.court_name, court_type: court.court_type, city: court.city, is_active: court.is_active });
+                          setShowEditCourtModal(true);
+                        }}
+                        className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200 transition text-sm font-semibold flex items-center space-x-1 space-x-reverse"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span>تعديل</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
-            // Default Content (Users, Lawyers, Admins)
+            // Default User/Lawyer/Admin Grid
             loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <p className="mt-4 text-gray-600 dark:text-gray-300">جاري التحميل...</p>
               </div>
-            ) : displayData.length === 0 ? (
-              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-                <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-xl text-gray-600 dark:text-gray-300">
-                  لا توجد بيانات لعرضها
-                </p>
-              </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayData.map((item) => (
-                  <UserCard key={item.user_id || item.lawyer_id || item.admin_id} user={item} />
-                ))}
-              </div>
+              <>
+                {/* Search Bar */}
+                {(mainTab === 'users' || mainTab === 'lawyers') && displayData.length > 0 && (
+                  <div className="mb-6">
+                    <div className="relative">
+                      <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="ابحث بالاسم، البريد، الهاتف، رقم الهوية، أو المدينة..."
+                        className="w-full pr-12 pl-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {filterUsers(displayData).length === 0 ? (
+                  <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                    <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-xl text-gray-600 dark:text-gray-300">
+                      {searchQuery ? 'لا توجد نتائج للبحث' : 'لا توجد بيانات لعرضها'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filterUsers(displayData).map((item) => (
+                      <UserCard key={item.user_id || item.lawyer_id || item.admin_id} user={item} />
+                    ))}
+                  </div>
+                )}
+              </>
             )
           )}
         </div>
@@ -1327,6 +2003,302 @@ const AdminDashboard = () => {
                 className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition font-semibold"
               >
                 إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Court Clerk Modal */}
+      {showAddClerkModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                إضافة موظف قلم محكمة
+              </h3>
+              <button onClick={() => setShowAddClerkModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  رقم الهوية
+                </label>
+                <input
+                  type="text"
+                  value={newClerkData.idNumber}
+                  onChange={(e) => setNewClerkData({ ...newClerkData, idNumber: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition"
+                  placeholder="أدخل رقم هوية المستخدم"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  المحكمة
+                </label>
+                <select
+                  value={newClerkData.courtId}
+                  onChange={(e) => setNewClerkData({ ...newClerkData, courtId: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition"
+                >
+                  <option value="">اختر المحكمة</option>
+                  {courts.filter(c => c.is_active).map((court) => (
+                    <option key={court.court_id} value={court.court_id}>
+                      {court.court_name} - {court.city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 space-x-reverse mt-6">
+              <button
+                onClick={handleAddCourtClerk}
+                disabled={processing}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-600 to-yellow-500 text-white rounded-xl hover:shadow-lg transition font-semibold disabled:opacity-50"
+              >
+                {processing ? 'جاري الإضافة...' : 'إضافة'}
+              </button>
+              <button
+                onClick={() => setShowAddClerkModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition font-semibold"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Court Modal */}
+      {showAddCourtModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                إضافة محكمة جديدة
+              </h3>
+              <button onClick={() => setShowAddCourtModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  اسم المحكمة
+                </label>
+                <input
+                  type="text"
+                  value={newCourtData.court_name}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, court_name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="اسم المحكمة"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  نوع المحكمة
+                </label>
+                <select
+                  value={newCourtData.court_type}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, court_type: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                >
+                  <option value="">اختر نوع المحكمة</option>
+                  <option value="صلح">محكمة صلح</option>
+                  <option value="بداية">محكمة بداية</option>
+                  <option value="تجارية">محكمة تجارية</option>
+                  <option value="عمل">محكمة عمل</option>
+                  <option value="إدارية">محكمة إدارية</option>
+                  <option value="مستعجلة">محكمة مستعجلة</option>
+                  <option value="استئناف">محكمة استئناف</option>
+                  <option value="نقض">محكمة نقض (عليا)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  المدينة
+                </label>
+                <input
+                  type="text"
+                  value={newCourtData.city}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, city: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="المدينة"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 space-x-reverse mt-6">
+              <button
+                onClick={handleAddCourt}
+                disabled={processing}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-500 text-white rounded-xl hover:shadow-lg transition font-semibold disabled:opacity-50"
+              >
+                {processing ? 'جاري الإضافة...' : 'إضافة'}
+              </button>
+              <button
+                onClick={() => setShowAddCourtModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition font-semibold"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Court Modal */}
+      {showEditCourtModal && selectedCourt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                تعديل المحكمة
+              </h3>
+              <button onClick={() => { setShowEditCourtModal(false); setSelectedCourt(null); }} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  اسم المحكمة
+                </label>
+                <input
+                  type="text"
+                  value={newCourtData.court_name}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, court_name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  نوع المحكمة
+                </label>
+                <select
+                  value={newCourtData.court_type}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, court_type: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                >
+                  <option value="صلح">محكمة صلح</option>
+                  <option value="بداية">محكمة بداية</option>
+                  <option value="تجارية">محكمة تجارية</option>
+                  <option value="عمل">محكمة عمل</option>
+                  <option value="إدارية">محكمة إدارية</option>
+                  <option value="مستعجلة">محكمة مستعجلة</option>
+                  <option value="استئناف">محكمة استئناف</option>
+                  <option value="نقض">محكمة نقض (عليا)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                  المدينة
+                </label>
+                <input
+                  type="text"
+                  value={newCourtData.city}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, city: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div className="flex items-center space-x-3 space-x-reverse">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={newCourtData.is_active}
+                  onChange={(e) => setNewCourtData({ ...newCourtData, is_active: e.target.checked })}
+                  className="w-5 h-5 rounded text-indigo-600"
+                />
+                <label htmlFor="is_active" className="text-gray-700 dark:text-gray-300 font-semibold">
+                  المحكمة نشطة
+                </label>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 space-x-reverse mt-6">
+              <button
+                onClick={handleUpdateCourt}
+                disabled={processing}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-500 text-white rounded-xl hover:shadow-lg transition font-semibold disabled:opacity-50"
+              >
+                {processing ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </button>
+              <button
+                onClick={() => { setShowEditCourtModal(false); setSelectedCourt(null); }}
+                className="flex-1 px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition font-semibold"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ban User Modal */}
+      {showBanModal && userToBan && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <XCircle className="h-6 w-6 text-red-600" />
+                تأكيد الحظر
+              </h3>
+              <button onClick={() => { setShowBanModal(false); setUserToBan(null); setBanReason(''); }} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 mb-4">
+              <p className="text-gray-700 dark:text-gray-300">
+                هل أنت متأكد من حظر المستخدم:
+              </p>
+              <p className="font-bold text-gray-900 dark:text-white text-lg mt-1">
+                {userToBan.first_name} {userToBan.last_name}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {userToBan.email}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                سبب الحظر (اختياري)
+              </label>
+              <textarea
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition"
+                placeholder="اكتب سبب الحظر..."
+                rows="3"
+              />
+            </div>
+
+            <div className="flex space-x-3 space-x-reverse mt-6">
+              <button
+                onClick={handleBanUser}
+                disabled={processing}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <XCircle className="h-5 w-5" />
+                {processing ? 'جاري الحظر...' : 'تأكيد الحظر'}
+              </button>
+              <button
+                onClick={() => { setShowBanModal(false); setUserToBan(null); setBanReason(''); }}
+                className="flex-1 px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition font-semibold"
+              >
+                إلغاء
               </button>
             </div>
           </div>

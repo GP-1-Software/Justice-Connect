@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { getAuthHeaders } from '../../utils/authHelpers';
+import RoleSwitcher from '../RoleSwitcher';
 
 const CourtClerkHeader = ({ title, subtitle }) => {
     const navigate = useNavigate();
@@ -55,7 +56,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
         { path: '/court-clerk/registration', label: 'التسجيل', icon: FileText },
         { path: '/court-clerk/hearings', label: 'الجلسات', icon: Calendar },
         { path: '/court-clerk/decisions', label: 'القرارات', icon: Scale },
-        { path: '/court-clerk/services', label: 'التبليغات', icon: Users },
+        //    { path: '/court-clerk/services', label: 'التبليغات', icon: Users },
     ];
 
     // Load clerk info
@@ -291,6 +292,11 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                         {/* Right Side Actions */}
                         <div className="flex items-center gap-2">
 
+
+                            {/* Role Switcher */}
+                            <RoleSwitcher />
+
+
                             {/* Dark Mode Toggle */}
                             <button
                                 onClick={toggleDarkMode}
@@ -299,6 +305,8 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                             >
                                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
                             </button>
+
+
 
                             {/* Notifications */}
                             <div className="relative" ref={notificationRef}>

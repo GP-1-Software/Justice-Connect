@@ -22,9 +22,11 @@ const Login = () => {
   const [tempUserData, setTempUserData] = useState(null);
 
   const handleLoginSuccess = (user, role) => {
-    // For admin/super_admin, set 'role' property; for others, set 'user_type'
+    // For admin/super_admin, use the actual role from user object (could be super_admin or admin)
+    // user.role comes from admins table, role parameter comes from user_roles table
+    const actualRole = user.role || role;
     const userData = role === 'admin' || role === 'super_admin'
-      ? { ...user, role: role, user_type: role }
+      ? { ...user, role: actualRole, user_type: actualRole }
       : { ...user, user_type: role };
 
     localStorage.setItem('user', JSON.stringify(userData));
@@ -105,7 +107,12 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        setLoginError(data.error || 'فشل تسجيل الدخول');
+        // If user is banned, show ban reason if available
+        if (data.banned && data.ban_reason) {
+          setLoginError(`${data.error}\n\nسبب الحظر: ${data.ban_reason}`);
+        } else {
+          setLoginError(data.error || 'فشل تسجيل الدخول');
+        }
         return;
       }
 
@@ -146,9 +153,11 @@ const Login = () => {
               {/* Login Error */}
               {loginError && (
                 <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-700 rounded-xl p-4">
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                    <p className="text-red-800 dark:text-red-300 font-semibold">{loginError}</p>
+                  <div className="flex items-start space-x-3 space-x-reverse">
+                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-red-800 dark:text-red-300 font-semibold whitespace-pre-line leading-relaxed">
+                      {loginError}
+                    </p>
                   </div>
                 </div>
               )}
@@ -278,22 +287,26 @@ const Login = () => {
                     <div className="flex items-center space-x-3 space-x-reverse">
                       <div className={`p-2 rounded-full ${role === 'client' ? 'bg-green-100 text-green-600' :
                         role === 'lawyer' ? 'bg-blue-100 text-blue-600' :
-                          'bg-purple-100 text-purple-600'
+                          role === 'court_clerk' ? 'bg-amber-100 text-amber-600' :
+                            'bg-purple-100 text-purple-600'
                         }`}>
                         {role === 'client' && <CreditCard className="h-6 w-6" />}
                         {role === 'lawyer' && <Scale className="h-6 w-6" />}
+                        {role === 'court_clerk' && <Scale className="h-6 w-6" />}
                         {(role === 'admin' || role === 'super_admin') && <Lock className="h-6 w-6" />}
                       </div>
                       <div className="text-right">
                         <h3 className="font-bold text-gray-900 dark:text-white text-lg">
                           {role === 'client' ? 'حساب عميل' :
                             role === 'lawyer' ? 'حساب محامي' :
-                              role === 'admin' ? 'مسؤول' : 'مسؤول عام'}
+                              role === 'court_clerk' ? 'موظف قلم محكمة' :
+                                role === 'admin' ? 'مسؤول' : 'مسؤول عام'}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {role === 'client' ? 'تصفح الخدمات وتابع قضاياك' :
                             role === 'lawyer' ? 'أدر قضاياك وتواصل مع العملاء' :
-                              'إدارة النظام والمستخدمين'}
+                              role === 'court_clerk' ? 'إدارة اللوائح والجلسات' :
+                                'إدارة النظام والمستخدمين'}
                         </p>
                       </div>
                     </div>

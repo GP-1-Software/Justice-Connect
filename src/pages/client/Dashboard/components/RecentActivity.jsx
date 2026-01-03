@@ -99,13 +99,11 @@ const RecentActivity = ({ activities, loading }) => {
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
           النشاط الأخير
         </h2>
-        <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition">
-          عرض الكل
-        </button>
+ 
       </div>
       
-      <div className="space-y-4">
-        {activities.slice(0, 8).map((activity, index) => {
+      <div className="space-y-4 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
+        {activities.map((activity, index) => {
           const Icon = getActivityIcon(activity.type);
           const colorClasses = getActivityColor(activity.type, activity.status);
           
@@ -162,14 +160,6 @@ const RecentActivity = ({ activities, loading }) => {
           );
         })}
       </div>
-      
-      {activities.length > 8 && (
-        <div className="mt-6 text-center">
-          <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold transition">
-            عرض المزيد ({activities.length - 8} نشاط إضافي)
-          </button>
-        </div>
-      )}
     </div>
   );
 };

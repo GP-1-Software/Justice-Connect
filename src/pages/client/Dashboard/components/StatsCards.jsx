@@ -1,13 +1,8 @@
 import React from 'react';
-import { 
-  Briefcase, 
-  Calendar, 
-  MessageSquare, 
-  CreditCard,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle
+import {
+  Briefcase,
+  Calendar,
+  MessageSquare
 } from 'lucide-react';
 
 const StatsCards = ({ summary, loading }) => {
@@ -32,13 +27,6 @@ const StatsCards = ({ summary, loading }) => {
       icon: MessageSquare,
       color: 'purple',
       description: 'رسائل تحتاج مراجعة'
-    },
-    {
-      title: 'الرصيد المتاح',
-      value: `${summary?.balance || 0} ₪`,
-      icon: CreditCard,
-      color: 'orange',
-      description: 'رصيد الحساب'
     }
   ];
 
@@ -46,16 +34,15 @@ const StatsCards = ({ summary, loading }) => {
     const colors = {
       blue: 'from-blue-500 to-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
       green: 'from-green-500 to-green-600 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-      purple: 'from-purple-500 to-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-      orange: 'from-orange-500 to-orange-600 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+      purple: 'from-purple-500 to-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
     };
     return colors[color] || colors.blue;
   };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {[1, 2, 3].map((i) => (
           <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 animate-pulse">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
@@ -70,13 +57,13 @@ const StatsCards = ({ summary, loading }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         const colorClasses = getColorClasses(stat.color);
-        
+
         return (
-          <div 
+          <div
             key={index}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-4 sm:p-6"
           >
@@ -85,7 +72,7 @@ const StatsCards = ({ summary, loading }) => {
                 <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
-            
+
             <div className="mb-2">
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {stat.value}
@@ -94,7 +81,7 @@ const StatsCards = ({ summary, loading }) => {
                 {stat.description}
               </p>
             </div>
-            
+
             <div className="flex items-center text-xs sm:text-sm">
               <span className="font-semibold text-gray-900 dark:text-white">
                 {stat.title}
@@ -108,6 +95,3 @@ const StatsCards = ({ summary, loading }) => {
 };
 
 export default StatsCards;
-
-
-

@@ -35,27 +35,10 @@ export const clientApi = {
 
       if (messagesError) throw messagesError;
 
-      // Get balance from payments
-      const { data: payments, error: paymentsError } = await supabase
-        .from('payments')
-        .select('amount, status')
-        .eq('client_id', clientId);
-
-      if (paymentsError) throw paymentsError;
-
-      // Calculate balance (paid - pending)
-      const balance = payments.reduce((total, payment) => {
-        if (payment.status === 'completed') {
-          return total - payment.amount; // Subtract paid amounts
-        }
-        return total;
-      }, 0);
-
       return {
         activeCases: activeCases?.length || 0,
         upcomingAppointments: upcomingAppointments?.length || 0,
-        unreadMessages: unreadMessages?.length || 0,
-        balance: Math.abs(balance) // Show positive balance
+        unreadMessages: unreadMessages?.length || 0
       };
     } catch (error) {
       console.error('Error fetching dashboard summary:', error);
