@@ -66,6 +66,13 @@ const RoleSwitcher = () => {
             const updatedUser = { ...newUserData, user_type: newRole };
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
+            // Send login email notification with the new role
+            fetch('http://localhost:5000/api/auth/send-login-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: updatedUser, role: newRole })
+            }).catch(err => console.error('Failed to trigger login email:', err));
+
             // Navigate to appropriate dashboard
             if (newRole === 'client') {
                 window.location.href = '/client/dashboard';

@@ -1,5 +1,6 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import { sendLoginNotification } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -78,6 +79,8 @@ router.post("/login", async (req, res) => {
         // For admins, use the actual role from admins table (could be 'admin' or 'super_admin')
         const actualRole = (validRole === 'admin' && user.role) ? user.role : validRole;
 
+        // Note: Email notification is sent from frontend after role selection
+
         res.json({
             success: true,
             roles: roles.map(r => r.role),
@@ -90,6 +93,28 @@ router.post("/login", async (req, res) => {
 
     } catch (error) {
         console.error("Login error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Send Login Email Notification (called after role selection)
+router.post("/send-login-email", async (req, res) => {
+    try {
+        const { user, role } = req.body;
+
+        if (!user || !role) {
+            return res.status(400).json({ error: "Missing user or role" });
+        }
+
+        // Send login notification email
+        sendLoginNotification(user, role).catch(err => {
+            console.error('Failed to send login email:', err);
+        });
+
+        res.json({ success: true, message: "Email notification triggered" });
+
+    } catch (error) {
+        console.error("Send login email error:", error);
         res.status(500).json({ error: error.message });
     }
 });

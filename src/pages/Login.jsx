@@ -22,14 +22,26 @@ const Login = () => {
   const [tempUserData, setTempUserData] = useState(null);
 
   const handleLoginSuccess = (user, role) => {
-    // For admin/super_admin, use the actual role from user object (could be super_admin or admin)
-    // user.role comes from admins table, role parameter comes from user_roles table
-    const actualRole = user.role || role;
+    // The 'role' parameter is the SELECTED role from the role picker
+    // For admin, check if it's actually super_admin from the database
+    let actualRole = role;
+    if ((role === 'admin' || role === 'super_admin') && user.role) {
+      actualRole = user.role; // Use super_admin if that's what's in the DB
+    }
+
     const userData = role === 'admin' || role === 'super_admin'
       ? { ...user, role: actualRole, user_type: actualRole }
       : { ...user, user_type: role };
 
     localStorage.setItem('user', JSON.stringify(userData));
+
+    // Send login email notification with the SELECTED role (not user.role from DB)
+    const emailRole = role; // Use the role user selected, not actualRole
+    fetch('http://localhost:5000/api/auth/send-login-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user: userData, role: emailRole })
+    }).catch(err => console.error('Failed to trigger login email:', err));
 
     if (role === 'client') {
       sessionStorage.setItem(
@@ -52,8 +64,33 @@ const Login = () => {
     }
   };
 
-  const handleRoleSelect = (role) => {
-    if (tempUserData) {
+  const handleRoleSelect = async (role) => {
+    if (!tempUserData) return;
+
+    try {
+      // Determine the correct table based on selected role
+      let table = 'users';
+      if (role === 'lawyer') table = 'lawyers';
+      if (role === 'admin' || role === 'super_admin') table = 'admins';
+      // court_clerk uses 'users' table
+
+      // Fetch the correct user data for this role
+      const { data: userData, error } = await supabase
+        .from(table)
+        .select('*')
+        .eq('id_number', tempUserData.id_number)
+        .single();
+
+      if (error || !userData) {
+        console.error('Error fetching role data:', error);
+        // Fallback to tempUserData
+        handleLoginSuccess(tempUserData, role);
+        return;
+      }
+
+      handleLoginSuccess(userData, role);
+    } catch (error) {
+      console.error('Error in role select:', error);
       handleLoginSuccess(tempUserData, role);
     }
   };
