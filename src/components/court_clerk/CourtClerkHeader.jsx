@@ -113,7 +113,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
 
         loadNotifications();
 
-        // Subscribe to new notifications for this clerk
+        // Subscribe to notification changes for this clerk
         const channel = supabase
             .channel(`clerk-notifications-${clerkInfo.user_id}`)
             .on('postgres_changes',
@@ -129,6 +129,44 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                         if (!payload.new.is_read) {
                             setUnreadCount(prev => prev + 1);
                         }
+                    }
+                }
+            )
+            .on('postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${clerkInfo.user_id}`
+                },
+                (payload) => {
+                    if (payload.new) {
+                        setNotifications(prev =>
+                            prev.map(n => n.notification_id === payload.new.notification_id ? payload.new : n)
+                        );
+                        // Recalculate unread count
+                        setNotifications(prev => {
+                            setUnreadCount(prev.filter(n => !n.is_read).length);
+                            return prev;
+                        });
+                    }
+                }
+            )
+            .on('postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${clerkInfo.user_id}`
+                },
+                (payload) => {
+                    if (payload.old) {
+                        setNotifications(prev => prev.filter(n => n.notification_id !== payload.old.notification_id));
+                        // Recalculate unread count after deletion
+                        setNotifications(prev => {
+                            setUnreadCount(prev.filter(n => !n.is_read).length);
+                            return prev;
+                        });
                     }
                 }
             )
@@ -341,22 +379,20 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                         </div>
 
                                         <div className="max-h-96 overflow-y-auto">
-                                            {notifications.length === 0 ? (
+                                            {notifications.filter(n => !n.is_read).length === 0 ? (
                                                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                                                     <Bell size={40} className="mx-auto mb-3 opacity-30" />
-                                                    <p>لا توجد إشعارات</p>
+                                                    <p>لا توجد إشعارات جديدة</p>
                                                 </div>
                                             ) : (
-                                                notifications.map((notification) => (
+                                                notifications.filter(n => !n.is_read).map((notification) => (
                                                     <div
                                                         key={notification.notification_id}
                                                         onClick={() => markAsRead(notification.notification_id)}
-                                                        className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition ${!notification.is_read ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
-                                                            }`}
+                                                        className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition bg-blue-50/50 dark:bg-blue-900/20"
                                                     >
                                                         <div className="flex items-start gap-3">
-                                                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notification.is_read ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                                                                }`} />
+                                                            <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-blue-500" />
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-medium text-gray-900 dark:text-white text-sm">
                                                                     {notification.title}

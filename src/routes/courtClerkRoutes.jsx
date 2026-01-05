@@ -16,6 +16,7 @@ import CourtClerkCaseDetails from '../pages/court_clerk/CaseDetails';
 import FeesManagement from '../pages/court_clerk/FeesManagement';
 import AppealsManagement from '../pages/court_clerk/AppealsManagement';
 import Settings from '../pages/court_clerk/Settings';
+import Notifications from '../pages/court_clerk/Notifications';
 
 const CourtClerkRoutes = () => {
     // Check if user is court_clerk
@@ -40,8 +41,10 @@ const CourtClerkRoutes = () => {
             <Route path="/fees" element={<FeesManagement />} />
             <Route path="/appeals" element={<AppealsManagement />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/notifications" element={<Notifications />} />
         </Routes>
     );
 };
 
 export default CourtClerkRoutes;
+

@@ -31,7 +31,6 @@ const ClientInfo = ({ caseData, lawyerId }) => {
           .from('users')
           .select('*')
           .eq('user_id', caseData.client_id)
-          .eq('user_type', 'client')
           .single();
 
         if (fetchError) {
@@ -54,7 +53,7 @@ const ClientInfo = ({ caseData, lawyerId }) => {
         if (detailsError && detailsError.code !== 'PGRST116') {
           console.error('Error fetching user details:', detailsError);
         }
-        
+
         detailsData = details;
       }
       // Or try to fetch by id_number (case created by lawyer with id_number)
@@ -69,7 +68,7 @@ const ClientInfo = ({ caseData, lawyerId }) => {
         if (detailsError && detailsError.code !== 'PGRST116') {
           console.error('Error fetching user details by id_number:', detailsError);
         }
-        
+
         detailsData = details;
 
         // If found in user_details and has user_id, fetch user data
@@ -78,7 +77,6 @@ const ClientInfo = ({ caseData, lawyerId }) => {
             .from('users')
             .select('*')
             .eq('user_id', detailsData.user_id)
-            .eq('user_type', 'client')
             .maybeSingle();
 
           if (userError && userError.code !== 'PGRST116') {
@@ -92,7 +90,6 @@ const ClientInfo = ({ caseData, lawyerId }) => {
             .from('users')
             .select('*')
             .eq('id_number', caseData.client_id_number)
-            .eq('user_type', 'client')
             .maybeSingle();
 
           if (userError && userError.code !== 'PGRST116') {
@@ -112,7 +109,7 @@ const ClientInfo = ({ caseData, lawyerId }) => {
         if (detailsError && detailsError.code !== 'PGRST116') {
           console.error('Error fetching user details by case_number:', detailsError);
         }
-        
+
         detailsData = details;
 
         // If found and has user_id, fetch user data
@@ -121,7 +118,6 @@ const ClientInfo = ({ caseData, lawyerId }) => {
             .from('users')
             .select('*')
             .eq('user_id', detailsData.user_id)
-            .eq('user_type', 'client')
             .maybeSingle();
 
           if (userError && userError.code !== 'PGRST116') {
@@ -171,14 +167,13 @@ const ClientInfo = ({ caseData, lawyerId }) => {
     );
   }
 
-  // Show AddClientInfo in edit mode if:
-  // 1. No client linked AND no details in user_details
-  const shouldShowAddForm = !caseData.client_id && !clientDetails && !clientData;
+  // Show AddClientInfo form if no client data was found after loading
+  const shouldShowAddForm = !clientDetails && !clientData;
 
   if (shouldShowAddForm) {
     // Show AddClientInfo component when client is not found or not linked
     return (
-      <AddClientInfo 
+      <AddClientInfo
         clientIdNumber={caseData?.client_id_number}
         caseNumber={caseData?.case_number}
         lawyerId={lawyerId}
@@ -190,7 +185,7 @@ const ClientInfo = ({ caseData, lawyerId }) => {
   // If editing mode, show AddClientInfo
   if (isEditing) {
     return (
-      <AddClientInfo 
+      <AddClientInfo
         clientIdNumber={clientDetails?.id_number || caseData?.client_id_number}
         caseNumber={caseData?.case_number}
         lawyerId={lawyerId}
@@ -316,8 +311,8 @@ const ClientInfo = ({ caseData, lawyerId }) => {
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                {clientDetails?.first_name || clientData?.first_name 
-                  ? `${clientDetails?.first_name || clientData?.first_name} ${clientDetails?.last_name || clientData?.last_name}` 
+                {clientDetails?.first_name || clientData?.first_name
+                  ? `${clientDetails?.first_name || clientData?.first_name} ${clientDetails?.last_name || clientData?.last_name}`
                   : 'عميل'}
               </h4>
               <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium">

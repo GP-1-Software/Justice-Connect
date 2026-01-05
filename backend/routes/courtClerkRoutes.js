@@ -4162,4 +4162,151 @@ router.put("/profile", verifyCourtClerk, async (req, res) => {
     }
 });
 
+// ============================================
+// LAWYER CASE ACTIONS (Public - No clerk auth required)
+// ============================================
+
+/**
+ * POST /api/court-clerk/public/cases/:case_id/mark-fully-executed
+ * Mark a case as fully executed (called by lawyer)
+ */
+router.post("/public/cases/:case_id/mark-fully-executed", async (req, res) => {
+    try {
+        const case_id = parseInt(req.params.case_id);
+
+        // Decode user from header
+        let user = {};
+        const userDataHeader = req.headers['x-user-data'];
+        if (userDataHeader) {
+            try {
+                const binString = atob(userDataHeader);
+                const bytes = Uint8Array.from(binString, (c) => c.codePointAt(0));
+                const decoded = new TextDecoder().decode(bytes);
+                user = JSON.parse(decoded);
+            } catch (e) {
+                try {
+                    user = JSON.parse(Buffer.from(userDataHeader, 'base64').toString('utf-8'));
+                } catch {
+                    user = {};
+                }
+            }
+        }
+
+        const lawyerId = user.lawyer_id || user.user_id;
+
+        // Get case details
+        const { data: caseData, error: caseError } = await supabase
+            .from('cases')
+            .select('case_id, case_number, case_stage, title, assigned_lawyer_id, client_id')
+            .eq('case_id', case_id)
+            .single();
+
+        if (caseError || !caseData) {
+            return res.status(404).json({ error: 'القضية غير موجودة' });
+        }
+
+        // Verify case is in execution stage
+        if (caseData.case_stage !== 'in_execution') {
+            return res.status(400).json({
+                error: 'لا يمكن تنفيذ هذا الإجراء إلا للقضايا في مرحلة "قيد التنفيذ"',
+                current_stage: caseData.case_stage
+            });
+        }
+
+        // Update case stage to fully_executed
+        const { error: updateError } = await supabase
+            .from('cases')
+            .update({
+                case_stage: 'fully_executed',
+                updated_at: new Date().toISOString()
+            })
+            .eq('case_id', case_id);
+
+        if (updateError) throw updateError;
+
+        // Add to case stages history
+        await supabase.from('case_stages_history').insert({
+            case_id: case_id,
+            old_stage: 'in_execution',
+            new_stage: 'fully_executed',
+            changed_by: lawyerId,
+            changed_by_type: 'lawyer',
+            reason: 'تم تنفيذ الحكم بشكل نهائي من قبل المحامي',
+            created_at: new Date().toISOString()
+        });
+
+        // Add timeline event
+        await supabase.from('timeline_events').insert({
+            case_id: case_id,
+            event_type: 'case_fully_executed',
+            author_id: lawyerId,
+            author_type: 'lawyer',
+            title: 'تم تنفيذ الحكم بالكامل',
+            description: 'تم تأكيد تنفيذ الحكم بشكل نهائي',
+            visibility: 'all'
+        });
+
+        // Prepare notifications
+        const notifications = [];
+
+        // Notify lawyer
+        if (caseData.assigned_lawyer_id) {
+            notifications.push({
+                user_id: caseData.assigned_lawyer_id,
+                user_type: 'lawyer',
+                title: 'تم تنفيذ القضية بالكامل',
+                message: `تم تأكيد تنفيذ الحكم بشكل نهائي للقضية ${caseData.case_number || caseData.title}`,
+                type: NOTIFICATION_TYPES.CASE_FULLY_EXECUTED,
+                related_id: case_id,
+                related_type: 'case',
+                priority: NOTIFICATION_PRIORITY.HIGH,
+                action_url: `/lawyer/cases/${case_id}`
+            });
+        }
+
+        // Notify client
+        if (caseData.client_id) {
+            notifications.push({
+                user_id: caseData.client_id,
+                user_type: 'client',
+                title: 'تم تنفيذ قضيتك بالكامل',
+                message: `تم تأكيد تنفيذ الحكم بشكل نهائي للقضية ${caseData.case_number || caseData.title}`,
+                type: NOTIFICATION_TYPES.CASE_FULLY_EXECUTED,
+                related_id: case_id,
+                related_type: 'case',
+                priority: NOTIFICATION_PRIORITY.HIGH,
+                action_url: `/client/cases/${case_id}`
+            });
+        }
+
+        // Insert notifications
+        if (notifications.length > 0) {
+            const { error: notifError } = await supabase
+                .from('notifications')
+                .insert(notifications);
+
+            if (notifError) {
+                console.error('Error creating notifications:', notifError);
+            } else {
+                console.log(`✅ Created ${notifications.length} notifications for case ${case_id} fully executed`);
+            }
+        }
+
+        console.log(`✅ Case ${case_id} marked as fully executed by lawyer ${lawyerId}`);
+
+        res.json({
+            success: true,
+            message: 'تم تأكيد تنفيذ الحكم بشكل نهائي بنجاح',
+            data: {
+                case_id: case_id,
+                new_stage: 'fully_executed'
+            }
+        });
+
+    } catch (error) {
+        console.error('Error marking case as fully executed:', error);
+        res.status(500).json({ error: 'فشل في تحديث حالة القضية', details: error.message });
+    }
+});
+
 export default router;

@@ -336,9 +336,8 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             textColor: 'text-purple-700',
             description: 'جاري تنفيذ الحكم',
             actions: [
-                { id: 'open_execution_file', label: 'فتح ملف تنفيذ إلكتروني', icon: FileText, variant: 'primary' }
-                // { id: 'submit_execution_request', label: 'رفع طلبات تنفيذية', icon: Upload, variant: 'secondary' },
-                // { id: 'track_execution', label: 'متابعة إجراءات التنفيذ', icon: RefreshCw, variant: 'secondary' }
+                // { id: 'open_execution_file', label: 'فتح ملف تنفيذ إلكتروني', icon: FileText, variant: 'primary' },
+                { id: 'mark_fully_executed', label: 'تم تنفيذ الحكم بشكل نهائي', icon: CheckCircle, variant: 'danger' }
             ]
         },
         'fully_executed': {
@@ -351,8 +350,8 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             description: 'تم تنفيذ الحكم بالكامل - نهاية القضية',
             showBell: true,
             actions: [
-                { id: 'download_execution_notice', label: 'تحميل إشعار التنفيذ النهائي', icon: Download, variant: 'primary' },
-                { id: 'close_case', label: 'إغلاق القضية من عندي', icon: CheckCircle, variant: 'secondary' }
+                // { id: 'download_execution_notice', label: 'تحميل إشعار التنفيذ النهائي', icon: Download, variant: 'primary' },
+                // { id: 'close_case', label: 'إغلاق القضية من عندي', icon: CheckCircle, variant: 'secondary' }
             ]
         }
     };
@@ -541,6 +540,29 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
 
                 case 'close_case':
                     toast.success('تم إغلاق القضية من طرفك');
+                    break;
+
+                case 'mark_fully_executed':
+                    // Show confirmation before marking as fully executed
+                    if (window.confirm('هل أنت متأكد من أن الحكم تم تنفيذه بشكل نهائي؟\n\nسيتم تحويل حالة القضية إلى "منفذة بالكامل" وإرسال إشعارات للعميل.')) {
+                        try {
+                            const response = await fetch(`http://localhost:5000/api/court-clerk/public/cases/${caseId}/mark-fully-executed`, {
+                                method: 'POST',
+                                headers: getAuthHeaders()
+                            });
+
+                            if (response.ok) {
+                                toast.success('تم تأكيد تنفيذ الحكم بشكل نهائي');
+                                // Supabase Realtime will update the UI automatically
+                            } else {
+                                const error = await response.json();
+                                toast.error(error.error || 'فشل في تحديث حالة القضية');
+                            }
+                        } catch (err) {
+                            console.error('Mark fully executed error:', err);
+                            toast.error('حدث خطأ أثناء تحديث حالة القضية');
+                        }
+                    }
                     break;
 
                 default:
