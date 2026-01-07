@@ -45,6 +45,7 @@ const Appointments = () => {
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [meetings, setMeetings] = useState({}); // Map of appointment_id -> meeting
   const [isFiltering, setIsFiltering] = useState(false);
+  const [resolvedClientId, setResolvedClientId] = useState(null); // Resolved client_id for appointments
 
   // Track if we've already handled the appointmentId to prevent loops
   const handledAppointmentId = useRef(null);
@@ -76,17 +77,54 @@ const Appointments = () => {
       console.log('=== DEBUG: Appointments Page ===');
       console.log('userProfile:', userProfile);
       console.log('userProfile.user_id:', userProfile?.user_id);
+      console.log('userProfile.id_number:', userProfile?.id_number);
+      console.log('Full localStorage user:', localStorage.getItem('user'));
 
-      if (!userProfile?.user_id) {
+      // Try to get user_id, with fallback to fetching from database using id_number
+      let clientId = userProfile?.user_id;
+
+      if (!clientId && userProfile?.id_number) {
+        console.log('user_id not found, attempting to fetch from database using id_number:', userProfile.id_number);
+        try {
+          const { data: userData, error } = await supabase
+            .from('users')
+            .select('user_id')
+            .eq('id_number', userProfile.id_number)
+            .eq('user_type', 'client')
+            .single();
+
+          if (userData && !error) {
+            clientId = userData.user_id;
+            console.log('Found user_id from database:', clientId);
+
+            // Update localStorage with the correct user_id
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              parsedUser.user_id = clientId;
+              localStorage.setItem('user', JSON.stringify(parsedUser));
+              console.log('Updated localStorage with correct user_id');
+            }
+          } else {
+            console.error('Error fetching user_id from database:', error);
+          }
+        } catch (err) {
+          console.error('Exception while fetching user_id:', err);
+        }
+      }
+
+      if (!clientId) {
         console.log('No user_id found, skipping fetch');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('Fetching appointments for user_id:', userProfile.user_id);
-        const data = await getClientAppointments(userProfile.user_id);
+        console.log('Fetching appointments for user_id:', clientId);
+        const data = await getClientAppointments(clientId);
+        console.log('Appointments fetched:', data?.length || 0, 'appointments');
         setAppointments(data || []);
+        setResolvedClientId(clientId); // Save resolved client ID for subscriptions
 
         // Fetch meetings for confirmed appointments with video_call
         const confirmedVideoAppointments = (data || []).filter(
@@ -114,97 +152,102 @@ const Appointments = () => {
     };
 
     fetchAppointments();
+  }, [userProfile]);
+
+  // Separate effect for real-time subscriptions using resolved client ID
+  useEffect(() => {
+    if (!resolvedClientId) return;
+
+    console.log('Setting up real-time subscriptions for client_id:', resolvedClientId);
 
     // Real-time subscription for appointments
-    if (userProfile?.user_id) {
-      const appointmentsChannel = supabase
-        .channel('client-appointments-changes')
-        .on('postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'appointments',
-            filter: `client_id=eq.${userProfile.user_id}`
-          },
-          async (payload) => {
-            if (payload.eventType === 'UPDATE' && payload.new.status === 'confirmed' && payload.new.meeting_method === 'video_call') {
-              // Fetch meeting if appointment is confirmed
-              try {
-                const meeting = await getMeetingByAppointment(payload.new.id);
-                if (meeting) {
-                  setMeetings(prev => ({ ...prev, [payload.new.id]: meeting }));
-                }
-              } catch (error) {
-                console.error('Error fetching meeting:', error);
+    const appointmentsChannel = supabase
+      .channel('client-appointments-changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `client_id=eq.${resolvedClientId}`
+        },
+        async (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new.status === 'confirmed' && payload.new.meeting_method === 'video_call') {
+            // Fetch meeting if appointment is confirmed
+            try {
+              const meeting = await getMeetingByAppointment(payload.new.id);
+              if (meeting) {
+                setMeetings(prev => ({ ...prev, [payload.new.id]: meeting }));
               }
-            }
-            // Refresh appointments
-            const data = await getClientAppointments(userProfile.user_id);
-            setAppointments(data || []);
-          }
-        )
-        .subscribe();
-
-      // Real-time subscription for meetings
-      const meetingsChannel = supabase
-        .channel('client-meetings-changes')
-        .on('postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'meetings'
-          },
-          async (payload) => {
-            if (payload.eventType === 'INSERT' && payload.new?.related_appointment_id) {
-              // New meeting created - check if it belongs to this client
-              try {
-                const { data: appointment } = await supabase
-                  .from('appointments')
-                  .select('id, client_id')
-                  .eq('id', payload.new.related_appointment_id)
-                  .eq('client_id', userProfile.user_id)
-                  .single();
-
-                if (appointment) {
-                  setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
-                }
-              } catch (error) {
-                console.error('Error checking appointment:', error);
-              }
-            } else if (payload.eventType === 'UPDATE' && payload.new?.related_appointment_id) {
-              // Meeting updated - check if it belongs to this client
-              try {
-                const { data: appointment } = await supabase
-                  .from('appointments')
-                  .select('id, client_id')
-                  .eq('id', payload.new.related_appointment_id)
-                  .eq('client_id', userProfile.user_id)
-                  .single();
-
-                if (appointment) {
-                  setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
-                }
-              } catch (error) {
-                console.error('Error checking appointment:', error);
-              }
-            } else if (payload.eventType === 'DELETE' && payload.old?.related_appointment_id) {
-              // Meeting deleted - remove from state immediately
-              setMeetings(prev => {
-                const newMeetings = { ...prev };
-                delete newMeetings[payload.old.related_appointment_id];
-                return newMeetings;
-              });
+            } catch (error) {
+              console.error('Error fetching meeting:', error);
             }
           }
-        )
-        .subscribe();
+          // Refresh appointments
+          const data = await getClientAppointments(resolvedClientId);
+          setAppointments(data || []);
+        }
+      )
+      .subscribe();
 
-      return () => {
-        appointmentsChannel.unsubscribe();
-        meetingsChannel.unsubscribe();
-      };
-    }
-  }, [userProfile]);
+    // Real-time subscription for meetings
+    const meetingsChannel = supabase
+      .channel('client-meetings-changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'meetings'
+        },
+        async (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new?.related_appointment_id) {
+            // New meeting created - check if it belongs to this client
+            try {
+              const { data: appointment } = await supabase
+                .from('appointments')
+                .select('id, client_id')
+                .eq('id', payload.new.related_appointment_id)
+                .eq('client_id', resolvedClientId)
+                .single();
+
+              if (appointment) {
+                setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
+              }
+            } catch (error) {
+              console.error('Error checking appointment:', error);
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new?.related_appointment_id) {
+            // Meeting updated - check if it belongs to this client
+            try {
+              const { data: appointment } = await supabase
+                .from('appointments')
+                .select('id, client_id')
+                .eq('id', payload.new.related_appointment_id)
+                .eq('client_id', resolvedClientId)
+                .single();
+
+              if (appointment) {
+                setMeetings(prev => ({ ...prev, [payload.new.related_appointment_id]: payload.new }));
+              }
+            } catch (error) {
+              console.error('Error checking appointment:', error);
+            }
+          } else if (payload.eventType === 'DELETE' && payload.old?.related_appointment_id) {
+            // Meeting deleted - remove from state immediately
+            setMeetings(prev => {
+              const newMeetings = { ...prev };
+              delete newMeetings[payload.old.related_appointment_id];
+              return newMeetings;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      appointmentsChannel.unsubscribe();
+      meetingsChannel.unsubscribe();
+    };
+  }, [resolvedClientId]);
 
   const getStatusConfig = (status) => {
     const configs = {

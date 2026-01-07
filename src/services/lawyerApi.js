@@ -74,29 +74,11 @@ export const searchLawyers = async (filters = {}) => {
 
     if (error) throw error;
 
-    // Fetch lawyer_stats separately for each lawyer
-    const lawyersWithStats = await Promise.all(
-      data.map(async (lawyer) => {
-        try {
-          const { data: stats, error: statsError } = await supabase
-            .from('lawyer_stats')
-            .select('*')
-            .eq('lawyer_id', lawyer.lawyer_id)
-            .maybeSingle();
-
-          return {
-            ...lawyer,
-            lawyer_stats: stats ? [stats] : []
-          };
-        } catch (err) {
-          // If stats not found, just return lawyer without stats
-          return {
-            ...lawyer,
-            lawyer_stats: []
-          };
-        }
-      })
-    );
+    // Add empty lawyer_stats for compatibility
+    const lawyersWithStats = data.map(lawyer => ({
+      ...lawyer,
+      lawyer_stats: []
+    }));
 
     // Post-process for price filtering
     let filteredData = lawyersWithStats;
@@ -168,16 +150,10 @@ export const getLawyerById = async (lawyerId) => {
 
     if (error) throw error;
 
-    // Fetch lawyer_stats separately
-    const { data: stats } = await supabase
-      .from('lawyer_stats')
-      .select('*')
-      .eq('lawyer_id', lawyerId)
-      .maybeSingle();
-
+    // Return lawyer with empty stats (lawyer_stats table not used)
     return {
       ...data,
-      lawyer_stats: stats ? [stats] : []
+      lawyer_stats: []
     };
   } catch (error) {
     console.error('Error fetching lawyer:', error);
@@ -330,23 +306,13 @@ export const getCities = async () => {
 
 /**
  * Get lawyer statistics
+ * Note: lawyer_stats table is not used - returns null
  * @param {number} lawyerId - Lawyer ID
- * @returns {Promise<Object>} Lawyer statistics
+ * @returns {Promise<Object>} Lawyer statistics (always null)
  */
 export const getLawyerStats = async (lawyerId) => {
-  try {
-    const { data, error } = await supabase
-      .from('lawyer_stats')
-      .select('*')
-      .eq('lawyer_id', lawyerId)
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error fetching lawyer stats:', error);
-    return null;
-  }
+  // lawyer_stats table doesn't exist - return null
+  return null;
 };
 
 /**
