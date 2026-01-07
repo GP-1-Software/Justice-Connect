@@ -33,6 +33,43 @@
   }
 }
 
+/* Mobile Filter Drawer Slide Animation */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}
+
+/* RTL version slides from left */
+html[dir='rtl'] .animate-slide-in {
+  animation: slideInFromLeft 0.3s ease-out forwards;
+}
+
+/* Mobile Filter Popup Animation */
+@keyframes popupIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-popup-in {
+  animation: popupIn 0.25s ease-out forwards;
+}
+
 /* Basic RTL helper: toggle by document.dir = 'rtl' */
 html[dir='rtl'] body {
   direction: rtl;

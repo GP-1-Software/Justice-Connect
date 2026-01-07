@@ -110,32 +110,32 @@ const Calendar = () => {
     : appointments.filter(a => a.status === statusFilter);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <CalendarIcon className="h-8 w-8 text-blue-600" />
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
               التقويم والمواعيد
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               إدارة مواعيدك واستشاراتك
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <button
             onClick={handleToday}
-            className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition text-sm"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition text-xs sm:text-sm touch-manipulation"
           >
             اليوم
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setViewMode('month')}
-              className={`px-4 py-2 rounded-lg text-sm transition ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm transition touch-manipulation ${
                 viewMode === 'month'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600'
@@ -145,7 +145,7 @@ const Calendar = () => {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-lg text-sm transition ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm transition touch-manipulation ${
                 viewMode === 'list'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600'
@@ -158,22 +158,22 @@ const Calendar = () => {
       </div>
 
       {/* Month Navigation */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl shadow p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition touch-manipulation"
           >
-            <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-300" />
           </button>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
             {currentDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' })}
           </h2>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition touch-manipulation"
           >
-            <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
       </div>
@@ -183,9 +183,9 @@ const Calendar = () => {
 
       {/* Calendar or List View */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4">جاري التحميل...</p>
+        <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-3 sm:mt-4 text-sm">جاري التحميل...</p>
         </div>
       ) : viewMode === 'month' ? (
         <CalendarView 

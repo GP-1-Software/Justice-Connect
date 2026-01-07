@@ -349,19 +349,10 @@ const FileCaseLawyer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 transition-colors" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 transition-colors" dir="rtl">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-900 to-blue-700 dark:from-blue-800 dark:to-blue-600 text-white rounded-t-2xl p-8 text-center relative">
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="absolute left-4 top-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-            title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-
           <div className="flex items-center justify-center gap-3 mb-2">
             <Scale className="w-10 h-10" />
             <h1 className="text-3xl font-bold">تقديم دعوى إلكترونية جديدة</h1>
@@ -749,7 +740,7 @@ const FileCaseLawyer = () => {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  رقم الهوية / الجوال / السجل التجاري
+                  رقم الهوية
                 </label>
                 <input
                   type="text"

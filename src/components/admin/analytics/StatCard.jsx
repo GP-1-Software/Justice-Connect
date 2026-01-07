@@ -2,10 +2,10 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-const StatCard = ({ 
-  title, 
-  value, 
-  icon: Icon, 
+const StatCard = ({
+  title,
+  value,
+  icon: Icon,
   color = 'blue',
   trend,
   trendValue,
@@ -71,45 +71,47 @@ const StatCard = ({
   }
 
   return (
-    <div className={`${colors.bg} border ${colors.border} rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:scale-105`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1 truncate">
+    <div className={`${colors.bg} border ${colors.border} rounded-xl sm:rounded-2xl p-3 sm:p-6 hover:shadow-lg transition-all duration-300 hover:scale-105`}>
+      {/* Mobile: Vertical Layout, Desktop: Horizontal */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+        {/* Icon - Top on mobile, Right on desktop */}
+        <div className={`p-2 sm:p-3 ${colors.iconBg} rounded-lg sm:rounded-xl self-start sm:order-2 flex-shrink-0`}>
+          <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${colors.icon}`} />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 sm:order-1">
+          <p className="text-[10px] sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 truncate">
             {title}
           </p>
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
             {value?.toLocaleString('ar-EG') || '0'}
           </h3>
-          
+
           {subtitle && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
               {subtitle}
             </p>
           )}
-          
+
           {trend && (
-            <div className="flex items-center space-x-1 space-x-reverse mt-2">
+            <div className="flex items-center space-x-1 space-x-reverse mt-1 sm:mt-2">
               {trend === 'up' ? (
-                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
               )}
-              <span className={`text-xs font-semibold ${
-                trend === 'up' 
-                  ? 'text-green-600 dark:text-green-400' 
-                  : 'text-red-600 dark:text-red-400'
-              }`}>
+              <span className={`text-[10px] sm:text-xs font-semibold ${trend === 'up'
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-red-600 dark:text-red-400'
+                }`}>
                 {trendValue}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
                 من الشهر الماضي
               </span>
             </div>
           )}
-        </div>
-        
-        <div className={`p-2 sm:p-3 ${colors.iconBg} rounded-xl flex-shrink-0`}>
-          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${colors.icon}`} />
         </div>
       </div>
     </div>

@@ -47,12 +47,12 @@ const Dashboard = () => {
           .gte('appointment_date', new Date().toISOString().split('T')[0])
           .in('status', ['pending', 'confirmed']);
 
-        // Fetch completed cases
+        // Fetch completed cases (fully executed - based on case_stage)
         const { count: completedCases } = await supabase
           .from('cases')
           .select('*', { count: 'exact', head: true })
           .eq('assigned_lawyer_id', lawyer.lawyer_id)
-          .eq('status', 'completed');
+          .eq('case_stage', 'fully_executed');
 
         if (mounted) {
           // Calculate average rating
@@ -83,12 +83,12 @@ const Dashboard = () => {
   }, [lawyer]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Welcome Banner */}
       <WelcomeBanner />
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <StatsCard
           icon={Briefcase}
           label="إجمالي القضايا"
@@ -124,31 +124,31 @@ const Dashboard = () => {
       </div>
 
       {/* Rating Card - Compact */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-              <Star className="w-5 h-5 text-yellow-600 fill-yellow-500" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-2.5 sm:p-4">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 fill-yellow-500" />
             </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">تقييمك</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">تقييمك</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`w-4 h-4 ${star <= Math.round(stats.averageRating)
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${star <= Math.round(stats.averageRating)
                     ? 'text-yellow-500 fill-yellow-500'
                     : 'text-gray-300 dark:text-gray-600'
                     }`}
                 />
               ))}
             </div>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">
+            <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
               {stats.averageRating || '-'}
             </span>
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              ({stats.ratingsCount} تقييم)
+              ({stats.ratingsCount})
             </span>
           </div>
         </div>

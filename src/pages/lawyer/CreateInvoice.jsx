@@ -105,7 +105,7 @@ const CreateInvoice = () => {
     fetchData();
   }, [lawyerId]);
 
-  // Search and auto-fill by case number
+  // Search and auto-fill by case number or filing number
   const handleCaseNumberSearch = async (caseNumber) => {
     setSearchCaseNumber(caseNumber);
     if (!caseNumber.trim()) return;
@@ -126,42 +126,108 @@ const CreateInvoice = () => {
         lawyerId: lawyerId
       });
 
-      const { data: caseData, error } = await supabase
-        .from('cases')
-        .select('case_id, title, case_number, client_id')
-        .eq('case_number', cleanCaseNumber)
-        .eq('assigned_lawyer_id', lawyerId)
-        .single();
+      // Check if it's a filing number (starts with FILING-)
+      const isFilingNumber = cleanCaseNumber.toUpperCase().startsWith('FILING-');
 
-      if (error) {
-        console.error('❌ خطأ في البحث:', error);
-        console.log('تفاصيل الخطأ:', {
-          code: error.code,
-          message: error.message,
-          details: error.details
-        });
-        // Mark search as invalid
+      let caseData = null;
+      let foundViaFiling = false;
+
+      if (isFilingNumber) {
+        // Search in court_clerk_filings table first
+        console.log('🔍 البحث برقم اللائحة في court_clerk_filings...');
+        const { data: filingData, error: filingError } = await supabase
+          .from('court_clerk_filings')
+          .select('filing_id, case_id, client_id, filing_number, plaintiff_name, defendant_name, case_type')
+          .eq('filing_number', cleanCaseNumber)
+          .eq('lawyer_id', lawyerId)
+          .single();
+
+        if (!filingError && filingData) {
+          console.log('✅ تم العثور على اللائحة:', filingData);
+          foundViaFiling = true;
+          
+          // If filing has a linked case_id, get case details
+          if (filingData.case_id) {
+            const { data: linkedCase } = await supabase
+              .from('cases')
+              .select('case_id, title, case_number, client_id')
+              .eq('case_id', filingData.case_id)
+              .single();
+            
+            if (linkedCase) {
+              caseData = linkedCase;
+            }
+          }
+          
+          // If no linked case, use filing data directly
+          if (!caseData) {
+            caseData = {
+              case_id: filingData.case_id,
+              client_id: filingData.client_id,
+              title: `${filingData.case_type} - ${filingData.plaintiff_name} ضد ${filingData.defendant_name}`,
+              filing_number: filingData.filing_number
+            };
+          }
+        }
+      }
+
+      // If not found via filing, search in cases table
+      if (!caseData) {
+        const { data: casesResult, error } = await supabase
+          .from('cases')
+          .select('case_id, title, case_number, client_id')
+          .eq('case_number', cleanCaseNumber)
+          .eq('assigned_lawyer_id', lawyerId)
+          .single();
+
+        if (!error && casesResult) {
+          caseData = casesResult;
+        }
+      }
+
+      // If still not found, try searching filings by case_id match in cases
+      if (!caseData && !isFilingNumber) {
+        // Try to find if this case_number exists in filings
+        const { data: filingByCase } = await supabase
+          .from('court_clerk_filings')
+          .select('filing_id, case_id, client_id, filing_number, case_type, plaintiff_name, defendant_name')
+          .eq('lawyer_id', lawyerId)
+          .or(`filing_number.ilike.%${cleanCaseNumber}%,official_case_number.eq.${cleanCaseNumber},registry_number.eq.${cleanCaseNumber}`)
+          .limit(1)
+          .single();
+
+        if (filingByCase) {
+          foundViaFiling = true;
+          caseData = {
+            case_id: filingByCase.case_id,
+            client_id: filingByCase.client_id,
+            title: `${filingByCase.case_type} - ${filingByCase.plaintiff_name} ضد ${filingByCase.defendant_name}`,
+            filing_number: filingByCase.filing_number
+          };
+        }
+      }
+
+      if (!caseData) {
+        console.error('❌ لم يتم العثور على القضية أو اللائحة');
         setIsValidSearch(false);
         setSearchPerformed(true);
-        alert(`❌ لم يتم العثور على القضية "${cleanCaseNumber}"\nتأكد من:\n1. الرقم صحيح\n2. القضية موجودة\n3. القضية مسندة لك`);
+        alert(`❌ لم يتم العثور على القضية أو اللائحة "${cleanCaseNumber}"\nتأكد من:\n1. الرقم صحيح\n2. القضية/اللائحة موجودة\n3. مسندة لك`);
         return;
       }
 
-      if (caseData) {
-        console.log('✅ تم العثور على القضية:', caseData);
-        setFormData(prev => ({
-          ...prev,
-          case_id: caseData.case_id,
-          client_id: caseData.client_id,
-          appointment_id: '' // Clear appointment if case is selected
-        }));
-        // Clear appointment search field
-        setSearchAppointmentNumber('');
-        // Mark search as valid
-        setIsValidSearch(true);
-        setSearchPerformed(true);
-        alert(`✅ تم العثور على القضية: ${caseData.title}`);
-      }
+      console.log('✅ تم العثور على القضية:', caseData, foundViaFiling ? '(عبر اللائحة)' : '(مباشرة)');
+      setFormData(prev => ({
+        ...prev,
+        case_id: caseData.case_id,
+        client_id: caseData.client_id,
+        appointment_id: '' // Clear appointment if case is selected
+      }));
+      // Clear appointment search field
+      setSearchAppointmentNumber('');
+      // Mark search as valid
+      setIsValidSearch(true);
+      setSearchPerformed(true);
+      alert(`✅ تم العثور على القضية: ${caseData.title}${foundViaFiling ? '\n(تم العثور عليها من خلال رقم اللائحة)' : ''}`);
     } catch (error) {
       console.error('💥 خطأ غير متوقع:', error);
       alert('حدث خطأ غير متوقع. راجع Console.');

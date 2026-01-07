@@ -17,21 +17,21 @@ const WelcomeBanner = () => {
     : lawyer?.email || 'محامي';
 
   return (
-    <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 text-white">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-lg sm:rounded-2xl shadow-lg p-3 sm:p-6 text-white">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
             <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{getGreeting()}, {lawyerName}</h2>
+            <h2 className="text-base sm:text-xl lg:text-2xl font-bold truncate">{getGreeting()}, {lawyerName}</h2>
           </div>
-          <p className="text-sm sm:text-base text-blue-100">
+          <p className="text-xs sm:text-base text-blue-100">
             مرحباً بك في لوحة المحامي. إليك نظرة عامة على أنشطتك اليوم.
           </p>
         </div>
         <div className="w-full sm:w-auto">
           <div className="text-right">
-            <p className="text-xs sm:text-sm text-blue-100">اليوم</p>
-            <p className="text-sm sm:text-base lg:text-lg font-semibold">
+            <p className="text-xs text-blue-100">اليوم</p>
+            <p className="text-xs sm:text-base lg:text-lg font-semibold">
               {new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>

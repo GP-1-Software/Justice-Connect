@@ -328,20 +328,20 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                         </nav>
 
                         {/* Right Side Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
 
-
-                            {/* Role Switcher */}
-                            <RoleSwitcher />
-
+                            {/* Role Switcher - Hidden on mobile */}
+                            <div className="hidden lg:block">
+                                <RoleSwitcher />
+                            </div>
 
                             {/* Dark Mode Toggle */}
                             <button
                                 onClick={toggleDarkMode}
-                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
+                                className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
                                 title={darkMode ? 'الوضع الفاتح' : 'الوضع الداكن'}
                             >
-                                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                                {darkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
                             </button>
 
 
@@ -350,11 +350,11 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                             <div className="relative" ref={notificationRef}>
                                 <button
                                     onClick={() => setShowNotifications(!showNotifications)}
-                                    className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
+                                    className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
                                 >
-                                    <Bell size={20} />
+                                    <Bell size={18} className="sm:w-5 sm:h-5" />
                                     {unreadCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
                                             {unreadCount > 9 ? '9+' : unreadCount}
                                         </span>
                                     )}
@@ -429,15 +429,15 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                             <div className="relative" ref={userMenuRef}>
                                 <button
                                     onClick={() => setShowUserMenu(!showUserMenu)}
-                                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                                    className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                                 >
-                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                                         {clerkInfo?.first_name?.[0] || 'م'}
                                     </div>
                                     <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
                                         {clerkInfo?.first_name || 'موظف'}
                                     </span>
-                                    <ChevronDown size={16} className="text-gray-400" />
+                                    <ChevronDown size={14} className="hidden sm:block text-gray-400" />
                                 </button>
 
                                 {showUserMenu && (
@@ -449,6 +449,11 @@ const CourtClerkHeader = ({ title, subtitle }) => {
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 {clerkInfo?.email || 'موظف قلم المحكمة'}
                                             </p>
+                                        </div>
+
+                                        {/* Role Switcher in Mobile Menu */}
+                                        <div className="lg:hidden px-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                                            <RoleSwitcher />
                                         </div>
 
                                         <div className="py-2">

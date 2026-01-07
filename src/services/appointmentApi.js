@@ -20,6 +20,10 @@ const generateAppointmentNumber = async () => {
 // Get all appointments for a client with related case info
 export const getClientAppointments = async (clientId) => {
   try {
+    console.log('=== DEBUG: getClientAppointments ===');
+    console.log('Searching for client_id:', clientId);
+    console.log('Parsed client_id:', parseInt(clientId));
+
     const { data, error } = await supabase
       .from('appointments')
       .select(`
@@ -42,6 +46,10 @@ export const getClientAppointments = async (clientId) => {
       `)
       .eq('client_id', parseInt(clientId))
       .order('appointment_date', { ascending: false });
+
+    console.log('Query result - data:', data);
+    console.log('Query result - error:', error);
+    console.log('Number of appointments found:', data?.length || 0);
 
     if (error) {
       console.error('Error fetching appointments:', error);
