@@ -114,7 +114,8 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">{news.map((article) => {
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+        {news.map((article) => {
           const isExpanded = expandedId === article.id;
           return (
           <div

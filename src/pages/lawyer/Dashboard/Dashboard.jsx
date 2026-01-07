@@ -158,7 +158,7 @@ const Dashboard = () => {
       <QuickActions />
 
       {/* Palestinian Judiciary News */}
-      <PalestinianNews limit={12} />
+      <PalestinianNews limit={50} />
 
       {/* Today's Appointments - Removed as requested */}
       {/* <TodayAppointmentsList /> */}
