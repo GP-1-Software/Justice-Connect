@@ -6,6 +6,7 @@ import WelcomeBanner from './components/WelcomeBanner';
 import StatsCard from './components/StatsCard';
 import QuickActions from './components/QuickActions';
 import TodayAppointmentsList from './components/TodayAppointmentsList';
+import PalestinianNews from '../../../components/common/PalestinianNews';
 
 const Dashboard = () => {
   const { lawyer } = useLawyerAuth();
@@ -155,6 +156,9 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <QuickActions />
+
+      {/* Palestinian Judiciary News */}
+      <PalestinianNews limit={12} />
 
       {/* Today's Appointments - Removed as requested */}
       {/* <TodayAppointmentsList /> */}

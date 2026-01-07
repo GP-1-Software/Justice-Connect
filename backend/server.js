@@ -11,8 +11,8 @@ import notificationRouter from "./routes/notificationRouter.js";
 import authRouter from "./routes/authRoutes.js";
 import courtClerkRouter from "./routes/courtClerkRoutes.js";
 import documentAnalysisRouter from "./routes/documentAnalysisRoute.js";
+import newsRouter from "./routes/newsRoutes.js";
 // import legislationRouter from "./routes/legislationRoute.js";
-// import newsRouter from "./routes/newsRoute.js";
 import { startNotificationScheduler } from "./services/notificationScheduler.js";
 
 
@@ -43,6 +43,9 @@ app.use("/api/court-clerk", courtClerkRouter);
 
 // Route for Document Analysis (PDF upload)
 app.use("/api/document-analysis", documentAnalysisRouter);
+
+// Route for News
+app.use("/api/news", newsRouter);
 
 // // Route for Legislation
 // app.use("/api/law", legislationRouter);

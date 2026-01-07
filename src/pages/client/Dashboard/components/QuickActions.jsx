@@ -1,14 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  Search, 
-  MessageSquare, 
-  FileText,
+import {
+  Search,
   Calendar,
+  MessageSquare,
+  FileText,
   Bot,
-  FileCheck,
-  CreditCard,
   BookOpen
 } from 'lucide-react';
 
@@ -17,70 +14,48 @@ const QuickActions = () => {
 
   const actions = [
     {
-      title: 'إنشاء قضية جديدة',
-      description: 'ابدأ قضية جديدة مع محاميك',
-      icon: Plus,
-      color: 'blue',
-      path: '/client/create-case',
-      highlight: true
-    },
-    {
-      title: 'البحث عن محامين',
-      description: 'ابحث عن محامي متخصص',
       icon: Search,
-      color: 'green',
-      path: '/client/search-lawyers'
+      labelAr: 'البحث عن محامين',
+      labelEn: 'Search Lawyers',
+      bgColor: 'from-green-500 to-green-600',
+      onClick: () => navigate('/client/search-lawyers')
     },
     {
-      title: 'مواعيدي',
-      description: 'عرض وإدارة مواعيدك',
       icon: Calendar,
-      color: 'purple',
-      path: '/client/appointments'
+      labelAr: 'مواعيدي',
+      labelEn: 'My Appointments',
+      bgColor: 'from-purple-500 to-purple-600',
+      onClick: () => navigate('/client/appointments')
     },
     {
-      title: 'الرسائل',
-      description: 'تواصل مع محاميك',
-      icon: MessageSquare,
-      color: 'orange',
-      path: '/client/messages'
-    },
-    {
-      title: 'المساعد الذكي',
-      description: 'احصل على استشارة فورية',
-      icon: Bot,
-      color: 'cyan',
-      path: '/client/justice-ai',
-      badge: 'AI'
-    },
-    {
-      title: 'قضاياي',
-      description: 'عرض وإدارة قضاياك',
       icon: FileText,
-      color: 'indigo',
-      path: '/client/cases'
+      labelAr: 'قضاياي',
+      labelEn: 'My Cases',
+      bgColor: 'from-indigo-500 to-indigo-600',
+      onClick: () => navigate('/client/cases')
     },
     {
-      title: 'التشريعات',
-      description: 'تصفح القوانين الفلسطينية',
+      icon: MessageSquare,
+      labelAr: 'الرسائل',
+      labelEn: 'Messages',
+      bgColor: 'from-orange-500 to-orange-600',
+      onClick: () => navigate('/client/messages')
+    },
+    {
+      icon: Bot,
+      labelAr: 'المساعد الذكي',
+      labelEn: 'AI Assistant',
+      bgColor: 'from-cyan-500 to-cyan-600',
+      onClick: () => navigate('/client/justice-ai')
+    },
+    {
       icon: BookOpen,
-      color: 'emerald',
-      path: '/legislation'
+      labelAr: 'التشريعات',
+      labelEn: 'Legislations',
+      bgColor: 'from-green-500 to-emerald-600',
+      onClick: () => navigate('/legislation', { state: { from: 'client-dashboard' } })
     }
   ];
-
-  const getColorClasses = (color) => {
-    const colors = {
-      blue: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-      green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-      purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-      orange: 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
-      cyan: 'from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700',
-      indigo: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
-      emerald: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
-    };
-    return colors[color] || colors.blue;
-  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-6">
@@ -155,9 +130,12 @@ const QuickActions = () => {
             onClick={() => navigate('/client/justice-ai')}
             className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition touch-manipulation"
           >
-            ابدأ الآن
+            <action.icon className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm font-semibold text-center">
+              {action.labelAr}
+            </p>
           </button>
-        </div>
+        ))}
       </div>
     </div>
   );

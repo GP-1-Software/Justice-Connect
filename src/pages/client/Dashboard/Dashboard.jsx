@@ -4,9 +4,9 @@ import { useClientAuth } from '../../../hooks/useClientAuth';
 import { clientApi } from '../../../services/clientApi';
 import { getClientAppointments } from '../../../services/appointmentApi';
 import StatsCards from './components/StatsCards';
-import RecentActivity from './components/RecentActivity';
 import QuickActions from './components/QuickActions';
 import LoadingSpinner from '../../../components/shared/LoadingSpinner';
+import PalestinianNews from '../../../components/common/PalestinianNews';
 import { Calendar, Briefcase } from 'lucide-react';
 import { formatDate } from '../../../utils/dateUtils';
 
@@ -136,21 +136,11 @@ const Dashboard = () => {
         loading={dashboardData.loading} 
       />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-        {/* Recent Activity - Takes 2 columns on large screens */}
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          <RecentActivity 
-            activities={dashboardData.activities} 
-            loading={dashboardData.loading} 
-          />
-        </div>
+      {/* Quick Actions - Full Width */}
+      <QuickActions />
 
-        {/* Quick Actions - Takes 1 column on large screens */}
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          <QuickActions />
-        </div>
-      </div>
+      {/* Palestinian Judiciary News */}
+      <PalestinianNews limit={12} />
 
       {/* Additional Dashboard Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 lg:gap-8">
