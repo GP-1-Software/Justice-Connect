@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Newspaper, ExternalLink, Calendar, Tag } from 'lucide-react';
+import { Newspaper, ExternalLink, Calendar, Tag, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
 const PalestinianNews = ({ limit = 6, showAll = false }) => {
@@ -7,9 +7,17 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchNews();
+    
+    // Auto-refresh every 30 minutes
+    const interval = setInterval(() => {
+      fetchNews();
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    return () => clearInterval(interval);
   }, [limit]);
 
   const fetchNews = async () => {
@@ -20,7 +28,7 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
       const response = await axios.get(`${API_URL}/api/news?limit=${limit}`);
       
       if (response.data.success) {
-        setNews(response.data.data);
+        setNews(response.data.news || response.data.data || []);
       } else {
         setError('فشل في تحميل الأخبار');
       }
@@ -30,6 +38,12 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchNews();
+    setRefreshing(false);
   };
 
   const formatDate = (dateString) => {
@@ -42,20 +56,18 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-            أخبار القضاء الفلسطيني
-          </h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+              أخبار القضاء الفلسطيني
+            </h2>
+          </div>
         </div>
-        <div className="space-y-3 sm:space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-            </div>
-          ))}
+        <div className="flex items-center justify-center gap-3 py-8">
+          <RefreshCw className="w-5 sm:w-6 h-5 sm:h-6 animate-spin text-blue-600" />
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">جاري تحميل الأخبار...</p>
         </div>
       </div>
     );
@@ -63,38 +75,22 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 md:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white">
             أخبار القضاء الفلسطيني
           </h2>
         </div>
-        <div className="text-center py-6 sm:py-8">
-          <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mb-3 sm:mb-4">{error}</p>
+        <div className="text-center py-8">
+          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
-            onClick={fetchNews}
-            className="px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             إعادة المحاولة
           </button>
         </div>
-      </div>
-    );
-  }
-
-  if (news.length === 0) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-            أخبار القضاء الفلسطيني
-          </h2>
-        </div>
-        <p className="text-center text-sm sm:text-base text-gray-500 dark:text-gray-400 py-6 sm:py-8">
-          لا توجد أخبار متاحة حالياً
-        </p>
       </div>
     );
   }
@@ -109,18 +105,16 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
           </h2>
         </div>
         <button
-          onClick={fetchNews}
-          className="px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 w-full sm:w-auto justify-center disabled:opacity-50"
         >
           <span>تحديث الأخبار</span>
-          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
+          <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${refreshing ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-        {news.map((article) => {
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">{news.map((article) => {
           const isExpanded = expandedId === article.id;
           return (
           <div
@@ -189,6 +183,12 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
           </div>
         )})}
       </div>
+
+      {news.length === 0 && (
+        <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+          لا توجد أخبار متاحة حالياً
+        </div>
+      )}
     </div>
   );
 };

@@ -1,206 +1,55 @@
 import express from 'express';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
+import newsService from '../services/newsService.js';
 
 const router = express.Router();
 
-// Palestinian judiciary news sources
-const NEWS_SOURCES = [
-  {
-    name: 'وكالة وفا',
-    url: 'https://www.wafa.ps/Pages/Search/SearchResults?Search=%D9%82%D8%B6%D8%A7%D8%A1',
-    selector: '.news-item',
-    type: 'wafa'
-  }
-];
-
-/**
- * Scrape Palestinian judiciary news from various sources
- */
-async function scrapeNews() {
+// GET /api/news - جلب الأخبار
+router.get("/", async (req, res) => {
   try {
-    const newsArticles = [];
-    
-    // For now, we'll return mock data with realistic Palestinian judiciary news
-    // In production, you would integrate with actual news APIs or scraping
-    const mockNews = [
-      {
-        id: 1,
-        title: 'المحكمة العليا تصدر قراراً بشأن قضية حقوق الأراضي في القدس',
-        description: 'أصدرت المحكمة العليا الفلسطينية قراراً هاماً يتعلق بحماية حقوق الملكية للأراضي في القدس الشرقية...',
-        fullContent: 'أصدرت المحكمة العليا الفلسطينية اليوم قراراً هاماً يتعلق بحماية حقوق الملكية للأراضي في القدس الشرقية. وأكد القرار على ضرورة احترام القوانين الدولية وحماية حقوق المواطنين الفلسطينيين في أراضيهم. وقد جاء هذا القرار بعد سلسلة من الجلسات الاستماع التي استمرت لعدة أشهر، حيث استمعت المحكمة إلى شهادات الخبراء والمواطنين المتضررين. ويعتبر هذا القرار سابقة قضائية هامة في تاريخ القضاء الفلسطيني، حيث يرسخ مبدأ حماية الحقوق الأساسية للمواطنين.',
-        source: 'وكالة وفا',
-        date: new Date().toISOString(),
-        url: 'https://www.wafa.ps',
-        imageUrl: 'https://placehold.co/800x600/1e40af/white?text=%D8%A7%D9%84%D9%85%D8%AD%D9%83%D9%85%D8%A9+%D8%A7%D9%84%D8%B9%D9%84%D9%8A%D8%A7&font=cairo',
-        category: 'أحكام قضائية'
-      },
-      {
-        id: 2,
-        title: 'وزارة العدل تعلن عن تعيينات جديدة في القضاء الفلسطيني',
-        description: 'أعلنت وزارة العدل الفلسطينية عن تعيين عدد من القضاة الجدد في محاكم الدرجة الأولى...',
-        fullContent: 'أعلنت وزارة العدل الفلسطينية اليوم عن تعيين 15 قاضياً جديداً في محاكم الدرجة الأولى في مختلف المحافظات الفلسطينية. وتأتي هذه التعيينات في إطار خطة تطوير القضاء وتعزيز كفاءة المنظومة القضائية. وقد تم اختيار القضاة الجدد بناءً على معايير صارمة تشمل الكفاءة العلمية والخبرة العملية والنزاهة. وسيتم توزيع القضاة الجدد على المحاكم المختلفة لتخفيف العبء عن القضاة الحاليين وتسريع إجراءات التقاضي.',
-        source: 'وزارة العدل',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        url: 'https://www.moj.pna.ps',
-        imageUrl: 'https://placehold.co/800x600/059669/white?text=%D9%88%D8%B2%D8%A7%D8%B1%D8%A9+%D8%A7%D9%84%D8%B9%D8%AF%D9%84&font=cairo',
-        category: 'تعيينات'
-      },
-      {
-        id: 3,
-        title: 'إطلاق نظام إلكتروني جديد لإدارة القضايا في المحاكم الفلسطينية',
-        description: 'في خطوة نحو التحول الرقمي، أطلق مجلس القضاء الأعلى نظاماً إلكترونياً متطوراً لإدارة القضايا...',
-        fullContent: 'في خطوة نوعية نحو التحول الرقمي، أطلق مجلس القضاء الأعلى اليوم نظاماً إلكترونياً متطوراً لإدارة القضايا في جميع المحاكم الفلسطينية. يهدف النظام الجديد إلى تسهيل إجراءات التقاضي وتوفير الوقت والجهد على المواطنين والمحامين. ويتيح النظام إمكانية تقديم الدعاوى إلكترونياً، ومتابعة سير القضايا، والحصول على الأحكام والقرارات بشكل فوري. كما يوفر النظام قاعدة بيانات شاملة للأحكام والسوابق القضائية التي تساعد القضاة والمحامين في عملهم.',
-        source: 'مجلس القضاء الأعلى',
-        date: new Date(Date.now() - 172800000).toISOString(),
-        url: 'https://www.wafa.ps',
-        imageUrl: 'https://placehold.co/800x600/7c3aed/white?text=%D9%86%D8%B8%D8%A7%D9%85+%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A&font=cairo',
-        category: 'تطوير'
-      },
-      {
-        id: 4,
-        title: 'ورشة عمل حول حقوق الإنسان في القضاء الفلسطيني',
-        description: 'نظم معهد القضاء الفلسطيني ورشة عمل متخصصة حول تطبيق معايير حقوق الإنسان في الأحكام القضائية...',
-        fullContent: 'نظم معهد القضاء الفلسطيني أمس ورشة عمل متخصصة حول تطبيق معايير حقوق الإنسان في الأحكام القضائية، بمشاركة 50 قاضياً من مختلف المحاكم الفلسطينية. تناولت الورشة المعايير الدولية لحقوق الإنسان وكيفية تطبيقها في القضايا المختلفة. وشارك في الورشة خبراء دوليون في مجال حقوق الإنسان والقانون الدولي. وأكد المشاركون على أهمية مراعاة حقوق الإنسان في جميع القرارات والأحكام القضائية، وضرورة مواكبة التطورات الدولية في هذا المجال.',
-        source: 'معهد القضاء',
-        date: new Date(Date.now() - 259200000).toISOString(),
-        url: 'https://www.moj.pna.ps',
-        imageUrl: 'https://placehold.co/800x600/dc2626/white?text=%D9%88%D8%B1%D8%B4%D8%A9+%D8%AD%D9%82%D9%88%D9%82+%D8%A7%D9%84%D8%A5%D9%86%D8%B3%D8%A7%D9%86&font=cairo',
-        category: 'ورش عمل'
-      },
-      {
-        id: 5,
-        title: 'محكمة الاستئناف تؤيد حكماً بشأن قضية تجارية كبرى',
-        description: 'أيدت محكمة الاستئناف في رام الله حكماً صادراً عن محكمة البداية في قضية تجارية بقيمة مليون دولار...',
-        fullContent: 'أيدت محكمة الاستئناف في رام الله اليوم حكماً صادراً عن محكمة البداية في قضية تجارية كبرى بقيمة مليون دولار. وتتعلق القضية بنزاع تجاري بين شركتين فلسطينيتين حول عقد توريد بضائع. وقد استمعت محكمة الاستئناف إلى مرافعات الطرفين ودرست جميع المستندات والأدلة المقدمة، وخلصت إلى تأييد حكم محكمة البداية بالكامل. ويعتبر هذا الحكم مهماً في تعزيز الثقة في القضاء التجاري الفلسطيني وحماية حقوق التجار والمستثمرين.',
-        source: 'وكالة معاً الإخبارية',
-        date: new Date(Date.now() - 345600000).toISOString(),
-        url: 'https://www.maannews.net',
-        imageUrl: 'https://placehold.co/800x600/ea580c/white?text=%D9%82%D8%B6%D8%A7%D9%8A%D8%A7+%D8%AA%D8%AC%D8%A7%D8%B1%D9%8A%D8%A9&font=cairo',
-        category: 'قضايا تجارية'
-      },
-      {
-        id: 6,
-        title: 'اتفاقية تعاون قضائي بين فلسطين والأردن',
-        description: 'وقعت وزارة العدل الفلسطينية اتفاقية تعاون قضائي مع نظيرتها الأردنية لتسهيل تبادل الخبرات...',
-        fullContent: 'وقعت وزارة العدل الفلسطينية أمس في عمان اتفاقية تعاون قضائي شامل مع نظيرتها الأردنية. وتهدف الاتفاقية إلى تسهيل تبادل الخبرات والمعلومات القضائية بين البلدين، وتدريب القضاة والكوادر القضائية. كما تنص الاتفاقية على التعاون في مجال تنفيذ الأحكام وتبادل المساعدات القانونية. وأكد الطرفان على أهمية هذه الاتفاقية في تعزيز العلاقات الثنائية وتطوير المنظومة القضائية في كلا البلدين.',
-        source: 'وكالة وفا',
-        date: new Date(Date.now() - 432000000).toISOString(),
-        url: 'https://www.wafa.ps',
-        imageUrl: 'https://placehold.co/800x600/0891b2/white?text=%D8%AA%D8%B9%D8%A7%D9%88%D9%86+%D8%AF%D9%88%D9%84%D9%8A&font=cairo',
-        category: 'تعاون دولي'
-      },
-      {
-        id: 7,
-        title: 'انطلاق برنامج تدريبي للقضاة الجدد في المحاكم الفلسطينية',
-        description: 'أطلق معهد القضاء برنامجاً تدريبياً شاملاً للقضاة المعينين حديثاً لتطوير مهاراتهم القانونية...',
-        fullContent: 'أطلق معهد القضاء الفلسطيني برنامجاً تدريبياً شاملاً يستمر لمدة ثلاثة أشهر للقضاة المعينين حديثاً. يهدف البرنامج إلى تطوير المهارات القانونية والقضائية وتعزيز فهم القضاة للتشريعات الفلسطينية والمعايير الدولية. يشمل البرنامج محاضرات نظرية وورش عمل عملية ومحاكاة لجلسات قضائية. كما يتضمن زيارات ميدانية للمحاكم المختلفة ولقاءات مع قضاة ذوي خبرة واسعة.',
-        source: 'معهد القضاء',
-        date: new Date(Date.now() - 518400000).toISOString(),
-        url: 'https://www.moj.pna.ps',
-        imageUrl: 'https://placehold.co/800x600/16a34a/white?text=%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D8%AC+%D8%AA%D8%AF%D8%B1%D9%8A%D8%A8%D9%8A&font=cairo',
-        category: 'تدريب'
-      },
-      {
-        id: 8,
-        title: 'محكمة النقض تصدر حكماً تاريخياً في قضية حقوق المرأة',
-        description: 'أصدرت محكمة النقض الفلسطينية حكماً تاريخياً يعزز حقوق المرأة في الميراث والملكية...',
-        fullContent: 'أصدرت محكمة النقض الفلسطينية حكماً تاريخياً يعزز حقوق المرأة الفلسطينية في الميراث والملكية. جاء الحكم في قضية استئناف تتعلق بحق امرأة في الحصول على نصيبها من تركة والدها. وأكدت المحكمة في حيثيات حكمها على المساواة بين الجنسين في الحقوق القانونية، وأن أي تمييز في هذا الشأن يتعارض مع المبادئ الدستورية والقوانين الفلسطينية.',
-        source: 'وكالة معاً الإخبارية',
-        date: new Date(Date.now() - 604800000).toISOString(),
-        url: 'https://www.maannews.net',
-        imageUrl: 'https://placehold.co/800x600/db2777/white?text=%D8%AD%D9%82%D9%88%D9%82+%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%A9&font=cairo',
-        category: 'أحكام قضائية'
-      },
-      {
-        id: 9,
-        title: 'إطلاق خدمة التقاضي عن بعد في المحاكم الفلسطينية',
-        description: 'دشنت وزارة العدل خدمة جديدة تتيح للمواطنين حضور الجلسات القضائية عن بعد عبر الإنترنت...',
-        fullContent: 'دشنت وزارة العدل الفلسطينية خدمة التقاضي عن بعد في جميع المحاكم، في خطوة تهدف إلى تسهيل الوصول للعدالة وتوفير الوقت والجهد على المتقاضين. تتيح الخدمة للمواطنين والمحامين حضور الجلسات القضائية من خلال تطبيق إلكتروني آمن. كما تسمح الخدمة بتقديم المستندات والأدلة إلكترونياً. وقد أعربت نقابة المحامين عن دعمها للمبادرة مع التأكيد على ضرورة توفير البنية التقنية اللازمة.',
-        source: 'وزارة العدل',
-        date: new Date(Date.now() - 691200000).toISOString(),
-        url: 'https://www.moj.pna.ps',
-        imageUrl: 'https://placehold.co/800x600/2563eb/white?text=%D8%AA%D9%82%D8%A7%D8%B6%D9%8A+%D8%B9%D9%86+%D8%A8%D8%B9%D8%AF&font=cairo',
-        category: 'تطوير'
-      },
-      {
-        id: 10,
-        title: 'مؤتمر دولي حول العدالة الانتقالية في فلسطين',
-        description: 'استضافت رام الله مؤتمراً دولياً بمشاركة خبراء قانونيين من 15 دولة لمناقشة العدالة الانتقالية...',
-        fullContent: 'استضافت مدينة رام الله مؤتمراً دولياً حول العدالة الانتقالية بمشاركة خبراء قانونيين وحقوقيين من 15 دولة عربية وأجنبية. ناقش المؤتمر آليات تطبيق العدالة الانتقالية في السياق الفلسطيني، وسبل تحقيق المساءلة عن الانتهاكات، وحماية حقوق الضحايا. وأكد المشاركون على أهمية بناء نظام عدالة قوي ومستقل كأساس للسلام والاستقرار. كما أوصى المؤتمر بإنشاء لجنة وطنية للعدالة الانتقالية.',
-        source: 'وكالة وفا',
-        date: new Date(Date.now() - 777600000).toISOString(),
-        url: 'https://www.wafa.ps',
-        imageUrl: 'https://placehold.co/800x600/9333ea/white?text=%D9%85%D8%A4%D8%AA%D9%85%D8%B1+%D8%AF%D9%88%D9%84%D9%8A&font=cairo',
-        category: 'مؤتمرات'
-      },
-      {
-        id: 11,
-        title: 'القضاء الفلسطيني يحقق إنجازاً في تقليص حالات التأخير القضائي',
-        description: 'أظهرت إحصائيات وزارة العدل انخفاضاً ملحوظاً في مدة البت في القضايا بنسبة 35% خلال العام الماضي...',
-        fullContent: 'أظهرت الإحصائيات السنوية لوزارة العدل انخفاضاً ملحوظاً في مدة البت في القضايا المدنية والجزائية، حيث انخفضت بنسبة 35% مقارنة بالعام السابق. يعود ذلك إلى تطبيق نظام الإدارة الإلكترونية للقضايا، وتعيين قضاة جدد، وإدخال تحسينات إجرائية. وأشادت منظمات المجتمع المدني بهذا الإنجاز معتبرة إياه خطوة مهمة نحو تعزيز الثقة في النظام القضائي.',
-        source: 'وزارة العدل',
-        date: new Date(Date.now() - 864000000).toISOString(),
-        url: 'https://www.moj.pna.ps',
-        imageUrl: 'https://placehold.co/800x600/f59e0b/white?text=%D8%A5%D8%AD%D8%B5%D8%A7%D8%A6%D9%8A%D8%A7%D8%AA&font=cairo',
-        category: 'إحصائيات'
-      },
-      {
-        id: 12,
-        title: 'تدشين مركز الوساطة والتحكيم في النزاعات التجارية',
-        description: 'افتتح وزير العدل مركزاً متخصصاً للوساطة والتحكيم لحل النزاعات التجارية بطرق بديلة...',
-        fullContent: 'افتتح وزير العدل الفلسطيني مركزاً متخصصاً للوساطة والتحكيم في النزاعات التجارية، يهدف إلى توفير بديل سريع وفعال لحل الخلافات التجارية دون اللجوء للمحاكم. يضم المركز محكمين ووسطاء معتمدين من ذوي الخبرة في القانون التجاري. وتعتبر هذه الخطوة جزءاً من جهود تحسين بيئة الأعمال وتشجيع الاستثمار. وقد أبدت غرف التجارة والصناعة ترحيبها بالمبادرة.',
-        source: 'وكالة معاً الإخبارية',
-        date: new Date(Date.now() - 950400000).toISOString(),
-        url: 'https://www.maannews.net',
-        imageUrl: 'https://placehold.co/800x600/65a30d/white?text=%D9%88%D8%B3%D8%A7%D8%B7%D8%A9+%D9%88%D8%AA%D8%AD%D9%83%D9%8A%D9%85&font=cairo',
-        category: 'تطوير'
-      }
-    ];
-
-    return mockNews;
-  } catch (error) {
-    console.error('Error fetching news:', error);
-    return [];
-  }
-}
-
-/**
- * GET /api/news
- * Get Palestinian judiciary news
- */
-router.get('/', async (req, res) => {
-  try {
-    const { limit = 10 } = req.query;
-    const news = await scrapeNews();
-    
-    // Limit results
-    const limitedNews = news.slice(0, parseInt(limit));
+    const limit = parseInt(req.query.limit) || 12;
+    const news = await newsService.getNews(limit);
     
     res.json({
       success: true,
-      data: limitedNews,
-      count: limitedNews.length,
-      timestamp: new Date().toISOString()
+      count: news.length,
+      news: news
     });
   } catch (error) {
-    console.error('Error in news route:', error);
+    console.error("Error fetching news:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch news',
-      message: error.message
+      error: "Failed to fetch news",
+      news: newsService.getFallbackNews()
     });
   }
 });
 
-/**
- * GET /api/news/:id
- * Get specific news article by ID
- */
-router.get('/:id', async (req, res) => {
+// POST /api/news/refresh - تحديث يدوي
+router.post("/refresh", async (req, res) => {
+  try {
+    newsService.clearCache();
+    const news = await newsService.getNews();
+    
+    res.json({
+      success: true,
+      message: "News refreshed successfully",
+      count: news.length,
+      news: news
+    });
+  } catch (error) {
+    console.error("Error refreshing news:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to refresh news"
+    });
+  }
+});
+
+// GET /api/news/:id - جلب خبر واحد (للتوافق)
+router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const news = await scrapeNews();
+    const news = await newsService.getNews();
     const article = news.find(item => item.id === parseInt(id));
     
     if (!article) {
