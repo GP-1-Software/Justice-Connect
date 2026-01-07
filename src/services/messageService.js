@@ -27,13 +27,13 @@ export const broadcastTyping = async (conversationId, userId, userType, isTyping
 // Subscribe to typing status
 export const subscribeToTyping = (conversationId, callback) => {
     const channel = supabase.channel(`typing:${conversationId}`);
-    
+
     channel
         .on('broadcast', { event: 'typing' }, (payload) => {
             callback(payload.payload);
         })
         .subscribe();
-    
+
     return channel;
 };
 
@@ -75,7 +75,21 @@ export const getUserConversations = async (userId, userType) => {
         }
 
         const data = await response.json();
-        return data.conversations;
+
+        // Filter out deleted messages from last_message
+        const userKey = `${userId}_${userType}`;
+        const conversations = (data.conversations || []).map(conv => {
+            if (conv.last_message) {
+                const deletedFor = conv.last_message.deleted_for || [];
+                if (deletedFor.includes(userKey)) {
+                    // This message was deleted by current user, remove it
+                    return { ...conv, last_message: null };
+                }
+            }
+            return conv;
+        });
+
+        return conversations;
     } catch (error) {
         console.error("Error in getUserConversations:", error);
         throw error;

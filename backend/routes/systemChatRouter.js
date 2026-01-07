@@ -2,6 +2,7 @@
 
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
 import { SYSTEM_PROMPT, SYSTEM_ANALYSIS_PROMPT } from "../systemAI/systemPrompt.js";
 import { SYSTEM_SCHEMA_TEXT } from "../systemAI/systemSchema.js";
 import { ENV } from "../config/env.js";
@@ -19,37 +20,28 @@ function getSupabase() {
   return supabase;
 }
 
-// Gemini AI helper function
-async function callGemini(prompt, systemPrompt = "") {
-  if (!ENV.GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
+// OpenAI helper function
+async function callOpenAI(prompt, systemPrompt = "") {
+  if (!ENV.OPENAI_API_KEY) {
+    throw new Error("OpenAI API key not configured");
   }
 
-  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+  const openai = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${ENV.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: fullPrompt }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2000,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+  const messages = [];
+  if (systemPrompt) {
+    messages.push({ role: "system", content: systemPrompt });
   }
+  messages.push({ role: "user", content: prompt });
 
-  const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages,
+    temperature: 0.1,
+    max_tokens: 2000,
+  });
+
+  return response.choices[0].message.content;
 }
 
 // ============================================================
@@ -234,8 +226,8 @@ router.post("/conversations/:conversationId/messages", async (req, res) => {
     if (!sb) {
       return res.status(500).json({ success: false, error: "Supabase is not configured. Please check .env file." });
     }
-    if (!ENV.GEMINI_API_KEY) {
-      return res.status(500).json({ success: false, error: "Gemini API is not configured. Please check .env file." });
+    if (!ENV.OPENAI_API_KEY) {
+      return res.status(500).json({ success: false, error: "OpenAI API is not configured. Please check .env file." });
     }
     const { conversationId } = req.params;
     const { message } = req.body;
@@ -262,11 +254,11 @@ router.post("/conversations/:conversationId/messages", async (req, res) => {
 
     if (userMessageError) throw userMessageError;
 
-    // 2️⃣ Generate SQL query using Gemini
+    // 2️⃣ Generate SQL query using OpenAI
     let sqlQuery;
     try {
       const systemPrompt = SYSTEM_PROMPT + "\n\n" + SYSTEM_SCHEMA_TEXT;
-      const sqlResponse = await callGemini(message, systemPrompt);
+      const sqlResponse = await callOpenAI(message, systemPrompt);
 
       sqlQuery = sqlResponse.trim();
 
@@ -280,7 +272,7 @@ router.post("/conversations/:conversationId/messages", async (req, res) => {
       sqlQuery = sqlQuery.replace(/;+\s*$/g, "");
 
     } catch (aiError) {
-      console.error("❌ Gemini SQL Generation Error:", aiError);
+      console.error("❌ OpenAI SQL Generation Error:", aiError);
       throw new Error("Failed to generate SQL query");
     }
 
@@ -304,7 +296,7 @@ router.post("/conversations/:conversationId/messages", async (req, res) => {
       console.error("❌ SQL Execution Error:", execError);
     }
 
-    // 4️⃣ Generate AI analysis using Gemini
+    // 4️⃣ Generate AI analysis using OpenAI
     let aiAnalysis;
     try {
       const analysisPrompt = `
@@ -317,10 +309,10 @@ ${JSON.stringify(queryResults, null, 2)}
 ${queryError ? `\nError during execution: ${queryError}` : ""}
 `;
 
-      aiAnalysis = await callGemini(analysisPrompt, SYSTEM_ANALYSIS_PROMPT);
+      aiAnalysis = await callOpenAI(analysisPrompt, SYSTEM_ANALYSIS_PROMPT);
       aiAnalysis = aiAnalysis.trim();
     } catch (aiError) {
-      console.error("❌ Gemini Analysis Error:", aiError);
+      console.error("❌ OpenAI Analysis Error:", aiError);
       aiAnalysis = queryError
         ? `حدث خطأ أثناء تنفيذ الاستعلام: ${queryError}`
         : "تم تنفيذ الاستعلام بنجاح ولكن فشل التحليل.";

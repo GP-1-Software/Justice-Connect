@@ -49,6 +49,7 @@ const RoleSwitcher = () => {
             let table = 'users';
             if (newRole === 'lawyer') table = 'lawyers';
             if (newRole === 'admin' || newRole === 'super_admin') table = 'admins';
+            if (newRole === 'court_clerk') table = 'users';
 
             const { data: newUserData, error } = await supabase
                 .from(table)
@@ -65,6 +66,13 @@ const RoleSwitcher = () => {
             const updatedUser = { ...newUserData, user_type: newRole };
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
+            // Send login email notification with the new role
+            fetch('http://localhost:5000/api/auth/send-login-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: updatedUser, role: newRole })
+            }).catch(err => console.error('Failed to trigger login email:', err));
+
             // Navigate to appropriate dashboard
             if (newRole === 'client') {
                 window.location.href = '/client/dashboard';
@@ -72,6 +80,8 @@ const RoleSwitcher = () => {
                 window.location.href = '/lawyer/dashboard';
             } else if (newRole === 'admin' || newRole === 'super_admin') {
                 window.location.href = '/admin/dashboard';
+            } else if (newRole === 'court_clerk') {
+                window.location.href = '/court-clerk/dashboard';
             }
 
             setIsOpen(false);
@@ -92,7 +102,8 @@ const RoleSwitcher = () => {
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {currentRole === 'client' ? 'عميل' :
                         currentRole === 'lawyer' ? 'محامي' :
-                            'مسؤول'}
+                            currentRole === 'court_clerk' ? 'قلم محكمة' :
+                                'مسؤول'}
                 </span>
                 <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -108,7 +119,8 @@ const RoleSwitcher = () => {
                             <span className="text-sm text-gray-700 dark:text-gray-200">
                                 {role === 'client' ? 'حساب عميل' :
                                     role === 'lawyer' ? 'حساب محامي' :
-                                        role === 'admin' ? 'مسؤول' : 'مسؤول عام'}
+                                        role === 'court_clerk' ? 'موظف قلم محكمة' :
+                                            role === 'admin' ? 'مسؤول' : 'مسؤول عام'}
                             </span>
                             {currentRole === role && <Check className="h-4 w-4 text-blue-600" />}
                         </button>

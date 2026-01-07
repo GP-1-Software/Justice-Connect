@@ -8,7 +8,7 @@ import CalendarPage from '../pages/lawyer/Calendar/Calendar';
 import AppointmentsPage from '../pages/lawyer/Appointments/Appointments';
 import ProfilePage from '../pages/lawyer/Profile/Profile';
 import SettingsPage from '../pages/lawyer/Settings';
-import JusticeAIChat from '../pages/lawyer/JusticeAI/JusticeAIChat';
+import JusticeAIChat from '../pages/lawyer/JusticeAI/index';
 import LawyerInvoices from '../pages/lawyer/LawyerInvoices';
 import CreateInvoice from '../pages/lawyer/CreateInvoice';
 import InvoiceDetails from '../pages/lawyer/InvoiceDetails';

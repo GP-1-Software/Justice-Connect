@@ -21,7 +21,7 @@ export function useLawyerAuth() {
             .select('*')
             .eq('lawyer_id', stored.lawyer_id)
             .single();
-          
+
           if (!dbError && data) {
             setLawyer(data);
             // Update localStorage with fresh data
@@ -63,7 +63,21 @@ export function useLawyerAuth() {
     await loadLawyer();
   };
 
-  return { loading, lawyer, error, refreshLawyer, setLawyer };
+  const signOut = async () => {
+    try {
+      // Clear localStorage
+      localStorage.removeItem('user');
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      // Clear lawyer state
+      setLawyer(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
+  };
+
+  return { loading, lawyer, error, refreshLawyer, setLawyer, signOut };
 }
 
 

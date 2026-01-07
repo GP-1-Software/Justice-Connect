@@ -64,17 +64,9 @@ const LawyerNavbar = ({ onMenuClick }) => {
             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">- المحامي</span>
           </Link>
 
+
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-6 space-x-reverse">
-            {/* Home Button */}
-            <button
-              onClick={() => window.location.href = '/'}
-              className="flex items-center space-x-2 space-x-reverse text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition font-semibold"
-            >
-              <Home className="h-5 w-5" />
-              <span>الصفحة الرئيسية</span>
-            </button>
-
             {/* Role Switcher */}
             <RoleSwitcher />
 
@@ -114,15 +106,17 @@ const LawyerNavbar = ({ onMenuClick }) => {
 
               {/* User Dropdown */}
               {userMenuOpen && (
-                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                       {lawyer?.first_name} {lawyer?.last_name}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={lawyer?.email}>
                       {lawyer?.email}
                     </p>
                   </div>
+
+
 
                   <Link
                     to="/lawyer/profile"

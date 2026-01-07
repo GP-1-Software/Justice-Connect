@@ -21,6 +21,7 @@ import ClientRoutes from './routes/clientRoutes';
 import CourtClerkRoutes from './routes/courtClerkRoutes';
 import { LawyerAuthProvider } from './hooks/useLawyerAuth.jsx';
 import { ClientAuthProvider } from './hooks/useClientAuth.jsx';
+import BanListener from './components/BanListener';
 
 
 // Import ThemeProvider
@@ -81,6 +82,8 @@ function App() {
               },
             }}
           />
+          {/* Real-time Ban Listener */}
+          <BanListener />
         </LawyerAuthProvider>
       </ClientAuthProvider>
     </ThemeProvider>

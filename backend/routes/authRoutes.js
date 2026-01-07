@@ -1,5 +1,6 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import { sendLoginNotification } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -65,18 +66,55 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Invalid password" });
         }
 
-        // 3. Return success with available roles
+        // 3. Check if user is banned
+        if (user.account_status === 'banned') {
+            return res.status(403).json({
+                error: "تم تعليق حسابك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
+                banned: true,
+                ban_reason: user.ban_reason || null
+            });
+        }
+
+        // 4. Return success with available roles
+        // For admins, use the actual role from admins table (could be 'admin' or 'super_admin')
+        const actualRole = (validRole === 'admin' && user.role) ? user.role : validRole;
+
+        // Note: Email notification is sent from frontend after role selection
+
         res.json({
             success: true,
             roles: roles.map(r => r.role),
             user: {
                 ...user,
-                user_type: validRole // The role that matched credentials
+                user_type: validRole, // The role that matched credentials
+                role: actualRole // Actual role (super_admin or admin)
             }
         });
 
     } catch (error) {
         console.error("Login error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Send Login Email Notification (called after role selection)
+router.post("/send-login-email", async (req, res) => {
+    try {
+        const { user, role } = req.body;
+
+        if (!user || !role) {
+            return res.status(400).json({ error: "Missing user or role" });
+        }
+
+        // Send login notification email
+        sendLoginNotification(user, role).catch(err => {
+            console.error('Failed to send login email:', err);
+        });
+
+        res.json({ success: true, message: "Email notification triggered" });
+
+    } catch (error) {
+        console.error("Send login email error:", error);
         res.status(500).json({ error: error.message });
     }
 });

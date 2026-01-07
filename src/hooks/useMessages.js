@@ -1,16 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-    getUserConversations,
+    broadcastTyping,
     getConversationMessages,
-    sendMessage,
+    getUserConversations,
     markMessagesAsRead,
+    sendMessage,
+    subscribeToConversations,
     subscribeToMessages,
     subscribeToMessageUpdates,
-    subscribeToConversations,
-    unsubscribeFromChannel,
     subscribeToTyping,
-    broadcastTyping,
-    getOrCreateConversation
+    unsubscribeFromChannel
 } from '../services/messageService';
 
 export const useMessages = (userId, userType) => {
@@ -48,7 +47,16 @@ export const useMessages = (userId, userType) => {
         try {
             setLoading(true);
             const data = await getConversationMessages(conversationId);
-            setMessages(data);
+
+            // Filter out messages deleted by current user
+            const userKey = `${userId}_${userType}`;
+            const filteredMessages = data.filter(msg => {
+                const deletedFor = msg.deleted_for || [];
+                return !deletedFor.includes(userKey);
+            });
+
+            console.log(`Filtered messages: ${data.length} -> ${filteredMessages.length}`);
+            setMessages(filteredMessages);
             setError(null);
 
             // Mark messages as read
@@ -69,8 +77,8 @@ export const useMessages = (userId, userType) => {
             let conversation = conversations.find(c => c.conversation_id === activeConversation);
             if (!conversation) return;
 
-            const isParticipant1 = 
-                conversation.participant1_id === parseInt(userId) && 
+            const isParticipant1 =
+                conversation.participant1_id === parseInt(userId) &&
                 conversation.participant1_type === userType;
 
             const receiverId = isParticipant1 ? conversation.participant2_id : conversation.participant1_id;
@@ -84,7 +92,7 @@ export const useMessages = (userId, userType) => {
                 receiverType,
                 content
             );
-            
+
             // Add message immediately with is_read = false
             const newMessage = {
                 ...message,
@@ -92,41 +100,41 @@ export const useMessages = (userId, userType) => {
                 message_id: message.message_id || Date.now(),
                 created_at: message.created_at || new Date().toISOString()
             };
-            
+
             // Play send sound
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
-                
+
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
-                
+
                 oscillator.frequency.value = 800;
                 oscillator.type = 'sine';
-                
+
                 gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-                
+
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.1);
             } catch (e) {
                 console.log('Send sound error:', e);
             }
-            
+
             setMessages(prev => {
                 const exists = prev.some(m => m.message_id === newMessage.message_id);
                 if (exists) return prev;
                 return [...prev, newMessage];
             });
-            
+
             // Update conversation's last_message_at in local state instead of reloading all
-            setConversations(prev => prev.map(c => 
-                c.conversation_id === conversation.conversation_id 
+            setConversations(prev => prev.map(c =>
+                c.conversation_id === conversation.conversation_id
                     ? { ...c, last_message_at: newMessage.created_at }
                     : c
             ));
-            
+
             setError(null);
         } catch (err) {
             // Check if error is due to blocking
@@ -142,7 +150,7 @@ export const useMessages = (userId, userType) => {
     // Set active conversation and load its messages
     const selectConversation = async (conversationId) => {
         console.log('Selecting conversation:', conversationId);
-        
+
         // Check if this is a temporary conversation
         const conversation = conversations.find(c => c.conversation_id === conversationId);
         if (conversation && conversation.isTemp) {
@@ -151,7 +159,7 @@ export const useMessages = (userId, userType) => {
             setMessages([]);
             return;
         }
-        
+
         // Unsubscribe from previous conversation
         if (messageChannel.current) {
             await unsubscribeFromChannel(messageChannel.current);
@@ -169,12 +177,12 @@ export const useMessages = (userId, userType) => {
         setActiveConversation(conversationId);
         setIsOtherUserTyping(false);
         await loadMessages(conversationId);
-        
+
         // Clear unread count for this conversation
-        setConversations(prev => 
-            prev.map(c => 
-                c.conversation_id === conversationId 
-                    ? { ...c, unread_count: 0 } 
+        setConversations(prev =>
+            prev.map(c =>
+                c.conversation_id === conversationId
+                    ? { ...c, unread_count: 0 }
                     : c
             )
         );
@@ -190,37 +198,40 @@ export const useMessages = (userId, userType) => {
         // Subscribe to new messages
         messageChannel.current = subscribeToMessages(conversationId, (newMessage) => {
             console.log('New message received:', newMessage);
-            
+
+            // Don't filter real-time messages - they are new messages sent after opening the conversation
+            // Old deleted messages are already filtered when loading the conversation
+
             // Play receive sound if message is from other user
             if (newMessage.sender_id !== parseInt(userId) || newMessage.sender_type !== userType) {
                 try {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
-                    
+
                     oscillator.connect(gainNode);
                     gainNode.connect(audioContext.destination);
-                    
+
                     oscillator.frequency.value = 600;
                     oscillator.type = 'sine';
-                    
+
                     gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                    
+
                     oscillator.start(audioContext.currentTime);
                     oscillator.stop(audioContext.currentTime + 0.15);
                 } catch (e) {
                     console.log('Receive sound error:', e);
                 }
             }
-            
+
             // Check if message already exists
             setMessages(prev => {
                 const exists = prev.some(m => m.message_id === newMessage.message_id);
                 if (exists) return prev;
                 return [...prev, newMessage];
             });
-            
+
             // Mark as read if it's not from current user
             if (newMessage.receiver_id === parseInt(userId) && newMessage.receiver_type === userType) {
                 markMessagesAsRead(conversationId, userId, userType);
@@ -233,12 +244,12 @@ export const useMessages = (userId, userType) => {
         // Subscribe to message updates (read status)
         updateChannel.current = subscribeToMessageUpdates(conversationId, (updatedMessage) => {
             console.log('Message updated (read status):', updatedMessage);
-            
+
             // Update message in current conversation
             setMessages(prev =>
                 prev.map(msg =>
-                    msg.message_id === updatedMessage.message_id 
-                        ? { ...msg, is_read: true, read_at: updatedMessage.read_at } 
+                    msg.message_id === updatedMessage.message_id
+                        ? { ...msg, is_read: true, read_at: updatedMessage.read_at }
                         : msg
                 )
             );

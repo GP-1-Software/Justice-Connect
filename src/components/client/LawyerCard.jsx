@@ -1,10 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { 
-  MapPin, 
-  Briefcase, 
-  Coins, 
+import {
+  MapPin,
+  Briefcase,
+  Coins,
   Star,
   Calendar,
   Eye,
@@ -25,18 +25,18 @@ const LawyerCard = ({ lawyer }) => {
   // Calculate minimum price from services
   const getMinPrice = () => {
     if (!lawyer.lawyer_services || lawyer.lawyer_services.length === 0) {
-      return t('searchLawyers.priceNotAvailable');
+      return 'غير محدد';
     }
     const activePrices = lawyer.lawyer_services
       .filter(s => s.is_active)
       .map(s => parseFloat(s.price));
-    
+
     if (activePrices.length === 0) {
-      return t('searchLawyers.priceNotAvailable');
+      return 'غير محدد';
     }
-    
+
     const minPrice = Math.min(...activePrices);
-    return `${minPrice} ${t('searchLawyers.currency')}`;
+    return `${minPrice} ₪`;
   };
 
   // Get total cases from stats
@@ -47,14 +47,13 @@ const LawyerCard = ({ lawyer }) => {
     return lawyer.lawyer_stats[0].total_cases || 0;
   };
 
-  // Calculate rating (placeholder - you can implement real rating system)
+  // Calculate rating from database
   const getRating = () => {
-    // For now, return a random rating based on experience
-    const experience = lawyer.years_of_experience || 0;
-    if (experience >= 10) return 4.8;
-    if (experience >= 5) return 4.5;
-    if (experience >= 2) return 4.2;
-    return 4.0;
+    if (lawyer.ratings_count && lawyer.ratings_count > 0) {
+      const average = lawyer.total_ratings_sum / lawyer.ratings_count;
+      return average.toFixed(1);
+    }
+    return null;
   };
 
   const handleViewProfile = () => {
@@ -72,44 +71,33 @@ const LawyerCard = ({ lawyer }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('handleSendMessage clicked', { user, lawyer });
-    
+
     try {
-      // Use user.id instead of user.user_id
       const clientId = user?.id || user?.user_id;
-      
+
       if (!user || !clientId) {
-        console.error('User not logged in', user);
         alert('يجب تسجيل الدخول أولاً');
         return;
       }
-      
-      console.log('Creating conversation between:', {
-        client: clientId,
-        lawyer: lawyer.lawyer_id
-      });
-      
+
       const conversation = await getOrCreateConversation(
         clientId,
         'client',
         lawyer.lawyer_id,
         'lawyer'
       );
-      
-      console.log('Conversation created:', conversation);
-      
+
       navigate(`/client/messages?conversation=${conversation.conversation_id}`);
     } catch (error) {
       console.error('Error starting conversation:', error);
-      alert('حدث خطأ في بدء المحادثة: ' + error.message);
+      alert('حدث خطأ في بدء المحادثة');
     }
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden ${isRTL ? 'rtl' : 'ltr'}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 ${isRTL ? 'rtl' : 'ltr'}`}>
       {/* Header with Image */}
-      <div className="relative h-48 bg-gradient-to-br from-blue-500 to-blue-700">
+      <div className="relative h-44 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700">
         {lawyer.profile_image_url ? (
           <img
             src={lawyer.profile_image_url}
@@ -118,94 +106,89 @@ const LawyerCard = ({ lawyer }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <User className="w-24 h-24 text-white opacity-50" />
+            <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+              <User className="w-12 h-12 text-white" />
+            </div>
           </div>
         )}
-        
+
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+
         {/* Rating Badge */}
-        <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} bg-white dark:bg-gray-800 rounded-full px-3 py-1 flex items-center gap-1 shadow-lg`}>
-          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            {getRating()}
-          </span>
-        </div>
+        {getRating() && (
+          <div className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg`}>
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            <span className="text-sm font-bold text-gray-900 dark:text-white">
+              {getRating()}
+            </span>
+            <span className="text-xs text-gray-500">({lawyer.ratings_count})</span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-5">
         {/* Name and Specialization */}
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+        <div className="mb-4 text-center">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
             {lawyer.first_name} {lawyer.last_name}
           </h3>
           {lawyer.specialization && (
-            <p className="text-blue-600 dark:text-blue-400 font-medium">
+            <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">
               {formatSpecialization(lawyer.specialization)}
             </p>
           )}
         </div>
 
         {/* Info Grid */}
-        <div className="space-y-3 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-4">
           {/* Location */}
           {lawyer.city && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <MapPin className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm">{lawyer.city}</span>
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+              <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+              <span className="text-xs truncate">{lawyer.city}</span>
             </div>
           )}
 
           {/* Experience */}
           {lawyer.years_of_experience && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <Briefcase className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm">
-                {lawyer.years_of_experience} {t('searchLawyers.yearsExperience')}
-              </span>
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+              <Briefcase className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <span className="text-xs">{lawyer.years_of_experience} سنة</span>
             </div>
           )}
 
           {/* Price */}
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <Coins className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">
-              {t('searchLawyers.startingFrom')} {getMinPrice()}
-            </span>
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+            <Coins className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+            <span className="text-xs">من {getMinPrice()}</span>
           </div>
 
           {/* Total Cases */}
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <Briefcase className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">
-              {getTotalCases()} {t('searchLawyers.casesHandled')}
-            </span>
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+            <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />
+            <span className="text-xs">{getTotalCases()} قضية</span>
           </div>
         </div>
 
-        {/* Bio Preview */}
-        {lawyer.bio && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-            {lawyer.bio}
-          </p>
-        )}
-
         {/* Services Tags */}
         {lawyer.lawyer_services && lawyer.lawyer_services.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-1.5 mb-4">
             {lawyer.lawyer_services
               .filter(s => s.is_active)
-              .slice(0, 3)
+              .slice(0, 2)
               .map((service) => (
                 <span
                   key={service.service_id}
-                  className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full"
+                  className="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs rounded-full"
                 >
                   {service.service_name}
                 </span>
               ))}
-            {lawyer.lawyer_services.filter(s => s.is_active).length > 3 && (
-              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
-                +{lawyer.lawyer_services.filter(s => s.is_active).length - 3}
+            {lawyer.lawyer_services.filter(s => s.is_active).length > 2 && (
+              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
+                +{lawyer.lawyer_services.filter(s => s.is_active).length - 2}
               </span>
             )}
           </div>
@@ -213,36 +196,30 @@ const LawyerCard = ({ lawyer }) => {
 
         {/* Action Buttons */}
         <div className="space-y-2">
+          {/* View Profile - Primary */}
           <button
             onClick={handleViewProfile}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
           >
             <Eye className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('searchLawyers.viewProfile')}</span>
+            <span className="text-sm font-medium">عرض الملف</span>
           </button>
-          
-          <button
-            onClick={handleSendMessage}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">تواصل عبر الرسائل</span>
-          </button>
-          
-          <div className="flex gap-2">
+
+          {/* Secondary Actions */}
+          <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={handleBookAppointment}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={handleSendMessage}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
             >
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs font-medium">{t('searchLawyers.bookNow')}</span>
+              <MessageCircle className="w-4 h-4" />
+              <span className="text-xs font-medium">رسالة</span>
             </button>
             <button
-              onClick={handleOpenCase}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              onClick={handleBookAppointment}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
             >
-              <FileText className="w-4 h-4" />
-              <span className="text-xs font-medium">{t('searchLawyers.openCase')}</span>
+              <Calendar className="w-4 h-4" />
+              <span className="text-xs font-medium">موعد</span>
             </button>
           </div>
         </div>

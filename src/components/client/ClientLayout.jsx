@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useClientAuth } from '../../hooks/useClientAuth';
 import ClientNavbar from './ClientNavbar';
 import ClientSidebar from './ClientSidebar';
+import FloatingAIChat from '../common/FloatingAIChat';
 import { useLocation } from 'react-router-dom';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -47,26 +48,26 @@ const ClientLayout = ({ children }) => {
   // Check if current route should hide sidebar (e.g., full-screen pages)
   const hideSidebarRoutes = ['/client/video-call', '/client/ai-chatbot'];
   const shouldHideSidebar = hideSidebarRoutes.some(route => location.pathname.includes(route));
-  
+
   // Check if current page is messages
   const isMessagesPage = location.pathname.includes('/messages');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       {/* Navigation Bar */}
       <ClientNavbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      
-      <div className="flex pt-16">
+
+      <div className="flex h-full pt-16 min-h-0">
         {/* Sidebar - Hidden on full-screen pages */}
         {!shouldHideSidebar && (
-          <ClientSidebar 
-            isOpen={sidebarOpen} 
-            onClose={() => setSidebarOpen(false)} 
+          <ClientSidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
           />
         )}
-        
+
         {/* Main Content */}
-        <main className="flex-1 transition-all duration-300 w-full overflow-x-hidden lg:mr-80">
+        <main className="flex-1 min-h-0 h-full transition-all duration-300 w-full overflow-x-hidden overflow-y-auto lg:mr-80">
           {isMessagesPage ? (
             children
           ) : (
@@ -76,6 +77,9 @@ const ClientLayout = ({ children }) => {
           )}
         </main>
       </div>
+
+      {/* Floating AI Chat Widget */}
+      <FloatingAIChat userProfile={userProfile} />
     </div>
   );
 };

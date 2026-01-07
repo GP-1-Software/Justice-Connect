@@ -16,11 +16,11 @@ const SearchLawyers = () => {
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(true);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  
+
   // Filter options
   const [specializations, setSpecializations] = useState([]);
   const [cities, setCities] = useState([]);
-  
+
   // Filters
   const [filters, setFilters] = useState({
     searchTerm: '',
@@ -130,36 +130,33 @@ const SearchLawyers = () => {
                 {t('searchLawyers.subtitle')}
               </p>
             </div>
-            
+
             {/* View Toggle */}
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-2 rounded-lg transition-colors ${
-                  showFilters
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                }`}
+                className={`p-2 rounded-lg transition-colors ${showFilters
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  }`}
               >
                 <Filter className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                }`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid'
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  }`}
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                }`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list'
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  }`}
               >
                 <List className="w-5 h-5" />
               </button>
@@ -170,10 +167,23 @@ const SearchLawyers = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-          {/* Filters Sidebar */}
+        {/* Results Count - Above both columns */}
+        <div className="mb-4">
+          <p className="text-gray-600 dark:text-gray-400">
+            {loading ? (
+              t('searchLawyers.searching')
+            ) : (
+              <>
+                {t('searchLawyers.found')} <span className="font-semibold text-gray-900 dark:text-white">{filteredLawyers.length}</span> {t('searchLawyers.lawyers')}
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start">
+          {/* Filters Sidebar - Right side in RTL */}
           {showFilters && (
-            <div className="lg:w-80 flex-shrink-0">
+            <div className="lg:w-80 flex-shrink-0 w-full">
               <div className="lg:sticky lg:top-6">
                 <SearchFilters
                   filters={filters}
@@ -187,19 +197,7 @@ const SearchLawyers = () => {
           )}
 
           {/* Results */}
-          <div className="flex-1">
-            {/* Results Header */}
-            <div className="mb-6">
-              <p className="text-gray-600 dark:text-gray-400">
-                {loading ? (
-                  t('searchLawyers.searching')
-                ) : (
-                  <>
-                    {t('searchLawyers.found')} <span className="font-semibold text-gray-900 dark:text-white">{filteredLawyers.length}</span> {t('searchLawyers.lawyers')}
-                  </>
-                )}
-              </p>
-            </div>
+          <div className="flex-1 min-w-0">
 
             {/* Loading State */}
             {loading && (
@@ -258,17 +256,16 @@ const SearchLawyers = () => {
                     >
                       {t('searchLawyers.previous')}
                     </button>
-                    
+
                     <div className="flex gap-2 overflow-x-auto max-w-full">
                       {[...Array(totalPages)].map((_, index) => (
                         <button
                           key={index}
                           onClick={() => handlePageChange(index + 1)}
-                          className={`w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base rounded-lg transition-colors flex-shrink-0 ${
-                            currentPage === index + 1
-                              ? 'bg-blue-600 text-white'
-                              : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
+                          className={`w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base rounded-lg transition-colors flex-shrink-0 ${currentPage === index + 1
+                            ? 'bg-blue-600 text-white'
+                            : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
                         >
                           {index + 1}
                         </button>

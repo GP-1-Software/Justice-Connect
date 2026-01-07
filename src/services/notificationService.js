@@ -384,6 +384,40 @@ export const notifyFileUploaded = async (receiverId, receiverType, caseTitle, fi
 }
 
 /**
+ * Create deletion request approved notification
+ */
+export const notifyDeletionRequestApproved = async (userId, userType) => {
+  return createNotification({
+    user_id: userId,
+    user_type: userType,
+    title: 'تمت الموافقة على حذف حسابك',
+    message: 'تمت الموافقة على طلب حذف حسابك. سيتم حذف الحساب قريباً.',
+    type: 'deletion_approved',
+    related_id: null,
+    related_type: 'deletion_request',
+    action_url: `/${userType}/settings`
+  });
+};
+
+/**
+ * Create deletion request rejected notification
+ */
+export const notifyDeletionRequestRejected = async (userId, userType, rejectionReason) => {
+  return createNotification({
+    user_id: userId,
+    user_type: userType,
+    title: 'تم رفض طلب حذف الحساب',
+    message: rejectionReason
+      ? `تم رفض طلب حذف حسابك. السبب: ${rejectionReason}`
+      : 'تم رفض طلب حذف حسابك. يمكنك إعادة تقديم الطلب.',
+    type: 'deletion_rejected',
+    related_id: null,
+    related_type: 'deletion_request',
+    action_url: `/${userType}/settings`
+  });
+};
+
+/**
  * Create timeline update notification
  */
 export const notifyTimelineUpdate = async (receiverId, receiverType, caseTitle, updateText, caseId) => {

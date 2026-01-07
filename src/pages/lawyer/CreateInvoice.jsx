@@ -430,8 +430,8 @@ const CreateInvoice = () => {
               {/* Search Status Indicator */}
               {searchPerformed && (
                 <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${isValidSearch
-                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
-                    : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
+                  ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                  : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
                   }`}>
                   {isValidSearch ? (
                     <>
@@ -541,7 +541,7 @@ const CreateInvoice = () => {
                     </div>
 
                     {/* Quantity */}
-                    <div>
+                    {/* <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         الكمية
                       </label>
@@ -549,12 +549,12 @@ const CreateInvoice = () => {
                         type="number"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                        min="0.01"
-                        step="0.01"
+                        min="1"
+                        step="1"
                         required
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
-                    </div>
+                    </div> */}
 
                     {/* Unit Price */}
                     <div>

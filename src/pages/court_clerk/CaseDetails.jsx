@@ -11,7 +11,8 @@ import {
     User,
     Clock,
     CheckCircle,
-    Shield
+    Shield,
+    Gavel
 } from 'lucide-react';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
 import { getAuthHeaders } from '../../utils/authHelpers';
@@ -126,167 +127,170 @@ const CourtClerkCaseDetails = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+        <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900" dir="rtl">
             <CourtClerkHeader
                 title="تفاصيل القضية"
                 subtitle={caseData.case_number ? `القضية ${caseData.case_number}` : 'عرض بيانات القضية'}
             />
 
-            <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700"
-                >
-                    <ArrowRight className="w-4 h-4" />
-                    العودة
-                </button>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+                <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700"
+                    >
+                        <ArrowRight className="w-4 h-4" />
+                        العودة
+                    </button>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">رقم القضية</p>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{caseData.case_number}</h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{caseData.title}</p>
-                        </div>
-                        {stageInfo && (
-                            <div className="flex flex-col items-end gap-2">
-                                <span
-                                    className="px-4 py-2 rounded-full text-sm font-medium"
-                                    style={{
-                                        backgroundColor: `${stageInfo.color}20`,
-                                        color: stageInfo.color
-                                    }}
-                                >
-                                    {stageInfo.label}
-                                </span>
-                                {caseData.stage_updated_at && (
-                                    <p className="text-xs text-gray-500">
-                                        آخر تحديث: {new Date(caseData.stage_updated_at).toLocaleDateString('ar-EG')}
-                                    </p>
-                                )}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">رقم القضية</p>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{caseData.case_number}</h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{caseData.title}</p>
                             </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-                        {infoRow('المحكمة', caseData.court_name)}
-                        {infoRow('نوع الدعوى', caseData.case_type)}
-                        {infoRow('تاريخ التقديم', caseData.created_at ? new Date(caseData.created_at).toLocaleDateString('ar-EG') : '-')}
-                        {infoRow('عدد الجلسات', hearings.length)}
-                        {infoRow('عدد القرارات', decisions.length)}
-                        {infoRow('الأولوية', caseData.priority === 'high' ? 'عالية' : caseData.priority === 'low' ? 'منخفضة' : 'عادية')}
-                    </div>
-                </div>
-
-                {/* Parties */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-4">
-                            <User className="text-blue-500" />
-                            <h3 className="font-semibold text-gray-900 dark:text-white">بيانات العميل</h3>
-                        </div>
-                        {caseData.client ? (
-                            <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                <p><strong>الاسم:</strong> {caseData.client.full_name || `${caseData.client.first_name || ''} ${caseData.client.last_name || ''}`}</p>
-                                <p><strong>الهوية:</strong> {caseData.client.id_number || '-'}</p>
-                                <p><strong>البريد:</strong> {caseData.client.email || '-'}</p>
-                                <p><strong>الهاتف:</strong> {caseData.client.phone || '-'}</p>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-gray-500">لا توجد بيانات عميل</p>
-                        )}
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Scale className="text-green-500" />
-                            <h3 className="font-semibold text-gray-900 dark:text-white">بيانات المحامي</h3>
-                        </div>
-                        {caseData.lawyer ? (
-                            <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                <p><strong>الاسم:</strong> {`${caseData.lawyer.first_name || ''} ${caseData.lawyer.last_name || ''}`}</p>
-                                <p><strong>البريد:</strong> {caseData.lawyer.email || '-'}</p>
-                                <p><strong>الهاتف:</strong> {caseData.lawyer.phone || '-'}</p>
-                                <p><strong>الاختصاص:</strong> {caseData.lawyer.specialization || '-'}</p>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-gray-500">لا يوجد محامي مرتبط</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Filing */}
-                {filingInfo && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-4">
-                            <FileText className="text-indigo-500" />
-                            <h3 className="font-semibold text-gray-900 dark:text-white">بيانات اللائحة</h3>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {infoRow('رقم اللائحة', filingInfo.filing_number)}
-                            {infoRow('حالة اللائحة', filingInfo.filing_status)}
-                            {infoRow('المدعي', filingInfo.plaintiff_name)}
-                            {infoRow('المدعى عليه', filingInfo.defendant_name)}
-                            {infoRow('تاريخ التقديم', filingInfo.submitted_at ? new Date(filingInfo.submitted_at).toLocaleDateString('ar-EG') : '-')}
-                            {infoRow('المطالبة', filingInfo.legal_requests)}
-                        </div>
-                    </div>
-                )}
-
-                {/* Hearings */}
-                {hearings.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Calendar className="text-purple-500" />
-                            <h3 className="font-semibold text-gray-900 dark:text-white">الجلسات ({hearings.length})</h3>
-                        </div>
-                        <div className="space-y-3">
-                            {hearings.slice(0, 4).map((hearing) => (
-                                <div key={hearing.hearing_id} className="p-3 rounded-lg border border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                        <p className="font-medium text-gray-900 dark:text-white">الجلسة {hearing.hearing_number || '-'}</p>
-                                        <p className="text-sm text-gray-500">
-                                            {hearing.hearing_date ? new Date(hearing.hearing_date).toLocaleDateString('ar-EG') : '-'} {hearing.hearing_time && ` - ${hearing.hearing_time}`}
-                                        </p>
-                                    </div>
+                            {stageInfo && (
+                                <div className="flex flex-col items-end gap-2">
                                     <span
-                                        className="px-3 py-1 rounded-full text-xs font-medium"
+                                        className="px-4 py-2 rounded-full text-sm font-medium"
                                         style={{
-                                            backgroundColor: hearing.hearing_status === 'held' ? '#22c55e20' : '#3b82f620',
-                                            color: hearing.hearing_status === 'held' ? '#22c55e' : '#3b82f6'
+                                            backgroundColor: `${stageInfo.color}20`,
+                                            color: stageInfo.color
                                         }}
                                     >
-                                        {hearing.hearing_status === 'held' ? 'منعقدة' :
-                                            hearing.hearing_status === 'scheduled' ? 'مجدولة' :
-                                                hearing.hearing_status === 'postponed' ? 'مؤجلة' :
-                                                    hearing.hearing_status || 'غير محدد'}
+                                        {stageInfo.label}
                                     </span>
+                                    {caseData.stage_updated_at && (
+                                        <p className="text-xs text-gray-500">
+                                            آخر تحديث: {new Date(caseData.stage_updated_at).toLocaleDateString('ar-EG')}
+                                        </p>
+                                    )}
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    </div>
-                )}
 
-                {/* Decisions */}
-                {decisions.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Gavel className="text-red-500" />
-                            <h3 className="font-semibold text-gray-900 dark:text-white">القرارات ({decisions.length})</h3>
-                        </div>
-                        <div className="space-y-3">
-                            {decisions.slice(0, 3).map((decision) => (
-                                <div key={decision.decision_id} className="p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                                    <p className="font-medium text-gray-900 dark:text-white">{decision.decision_title || 'قرار قضائي'}</p>
-                                    <p className="text-xs text-gray-500 mb-2">
-                                        {decision.decision_date ? new Date(decision.decision_date).toLocaleDateString('ar-EG') : '-'}
-                                    </p>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">{decision.decision_summary || 'لا يوجد ملخص'}</p>
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+                            {infoRow('المحكمة', caseData.court_name)}
+                            {infoRow('نوع الدعوى', caseData.case_type)}
+                            {infoRow('تاريخ التقديم', caseData.created_at ? new Date(caseData.created_at).toLocaleDateString('ar-EG') : '-')}
+                            {infoRow('عدد الجلسات', hearings.length)}
+                            {infoRow('عدد القرارات', decisions.length)}
+                            {infoRow('الأولوية', caseData.priority === 'high' ? 'عالية' : caseData.priority === 'low' ? 'منخفضة' : 'عادية')}
                         </div>
                     </div>
-                )}
+
+                    {/* Parties */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-4">
+                                <User className="text-blue-500" />
+                                <h3 className="font-semibold text-gray-900 dark:text-white">بيانات العميل</h3>
+                            </div>
+                            {caseData.client ? (
+                                <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                    <p><strong>الاسم:</strong> {caseData.client.full_name || `${caseData.client.first_name || ''} ${caseData.client.last_name || ''}`}</p>
+                                    <p><strong>الهوية:</strong> {caseData.client.id_number || '-'}</p>
+                                    <p><strong>البريد:</strong> {caseData.client.email || '-'}</p>
+                                    <p><strong>الهاتف:</strong> {caseData.client.phone || '-'}</p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500">لا توجد بيانات عميل</p>
+                            )}
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Scale className="text-green-500" />
+                                <h3 className="font-semibold text-gray-900 dark:text-white">بيانات المحامي</h3>
+                            </div>
+                            {caseData.lawyer ? (
+                                <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                    <p><strong>الاسم:</strong> {`${caseData.lawyer.first_name || ''} ${caseData.lawyer.last_name || ''}`}</p>
+                                    <p><strong>البريد:</strong> {caseData.lawyer.email || '-'}</p>
+                                    <p><strong>الهاتف:</strong> {caseData.lawyer.phone || '-'}</p>
+                                    <p><strong>الاختصاص:</strong> {caseData.lawyer.specialization || '-'}</p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500">لا يوجد محامي مرتبط</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Filing */}
+                    {filingInfo && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-4">
+                                <FileText className="text-indigo-500" />
+                                <h3 className="font-semibold text-gray-900 dark:text-white">بيانات اللائحة</h3>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {infoRow('رقم اللائحة', filingInfo.filing_number)}
+                                {infoRow('حالة اللائحة', filingInfo.filing_status)}
+                                {infoRow('المدعي', filingInfo.plaintiff_name)}
+                                {infoRow('المدعى عليه', filingInfo.defendant_name)}
+                                {infoRow('تاريخ التقديم', filingInfo.submitted_at ? new Date(filingInfo.submitted_at).toLocaleDateString('ar-EG') : '-')}
+                                {infoRow('المطالبة', filingInfo.legal_requests)}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Hearings */}
+                    {hearings.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Calendar className="text-purple-500" />
+                                <h3 className="font-semibold text-gray-900 dark:text-white">الجلسات ({hearings.length})</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {hearings.slice(0, 4).map((hearing) => (
+                                    <div key={hearing.hearing_id} className="p-3 rounded-lg border border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                            <p className="font-medium text-gray-900 dark:text-white">الجلسة {hearing.hearing_number || '-'}</p>
+                                            <p className="text-sm text-gray-500">
+                                                {hearing.hearing_date ? new Date(hearing.hearing_date).toLocaleDateString('ar-EG') : '-'} {hearing.hearing_time && ` - ${hearing.hearing_time}`}
+                                            </p>
+                                        </div>
+                                        <span
+                                            className="px-3 py-1 rounded-full text-xs font-medium"
+                                            style={{
+                                                backgroundColor: hearing.hearing_status === 'held' ? '#22c55e20' : '#3b82f620',
+                                                color: hearing.hearing_status === 'held' ? '#22c55e' : '#3b82f6'
+                                            }}
+                                        >
+                                            {hearing.hearing_status === 'held' ? 'منعقدة' :
+                                                hearing.hearing_status === 'scheduled' ? 'مجدولة' :
+                                                    hearing.hearing_status === 'postponed' ? 'مؤجلة' :
+                                                        hearing.hearing_status || 'غير محدد'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Decisions */}
+                    {decisions.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Gavel className="text-red-500" />
+                                <h3 className="font-semibold text-gray-900 dark:text-white">القرارات ({decisions.length})</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {decisions.slice(0, 3).map((decision) => (
+                                    <div key={decision.decision_id} className="p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                                        <p className="font-medium text-gray-900 dark:text-white">{decision.decision_title || 'قرار قضائي'}</p>
+                                        <p className="text-xs text-gray-500 mb-2">
+                                            {decision.decision_date ? new Date(decision.decision_date).toLocaleDateString('ar-EG') : '-'}
+                                        </p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">{decision.decision_summary || 'لا يوجد ملخص'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

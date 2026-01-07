@@ -20,7 +20,7 @@ import PayInvoice from '../pages/client/PayInvoice';
 import InvoiceDetails from '../pages/client/InvoiceDetails';
 import ClientCourtFees from '../pages/client/ClientCourtFees';
 
-import JusticeAIChat from "../pages/client/JusticeAI/JusticeAIChat.jsx";
+import JusticeAIChat from "../pages/client/JusticeAI/index.jsx";
 import SupportTickets from '../pages/SupportTickets';
 import ClientMessages from '../pages/client/ClientMessages';
 import NotificationsPage from '../pages/NotificationsPage';

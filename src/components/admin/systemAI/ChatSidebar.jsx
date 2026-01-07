@@ -61,7 +61,7 @@ const ChatSidebar = ({
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 dark:bg-gray-900">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
           {conversations.length === 0 ? (
             <div className="text-center py-16 px-4">
               <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-2xl flex items-center justify-center">

@@ -63,35 +63,7 @@ const ClientNavbar = ({ onMenuClick }) => {
             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">- العميل</span>
           </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6 space-x-reverse">
-            {/* Home Button */}
-            <button
-              onClick={() => window.location.href = '/'}
-              className="flex items-center space-x-2 space-x-reverse text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold"
-            >
-              <Scale className="h-5 w-5" />
-              <span>الصفحة الرئيسية</span>
-            </button>
 
-            {/* Search */}
-            <button
-              onClick={() => navigate('/client/search-lawyers')}
-              className="flex items-center space-x-2 space-x-reverse text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold"
-            >
-              <Search className="h-5 w-5" />
-              <span>البحث عن محامين</span>
-            </button>
-
-            {/* Quick Consultation */}
-            <button
-              onClick={() => navigate('/client/ai-chatbot')}
-              className="flex items-center space-x-2 space-x-reverse text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold"
-            >
-              <MessageSquare className="h-5 w-5" />
-              <span>استشارة سريعة</span>
-            </button>
-          </div>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4 space-x-reverse">
@@ -143,7 +115,7 @@ const ClientNavbar = ({ onMenuClick }) => {
                   {/* Menu Items */}
                   <button
                     onClick={() => {
-                      navigate('/client/dashboard');
+                      navigate('/client/profile-settings');
                       setUserMenuOpen(false);
                     }}
                     className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
@@ -176,81 +148,9 @@ const ClientNavbar = ({ onMenuClick }) => {
               )}
             </div>
 
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="text-gray-700 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              >
-                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isOpen && (
-          <div className="md:hidden pb-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col space-y-3 pt-4">
-              <button
-                onClick={() => {
-                  window.location.href = '/';
-                  setIsOpen(false);
-                }}
-                className="flex items-center space-x-3 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition rounded-lg"
-              >
-                <Scale className="h-5 w-5" />
-                <span>الصفحة الرئيسية</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  navigate('/client/search-lawyers');
-                  setIsOpen(false);
-                }}
-                className="flex items-center space-x-3 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition rounded-lg"
-              >
-                <Search className="h-5 w-5" />
-                <span>البحث عن محامين</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  navigate('/client/ai-chatbot');
-                  setIsOpen(false);
-                }}
-                className="flex items-center space-x-3 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition rounded-lg"
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span>استشارة سريعة</span>
-              </button>
-
-              <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-
-              <button
-                onClick={() => {
-                  navigate('/client/dashboard');
-                  setIsOpen(false);
-                }}
-                className="flex items-center space-x-3 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition rounded-lg"
-              >
-                <User className="h-5 w-5" />
-                <span>الملف الشخصي</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  navigate('/client/settings');
-                  setIsOpen(false);
-                }}
-                className="flex items-center space-x-3 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition rounded-lg"
-              >
-                <Settings className="h-5 w-5" />
-                <span>الإعدادات</span>
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );

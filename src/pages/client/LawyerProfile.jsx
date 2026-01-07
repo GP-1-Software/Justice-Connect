@@ -16,9 +16,10 @@ import {
   Loader,
   AlertCircle,
   CheckCircle,
-  FileText
+  FileText,
+  X
 } from 'lucide-react';
-import { getLawyerById, getLawyerAvailableSlots } from '../../services/lawyerApi';
+import { getLawyerById, getLawyerAvailableSlots, rateLawyer, removeRating } from '../../services/lawyerApi';
 import { formatSpecialization } from '../../utils/formatters';
 
 const LawyerProfile = () => {
@@ -33,6 +34,19 @@ const LawyerProfile = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Rating states
+  const [hoverRating, setHoverRating] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingSuccess, setRatingSuccess] = useState(false);
+  const [previousRating, setPreviousRating] = useState(null); // Stores user's previous rating (null if never rated)
+
+  // Check if user already rated this lawyer and get previous rating
+  useEffect(() => {
+    const lawyerRatings = JSON.parse(localStorage.getItem('lawyerRatings') || '{}');
+    const prevRating = lawyerRatings[lawyerId];
+    setPreviousRating(prevRating || null);
+  }, [lawyerId]);
 
   useEffect(() => {
     loadLawyerData();
@@ -53,7 +67,7 @@ const LawyerProfile = () => {
       setError(null);
       const data = await getLawyerById(parseInt(lawyerId));
       setLawyer(data);
-      
+
       // Set default date to tomorrow
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -87,6 +101,63 @@ const LawyerProfile = () => {
     navigate(`/client/create-case?lawyerId=${lawyerId}`);
   };
 
+  // Handle rating submission (supports re-rating)
+  const handleRating = async (rating) => {
+    try {
+      setRatingSubmitting(true);
+      // Pass previous rating if re-rating
+      await rateLawyer(parseInt(lawyerId), rating, previousRating);
+
+      // Save rating to localStorage
+      const lawyerRatings = JSON.parse(localStorage.getItem('lawyerRatings') || '{}');
+      lawyerRatings[lawyerId] = rating;
+      localStorage.setItem('lawyerRatings', JSON.stringify(lawyerRatings));
+      setPreviousRating(rating);
+
+      setRatingSuccess(true);
+      // Reload lawyer data to get updated rating
+      await loadLawyerData();
+      setTimeout(() => setRatingSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error submitting rating:', err);
+      alert('حدث خطأ في التقييم');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  // Handle removing rating
+  const handleRemoveRating = async () => {
+    if (!previousRating) return;
+
+    try {
+      setRatingSubmitting(true);
+      await removeRating(parseInt(lawyerId), previousRating);
+
+      // Remove from localStorage
+      const lawyerRatings = JSON.parse(localStorage.getItem('lawyerRatings') || '{}');
+      delete lawyerRatings[lawyerId];
+      localStorage.setItem('lawyerRatings', JSON.stringify(lawyerRatings));
+      setPreviousRating(null);
+
+      // Reload lawyer data
+      await loadLawyerData();
+    } catch (err) {
+      console.error('Error removing rating:', err);
+      alert('حدث خطأ في حذف التقييم');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  // Get current average rating
+  const getAverageRating = () => {
+    if (lawyer?.ratings_count && lawyer.ratings_count > 0) {
+      return (lawyer.total_ratings_sum / lawyer.ratings_count).toFixed(1);
+    }
+    return null;
+  };
+
   const getDayName = (dayKey) => {
     const dayMap = {
       'sunday': t('lawyerProfile.sunday'),
@@ -103,9 +174,9 @@ const LawyerProfile = () => {
   // Convert schedule JSONB to array for display
   const getScheduleArray = (schedule) => {
     if (!schedule) return [];
-    
+
     const daysOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    
+
     return daysOrder
       .filter(day => schedule[day] && schedule[day].enabled)
       .map(day => ({
@@ -204,6 +275,73 @@ const LawyerProfile = () => {
                     <span>{t('lawyerProfile.license')}: {lawyer.license_number}</span>
                   </div>
                 )}
+              </div>
+
+              {/* Rating Section */}
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center gap-4 flex-wrap">
+                  {/* Rating Label */}
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">
+                    التقييم:
+                  </span>
+
+                  {/* Average Rating Display */}
+                  {getAverageRating() && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        {getAverageRating()}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        ({lawyer?.ratings_count || 0} تقييم)
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block"></div>
+
+                  {/* Rate Stars */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">
+                      {previousRating ? 'تقييمك:' : 'قيّم المحامي:'}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          disabled={ratingSubmitting}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => handleRating(star)}
+                          className="p-0.5 transition-transform hover:scale-125 disabled:opacity-50"
+                        >
+                          <Star
+                            className={`w-6 h-6 cursor-pointer transition-colors ${star <= (hoverRating || previousRating || 0)
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-300 dark:text-gray-500 hover:text-yellow-300'
+                              }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    {/* Remove Rating Button */}
+                    {previousRating && !ratingSubmitting && (
+                      <button
+                        onClick={handleRemoveRating}
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                        title="حذف التقييم"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                    {ratingSubmitting && (
+                      <Loader className="w-5 h-5 text-blue-600 animate-spin" />
+                    )}
+                    {ratingSuccess && (
+                      <span className="text-green-600 text-sm">✓ شكراً!</span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-3">

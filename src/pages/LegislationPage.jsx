@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Search, Calendar, ExternalLink, X, Eye } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { FileText, Search, Calendar, ExternalLink, X, Eye, Maximize2, Minimize2, GripVertical } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import LawyerNavbar from '../components/lawyer/LawyerNavbar';
 import ClientNavbar from '../components/client/ClientNavbar';
+import FloatingAIChat from '../components/common/FloatingAIChat';
+import { useClientAuth } from '../hooks/useClientAuth';
+import { useLawyerAuth } from '../hooks/useLawyerAuth';
 import Footer from '../components/Footer';
 
 function LegislationPage() {
@@ -22,15 +25,32 @@ function LegislationPage() {
   const [currentPdfTitle, setCurrentPdfTitle] = useState(() => {
     return sessionStorage.getItem('currentPdfTitle') || '';
   });
-  const [isPdfExpanded, setIsPdfExpanded] = useState(false);
-  
+
+  // Resizable panel state
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = sessionStorage.getItem('pdfPanelWidth');
+    return saved ? parseInt(saved) : 600;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const panelRef = useRef(null);
+
   // تحديد نوع Navbar بناءً على المصدر
   const referrer = location.state?.from || 'home';
   const isFromLawyer = referrer.includes('lawyer');
   const isFromClient = referrer.includes('client');
-  
+
   // اختيار Navbar المناسب
   const NavbarComponent = isFromLawyer ? LawyerNavbar : isFromClient ? ClientNavbar : Navbar;
+
+  // Auth hooks for FloatingAIChat
+  const { userProfile: clientProfile } = useClientAuth();
+  const { lawyer: lawyerProfile } = useLawyerAuth();
+
+  // Determine if user is logged in and their type
+  const isLoggedIn = isFromClient ? !!clientProfile : isFromLawyer ? !!lawyerProfile : false;
+  const userProfile = isFromClient ? clientProfile : lawyerProfile;
+  const userType = isFromLawyer ? 'lawyer' : 'client';
 
   useEffect(() => {
     // تحميل البيانات الوصفية
@@ -64,6 +84,51 @@ function LegislationPage() {
     setFilteredLegislations(filtered);
   }, [searchTerm, selectedCategory, legislations]);
 
+  // Handle resize mouse events
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isResizing) return;
+
+    // Calculate new width based on mouse position (from left edge)
+    const newWidth = e.clientX;
+    const minWidth = 300;
+    const maxWidth = window.innerWidth * 0.9;
+
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      setPanelWidth(newWidth);
+      sessionStorage.setItem('pdfPanelWidth', newWidth.toString());
+    }
+  }, [isResizing]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
   // استخراج التصنيفات الفريدة
   const categories = [...new Set(legislations.map(leg => leg.category))];
 
@@ -75,7 +140,7 @@ function LegislationPage() {
     setCurrentPdfUrl(pdfUrl);
     setCurrentPdfTitle(title);
     setPdfModalOpen(true);
-    setIsPdfExpanded(false);
+    setIsFullScreen(false);
     // حفظ في sessionStorage
     sessionStorage.setItem('pdfModalOpen', 'true');
     sessionStorage.setItem('currentPdfUrl', pdfUrl);
@@ -86,23 +151,30 @@ function LegislationPage() {
     setPdfModalOpen(false);
     setCurrentPdfUrl('');
     setCurrentPdfTitle('');
-    setIsPdfExpanded(false);
+    setIsFullScreen(false);
     // مسح من sessionStorage
     sessionStorage.removeItem('pdfModalOpen');
     sessionStorage.removeItem('currentPdfUrl');
     sessionStorage.removeItem('currentPdfTitle');
   };
 
-  const togglePdfSize = () => {
-    setIsPdfExpanded(!isPdfExpanded);
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
   };
+
+  // Preset width options
+  const presetWidths = [
+    { label: '30%', value: Math.round(window.innerWidth * 0.3) },
+    { label: '50%', value: Math.round(window.innerWidth * 0.5) },
+    { label: '70%', value: Math.round(window.innerWidth * 0.7) },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <NavbarComponent />
       </div>
-      
+
       <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-24 pb-8">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
@@ -135,11 +207,10 @@ function LegislationPage() {
         <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center mb-6 sm:mb-8 px-2">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
-              selectedCategory === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${selectedCategory === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
           >
             الكل ({legislations.length})
           </button>
@@ -147,11 +218,10 @@ function LegislationPage() {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
-                selectedCategory === category
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${selectedCategory === category
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
             >
               {category} ({legislations.filter(leg => leg.category === category).length})
             </button>
@@ -246,69 +316,147 @@ function LegislationPage() {
         )}
       </div>
 
-      {/* PDF Side Panel */}
+      {/* Resizable PDF Side Panel */}
       {pdfModalOpen && (
         <>
           {/* Overlay - شفاف على الشاشات الكبيرة */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-30 lg:bg-opacity-10 z-[90]"
+          <div
+            className={`fixed inset-0 bg-black transition-opacity z-[90] ${isFullScreen ? 'bg-opacity-70' : 'bg-opacity-30 lg:bg-opacity-10'}`}
             onClick={closePDFModal}
           />
-          
+
           {/* Side Panel */}
-          <div 
-            className={`fixed top-0 left-0 h-screen z-[100] bg-white dark:bg-gray-800 shadow-2xl transition-all duration-300 ease-in-out border-l border-gray-200 dark:border-gray-700 ${
-              isPdfExpanded 
-                ? 'w-full sm:w-[95%] md:w-[80%] lg:w-[75%] xl:w-[70%]'
-                : 'w-full sm:w-[90%] md:w-[55%] lg:w-[50%] xl:w-[45%] 2xl:w-[40%]'
-            }`}
-            style={{ animation: 'slideInFromLeft 0.3s ease-out' }}
+          <div
+            ref={panelRef}
+            className={`fixed top-0 left-0 h-screen z-[100] bg-white dark:bg-gray-800 shadow-2xl transition-all border-r-2 border-gray-200 dark:border-gray-700 ${isFullScreen ? 'w-full' : ''
+              }`}
+            style={{
+              width: isFullScreen ? '100%' : `${panelWidth}px`,
+              animation: 'slideInFromLeft 0.3s ease-out'
+            }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div className="flex items-center gap-2 flex-1">
-                <button
-                  onClick={togglePdfSize}
-                  className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  aria-label={isPdfExpanded ? 'تصغير' : 'توسيع'}
-                  title={isPdfExpanded ? 'تصغير' : 'توسيع'}
-                >
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {isPdfExpanded ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    )}
-                  </svg>
-                </button>
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 dark:text-white truncate text-right">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <FileText className="h-5 w-5 flex-shrink-0" />
+                <h2 className="text-sm sm:text-base font-bold truncate">
                   {currentPdfTitle}
                 </h2>
               </div>
-              <button
-                onClick={closePDFModal}
-                className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                aria-label="إغلاق"
-              >
-                <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 dark:text-gray-400" />
-              </button>
+              <div className="flex items-center gap-1">
+                {/* Preset Width Buttons */}
+                {!isFullScreen && (
+                  <div className="hidden md:flex items-center gap-1 mr-2">
+                    {presetWidths.map(preset => (
+                      <button
+                        key={preset.label}
+                        onClick={() => {
+                          setPanelWidth(preset.value);
+                          sessionStorage.setItem('pdfPanelWidth', preset.value.toString());
+                        }}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${Math.abs(panelWidth - preset.value) < 50
+                          ? 'bg-white/30'
+                          : 'bg-white/10 hover:bg-white/20'
+                          }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Full Screen Toggle */}
+                <button
+                  onClick={toggleFullScreen}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  title={isFullScreen ? 'تصغير' : 'ملء الشاشة'}
+                >
+                  {isFullScreen ? (
+                    <Minimize2 className="h-5 w-5" />
+                  ) : (
+                    <Maximize2 className="h-5 w-5" />
+                  )}
+                </button>
+
+                {/* Open in New Tab */}
+                <button
+                  onClick={() => openPDF(currentPdfUrl)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  title="فتح في تبويب جديد"
+                >
+                  <ExternalLink className="h-5 w-5" />
+                </button>
+
+                {/* Close */}
+                <button
+                  onClick={closePDFModal}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  title="إغلاق"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            
+
+            {/* Width Indicator */}
+            {!isFullScreen && isResizing && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-sm font-bold z-50">
+                {Math.round((panelWidth / window.innerWidth) * 100)}%
+              </div>
+            )}
+
             {/* PDF Viewer */}
-            <div className="h-[calc(100vh-60px)] overflow-hidden bg-gray-50 dark:bg-gray-900">
+            <div className="h-[calc(100vh-60px)] overflow-hidden bg-gray-100 dark:bg-gray-900">
               <iframe
                 src={currentPdfUrl}
                 className="w-full h-full border-0"
                 title="PDF Viewer"
               />
             </div>
+
+            {/* Resize Handle */}
+            {!isFullScreen && (
+              <div
+                onMouseDown={handleMouseDown}
+                className={`absolute top-0 right-0 w-2 h-full cursor-ew-resize group flex items-center justify-center transition-colors ${isResizing ? 'bg-blue-500' : 'bg-transparent hover:bg-blue-400'
+                  }`}
+              >
+                {/* Handle Visual */}
+                <div className={`absolute right-0 top-1/2 transform -translate-y-1/2 transition-all ${isResizing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
+                  <div className="bg-blue-500 text-white p-1 rounded-r-lg shadow-lg">
+                    <GripVertical className="h-6 w-6" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
 
       <Footer />
+
+      {/* Custom Styles */}
+      <style>{`
+        @keyframes slideInFromLeft {
+          from {
+            transform: translateX(-100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
+      {/* Floating AI Chat - only for logged in users */}
+      {isLoggedIn && userProfile && (
+        <FloatingAIChat userProfile={userProfile} userType={userType} />
+      )}
     </div>
   );
 }
 
 export default LegislationPage;
+
