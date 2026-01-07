@@ -139,7 +139,7 @@ const Analytics = () => {
           </div>
 
           {/* Overall Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
             <StatCard
               title="إجمالي المستخدمين"
               value={overallStats?.totalUsers}
@@ -176,7 +176,7 @@ const Analytics = () => {
 
           {/* Approval Rate Cards */}
           {approvalStats && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 sm:p-6">
                 <div className="flex items-center space-x-2 sm:space-x-3 space-x-reverse mb-3 sm:mb-4">
                   <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400 flex-shrink-0" />

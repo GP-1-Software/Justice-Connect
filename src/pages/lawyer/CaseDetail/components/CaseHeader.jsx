@@ -218,10 +218,10 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
   const isRejected = caseData.status === 'rejected';
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow p-4 sm:p-6">
       {/* Rejection Reason Banner */}
       {isRejected && caseData.rejection_reason && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <div className="flex items-start gap-2">
             <X className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
             <div>
@@ -237,54 +237,54 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
       )}
 
       {/* Header Actions */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
             {isEditing ? editedData.title : caseData.title}
           </h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {!isRejected && isEditing ? (
             <>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700 transition disabled:opacity-50 touch-manipulation"
               >
                 {saving ? (
                   <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                حفظ
+                <span className="hidden sm:inline">حفظ</span>
               </button>
               <button
                 onClick={() => {
                   setIsEditing(false);
                   setEditedData(caseData);
                 }}
-                className="flex items-center gap-1 px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-700 transition touch-manipulation"
               >
                 <X className="h-4 w-4" />
-                إلغاء
+                <span className="hidden sm:inline">إلغاء</span>
               </button>
             </>
           ) : !isRejected ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition touch-manipulation"
             >
               <Edit2 className="h-4 w-4" />
-              تعديل
+              <span className="hidden sm:inline">تعديل</span>
             </button>
           ) : null}
         </div>
       </div>
 
       {/* Case Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {/* Case Type */}
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">نوع القضية</label>
@@ -293,7 +293,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               name="case_type"
               value={editedData.case_type || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">اختر نوع القضية</option>
               <option value="مدني">مدني</option>
@@ -322,7 +322,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               name="status"
               value={editedData.status || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="active">نشط</option>
               <option value="pending">قيد الانتظار</option>
@@ -354,7 +354,7 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               name="priority"
               value={editedData.priority || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="low">منخفضة</option>
               <option value="medium">متوسطة</option>
@@ -377,11 +377,11 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               name="court_name"
               value={editedData.court_name || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 break-words">
                 {caseData.court_name || '—'}
               </span>
             </div>
@@ -397,12 +397,12 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               name="filing_date"
               value={editedData.filing_date || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           ) : (
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                 {(caseData.filing_date || caseData.created_at) ? new Date(caseData.filing_date || caseData.created_at).toLocaleDateString('ar-EG') : '—'}
               </span>
             </div>
@@ -418,12 +418,12 @@ const CaseHeader = ({ caseData, onCaseUpdated }) => {
               name="next_hearing_date"
               value={editedData.next_hearing_date || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           ) : (
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                 {caseData.next_hearing_date ? new Date(caseData.next_hearing_date).toLocaleDateString('ar-EG') : '—'}
               </span>
             </div>

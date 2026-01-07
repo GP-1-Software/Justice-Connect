@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 const EmptyState = ({ hasSearch }) => {
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-16 text-center"
@@ -45,7 +45,7 @@ const EmptyState = ({ hasSearch }) => {
           <p className="text-gray-500 dark:text-gray-400 text-lg mb-8 max-w-md mx-auto">
             لم يتم تعيين أي قضايا لك حتى الآن. ابدأ بإضافة قضية جديدة
           </p>
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-8 py-3 bg-gradient-to-r from-[#2563eb] to-[#7c3aed] text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/30 transition-all font-semibold text-lg"

@@ -135,7 +135,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
   const getCourtStageBadge = (stage) => {
     const stageInfo = COURT_STAGES[stage];
     if (!stageInfo) return null;
-    
+
     const colorMap = {
       'gray': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', border: 'border-gray-500' },
       'orange': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-500' },
@@ -150,7 +150,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
       'violet': { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-500' },
       'green': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', border: 'border-green-500' }
     };
-    
+
     return { ...stageInfo, ...colorMap[stageInfo.color] };
   };
 
@@ -211,7 +211,7 @@ const CaseCard = ({ caseData, onCaseDeleted, onCaseUpdated }) => {
   // Check if case needs accept/reject buttons
   // Only show if: status is pending AND case was assigned by someone else (has client_id but no case_stage means client created it)
   const showAcceptRejectButtons = caseData.status === 'pending' && !caseData.case_stage && caseData.client_id;
-  
+
   const courtStageBadge = getCourtStageBadge(caseData.case_stage);
 
   const getCaseTypeLabel = (caseType) => {

@@ -851,62 +851,63 @@ const AdminDashboard = () => {
     const IconComponent = userType.icon;
 
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3 space-x-reverse">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <IconComponent className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition">
+        <div className="flex items-start justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+              <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
                 {user.first_name} {user.last_name}
               </h3>
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${userType.color}`}>
+              <span className={`inline-block px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-semibold ${userType.color}`}>
                 {userType.label}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-            <Mail className="h-4 w-4" />
-            <span className="text-sm">{user.email}</span>
+        {/* User Info - Compact Grid */}
+        <div className="grid grid-cols-2 gap-2 mb-4 text-xs sm:text-sm">
+          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1.5">
+            <Mail className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
+            <span className="truncate">{user.email}</span>
           </div>
-          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-            <Phone className="h-4 w-4" />
-            <span className="text-sm">{user.phone}</span>
+          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1.5">
+            <Phone className="h-3.5 w-3.5 flex-shrink-0 text-green-500" />
+            <span className="truncate" dir="ltr">{user.phone}</span>
           </div>
-          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-            <MapPin className="h-4 w-4" />
-            <span className="text-sm">{user.city}</span>
+          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1.5">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-red-500" />
+            <span className="truncate">{user.city}</span>
           </div>
-          <div className="flex items-center space-x-2 space-x-reverse text-gray-600 dark:text-gray-300">
-            <CreditCard className="h-4 w-4" />
-            <span className="text-sm">{user.id_number}</span>
-          </div>
-          <div className="flex items-center space-x-2 space-x-reverse text-gray-500 dark:text-gray-400">
-            <Clock className="h-4 w-4" />
-            <span className="text-xs">
-              تاريخ التسجيل: {new Date(user.created_at).toLocaleDateString('ar-EG')}
-            </span>
+          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1.5">
+            <CreditCard className="h-3.5 w-3.5 flex-shrink-0 text-purple-500" />
+            <span className="truncate" dir="ltr">{user.id_number}</span>
           </div>
         </div>
 
+        {/* Registration Date */}
+        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-3 justify-center bg-gray-100 dark:bg-gray-700 rounded-lg py-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          <span>تاريخ التسجيل: {new Date(user.created_at).toLocaleDateString('ar-EG')}</span>
+        </div>
+
         {(mainTab === 'users' || mainTab === 'lawyers') && userStatusTab === 'pending' && (
-          <div className="flex space-x-3 space-x-reverse">
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleApprove(user.user_id || user.lawyer_id)}
-              className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition font-semibold text-sm shadow-md"
             >
-              <CheckCircle className="h-5 w-5" />
+              <CheckCircle className="h-4 w-4" />
               <span>قبول</span>
             </button>
             <button
               onClick={() => setSelectedUser(user)}
-              className="flex-1 flex items-center justify-center space-x-2 space-x-reverse px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition font-semibold text-sm shadow-md"
             >
-              <XCircle className="h-5 w-5" />
+              <XCircle className="h-4 w-4" />
               <span>رفض</span>
             </button>
           </div>
@@ -1050,15 +1051,15 @@ const AdminDashboard = () => {
         </div>
       )}
       <Navbar />
-      <div className="h-[calc(100vh-4rem)] mt-16 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-12 transition-colors duration-300">
+      <div className="h-[calc(100vh-4rem)] mt-16 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-3 sm:px-4 lg:px-6 py-4 sm:py-8 lg:py-12 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                 لوحة تحكم المسؤول
               </h1>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
                 إدارة طلبات الانضمام والمستخدمين المقبولين
               </p>
             </div>
@@ -1066,20 +1067,79 @@ const AdminDashboard = () => {
             {currentAdmin?.role === 'super_admin' && (
               <button
                 onClick={() => setShowAssignRoleModal(true)}
-                className="flex items-center justify-center space-x-2 space-x-reverse px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-bold"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-bold text-sm sm:text-base"
               >
-                <UserPlus className="h-5 w-5" />
-                <span>تعيين دور جديد</span>
+                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">تعيين دور جديد</span>
+                <span className="sm:hidden">تعيين</span>
               </button>
             )}
           </div>
 
           {/* Main Tabs */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
+          {/* Mobile: Dropdown Select */}
+          <div className="sm:hidden mb-4 space-y-3">
+            {/* Styled Dropdown */}
+            <div className="relative">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <select
+                value={mainTab}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Handle navigation links
+                  if (value === 'cases_page') {
+                    navigate('/admin/cases');
+                    return;
+                  }
+                  setMainTab(value);
+                  if (['users', 'lawyers', 'admins', 'super_admins'].includes(value)) {
+                    setUserStatusTab('pending');
+                  }
+                }}
+                className="w-full pl-4 pr-12 py-4 text-base font-bold bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-800 dark:to-gray-700 border-2 border-blue-200 dark:border-blue-800 rounded-2xl shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer text-gray-800 dark:text-white"
+              >
+                <option value="users">👥 المستخدمين</option>
+                <option value="lawyers">💼 المحاميين</option>
+                <option value="admins">🛡️ المسؤولين</option>
+                {currentAdmin?.role === 'super_admin' && <option value="super_admins">👑 Super Admin</option>}
+                <option value="deletion_requests">🗑️ طلبات الحذف</option>
+                <option value="support_tickets">💬 الدعم الفني</option>
+                <option value="court_clerks">⚖️ قلم المحكمة</option>
+                <option value="courts">🏛️ المحاكم</option>
+                <option value="cases_page">📋 القضايا</option>
+              </select>
+            </div>
+            {/* Quick Links for mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+              <Link to="/admin/system-ai" className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-md">
+                <BarChart3 className="h-4 w-4" />
+                SystemAI
+              </Link>
+              <Link to="/admin/appointments" className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-md">
+                <Calendar className="h-4 w-4" />
+                المواعيد
+              </Link>
+              <Link to="/admin/payments" className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-md">
+                <CreditCard className="h-4 w-4" />
+                المدفوعات
+              </Link>
+              <Link to="/admin/analytics" className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-md">
+                <BarChart3 className="h-4 w-4" />
+                الإحصائيات
+              </Link>
+            </div>
+          </div>
+
+          {/* Desktop/Tablet: Grid Buttons */}
+          <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-2 mb-8">
+            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
               <button
                 onClick={() => { setMainTab('users'); setUserStatusTab('pending'); }}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'users'
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition ${mainTab === 'users'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1089,7 +1149,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => { setMainTab('lawyers'); setUserStatusTab('pending'); }}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'lawyers'
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition ${mainTab === 'lawyers'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1099,7 +1159,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => { setMainTab('admins'); setUserStatusTab('pending'); }}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'admins'
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition ${mainTab === 'admins'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1110,7 +1170,7 @@ const AdminDashboard = () => {
               {currentAdmin?.role === 'super_admin' && (
                 <button
                   onClick={() => { setMainTab('super_admins'); setUserStatusTab('pending'); }}
-                  className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'super_admins'
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${mainTab === 'super_admins'
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
@@ -1121,7 +1181,7 @@ const AdminDashboard = () => {
               )}
               <button
                 onClick={() => setMainTab('deletion_requests')}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'deletion_requests'
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${mainTab === 'deletion_requests'
                   ? 'bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1131,7 +1191,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setMainTab('support_tickets')}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'support_tickets'
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${mainTab === 'support_tickets'
                   ? 'bg-gradient-to-r from-green-600 to-teal-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1141,7 +1201,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setMainTab('court_clerks')}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'court_clerks'
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${mainTab === 'court_clerks'
                   ? 'bg-gradient-to-r from-amber-600 to-yellow-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1151,7 +1211,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setMainTab('courts')}
-                className={`flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition ${mainTab === 'courts'
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${mainTab === 'courts'
                   ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -1161,35 +1221,35 @@ const AdminDashboard = () => {
               </button>
               <Link
                 to="/admin/analytics"
-                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-500 hover:text-white hover:shadow-lg"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-500 hover:text-white hover:shadow-lg"
               >
                 <BarChart3 className="h-5 w-5" />
                 <span>الإحصائيات</span>
               </Link>
               <Link
                 to="/admin/cases"
-                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-500 hover:text-white hover:shadow-lg"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-500 hover:text-white hover:shadow-lg"
               >
                 <FileText className="h-5 w-5" />
                 <span>إدارة القضايا</span>
               </Link>
               <Link
                 to="/admin/appointments"
-                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-500 hover:text-white hover:shadow-lg"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-500 hover:text-white hover:shadow-lg"
               >
                 <Calendar className="h-5 w-5" />
                 <span>المواعيد</span>
               </Link>
               <Link
                 to="/admin/payments"
-                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-green-500 hover:text-white hover:shadow-lg"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-green-500 hover:text-white hover:shadow-lg"
               >
                 <CreditCard className="h-5 w-5" />
                 <span>المدفوعات</span>
               </Link>
               <Link
                 to="/admin/system-ai"
-                className="flex items-center justify-center space-x-2 space-x-reverse py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-500 hover:text-white hover:shadow-lg"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-500 hover:text-white hover:shadow-lg"
               >
                 <BarChart3 className="h-5 w-5" />
                 <span>SystemAI</span>
@@ -1199,66 +1259,73 @@ const AdminDashboard = () => {
 
 
           {/* Statistics */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
             {(mainTab === 'users' || mainTab === 'lawyers') && (
               <>
+                {/* Pending */}
                 <button
                   onClick={() => setUserStatusTab('pending')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'pending' ? 'ring-4 ring-yellow-500 ring-opacity-50' : ''
+                  className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg p-3 sm:p-5 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'pending' ? 'ring-2 sm:ring-4 ring-yellow-400 bg-yellow-50 dark:bg-yellow-900/20' : ''
                     }`}
                 >
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-                      <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                    <div className="p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
                     </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">في الانتظار</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.pending}</p>
+                    <div className="text-center sm:text-right">
+                      <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">في الانتظار</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.pending}</p>
                     </div>
                   </div>
                 </button>
+
+                {/* Approved */}
                 <button
                   onClick={() => setUserStatusTab('approved')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'approved' ? 'ring-4 ring-green-500 ring-opacity-50' : ''
+                  className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg p-3 sm:p-5 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'approved' ? 'ring-2 sm:ring-4 ring-green-400 bg-green-50 dark:bg-green-900/20' : ''
                     }`}
                 >
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                    <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
                     </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">مقبول</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.approved}</p>
+                    <div className="text-center sm:text-right">
+                      <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">مقبول</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.approved}</p>
                     </div>
                   </div>
                 </button>
+
+                {/* Rejected */}
                 <button
                   onClick={() => setUserStatusTab('rejected')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'rejected' ? 'ring-4 ring-red-500 ring-opacity-50' : ''
+                  className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg p-3 sm:p-5 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'rejected' ? 'ring-2 sm:ring-4 ring-red-400 bg-red-50 dark:bg-red-900/20' : ''
                     }`}
                 >
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
-                      <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                    <div className="p-2 sm:p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                      <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
                     </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">مرفوض</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.rejected}</p>
+                    <div className="text-center sm:text-right">
+                      <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">مرفوض</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.rejected}</p>
                     </div>
                   </div>
                 </button>
+
+                {/* Banned */}
                 <button
                   onClick={() => setUserStatusTab('banned')}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'banned' ? 'ring-4 ring-gray-600 ring-opacity-50' : ''
+                  className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg p-3 sm:p-5 transition-all hover:shadow-xl cursor-pointer ${userStatusTab === 'banned' ? 'ring-2 sm:ring-4 ring-gray-400 bg-gray-100 dark:bg-gray-700' : ''
                     }`}
                 >
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <div className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full">
-                      <XCircle className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                    <div className="p-2 sm:p-3 bg-gray-200 dark:bg-gray-700 rounded-full">
+                      <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700 dark:text-gray-300" />
                     </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">محظور</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.banned}</p>
+                    <div className="text-center sm:text-right">
+                      <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">محظور</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.banned}</p>
                     </div>
                   </div>
                 </button>

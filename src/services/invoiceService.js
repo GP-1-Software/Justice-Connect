@@ -14,7 +14,7 @@ import { supabase } from '../supabaseClient';
 export const generateInvoiceNumber = async () => {
   try {
     const { data, error } = await supabase.rpc('generate_invoice_number');
-    
+
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
@@ -67,7 +67,7 @@ export const createInvoice = async (invoiceData, items) => {
 export const getLawyerInvoices = async (lawyerId, filters = {}) => {
   try {
     console.log('🔍 getLawyerInvoices called with:', { lawyerId, filters });
-    
+
     let query = supabase
       .from('invoices')
       .select(`
@@ -79,7 +79,7 @@ export const getLawyerInvoices = async (lawyerId, filters = {}) => {
       `)
       .eq('lawyer_id', lawyerId)
       .order('created_at', { ascending: false });
-      
+
     console.log('📝 Query built for lawyer_id:', lawyerId);
 
     // Apply filters
@@ -114,7 +114,7 @@ export const getLawyerInvoices = async (lawyerId, filters = {}) => {
 export const getClientInvoices = async (clientId, filters = {}) => {
   try {
     console.log('🔍 getClientInvoices called with:', { clientId, filters });
-    
+
     let query = supabase
       .from('invoices')
       .select(`
@@ -127,7 +127,7 @@ export const getClientInvoices = async (clientId, filters = {}) => {
       `)
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
-      
+
     console.log('📝 Query built for client_id:', clientId);
 
     // Apply filters
@@ -239,9 +239,9 @@ export const cancelInvoice = async (invoiceId, reason) => {
   try {
     const { data, error } = await supabase
       .from('invoices')
-      .update({ 
+      .update({
         status: 'cancelled',
-        notes: reason 
+        notes: reason
       })
       .eq('invoice_id', invoiceId)
       .select()
@@ -284,36 +284,48 @@ export const getLawyerInvoiceStats = async (lawyerId, period = 'month') => {
   try {
     const { data: invoices, error } = await supabase
       .from('invoices')
-      .select('status, total_amount, created_at')
+      .select('status, total_amount, created_at, due_date')
       .eq('lawyer_id', lawyerId);
 
     if (error) throw error;
 
     // Calculate statistics
     const now = new Date();
-    const startOfPeriod = period === 'month' 
+    const startOfPeriod = period === 'month'
       ? new Date(now.getFullYear(), now.getMonth(), 1)
       : new Date(now.getFullYear(), 0, 1);
 
-    const periodInvoices = invoices.filter(inv => 
+    const periodInvoices = invoices.filter(inv =>
       new Date(inv.created_at) >= startOfPeriod
     );
 
+    // Helper to check if invoice is overdue (pending + past due date)
+    const checkOverdue = (inv) => {
+      if (inv.status !== 'pending' || !inv.due_date) return false;
+      const dueDate = new Date(inv.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    };
+
+    // Calculate overdue invoices (pending with past due_date)
+    const overdueInvoices = invoices.filter(inv => checkOverdue(inv));
+    // Pending = pending but NOT overdue
+    const pendingInvoices = invoices.filter(inv => inv.status === 'pending' && !checkOverdue(inv));
+
     const stats = {
       total: invoices.length,
-      pending: invoices.filter(inv => inv.status === 'pending').length,
+      pending: pendingInvoices.length,
       paid: invoices.filter(inv => inv.status === 'paid').length,
-      overdue: invoices.filter(inv => inv.status === 'overdue').length,
+      overdue: overdueInvoices.length,
       cancelled: invoices.filter(inv => inv.status === 'cancelled').length,
       totalAmount: invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
       paidAmount: invoices
         .filter(inv => inv.status === 'paid')
         .reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
-      pendingAmount: invoices
-        .filter(inv => inv.status === 'pending')
+      pendingAmount: pendingInvoices
         .reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
-      overdueAmount: invoices
-        .filter(inv => inv.status === 'overdue')
+      overdueAmount: overdueInvoices
         .reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
       periodTotal: periodInvoices.length,
       periodAmount: periodInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
@@ -336,22 +348,35 @@ export const getClientInvoiceStats = async (clientId) => {
   try {
     const { data: invoices, error } = await supabase
       .from('invoices')
-      .select('status, total_amount')
+      .select('status, total_amount, due_date')
       .eq('client_id', clientId);
 
     if (error) throw error;
 
+    // Helper to check if invoice is overdue (pending + past due date)
+    const checkOverdue = (inv) => {
+      if (inv.status !== 'pending' || !inv.due_date) return false;
+      const dueDate = new Date(inv.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    };
+
+    // Calculate overdue invoices (pending with past due_date)
+    const overdueInvoices = invoices.filter(inv => checkOverdue(inv));
+    // Pending = pending but NOT overdue
+    const pendingInvoices = invoices.filter(inv => inv.status === 'pending' && !checkOverdue(inv));
+
     const stats = {
       total: invoices.length,
-      pending: invoices.filter(inv => inv.status === 'pending').length,
+      pending: pendingInvoices.length,
       paid: invoices.filter(inv => inv.status === 'paid').length,
-      overdue: invoices.filter(inv => inv.status === 'overdue').length,
+      overdue: overdueInvoices.length,
       totalAmount: invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
       paidAmount: invoices
         .filter(inv => inv.status === 'paid')
         .reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0),
-      pendingAmount: invoices
-        .filter(inv => inv.status === 'pending' || inv.status === 'overdue')
+      pendingAmount: [...pendingInvoices, ...overdueInvoices]
         .reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
     };
 
@@ -496,15 +521,15 @@ export const formatCurrency = (amount, currency = 'ILS') => {
     'JOD': 'د.أ',
     'ILS': '₪'
   };
-  
+
   const symbol = symbols[currency] || currency;
   const formattedAmount = parseFloat(amount).toFixed(2);
-  
+
   // For RTL currencies (JOD, ILS), put symbol after amount
   if (currency === 'JOD' || currency === 'ILS') {
     return `${formattedAmount} ${symbol}`;
   }
-  
+
   // For LTR currencies (USD), put symbol before amount
   return `${symbol}${formattedAmount}`;
 };
@@ -536,7 +561,7 @@ export const updateInvoiceWithItems = async (invoiceId, invoiceData, items) => {
     if (items && items.length > 0) {
       const { data: updatedItems, error: itemsError } = await updateInvoiceItems(invoiceId, items);
       if (itemsError) throw itemsError;
-      
+
       console.log('✅ Invoice items updated:', updatedItems);
     }
 

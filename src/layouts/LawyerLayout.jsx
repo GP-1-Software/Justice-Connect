@@ -15,6 +15,16 @@ const LawyerLayout = () => {
   // Check if current page is messages
   const isMessagesPage = location.pathname.includes('/messages');
 
+  // Check if current page is justice-ai and in mobile mode
+  const isJusticeAIPage = location.pathname.includes('/justice-ai');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -51,8 +61,10 @@ const LawyerLayout = () => {
         </main>
       </div>
 
-      {/* Floating AI Chat Widget */}
-      <FloatingAIChat userProfile={lawyer} userType="lawyer" />
+      {/* Floating AI Chat Widget - Hide on mobile when on justice-ai page */}
+      {!(isJusticeAIPage && isMobile) && (
+        <FloatingAIChat userProfile={lawyer} userType="lawyer" />
+      )}
     </div>
   );
 };

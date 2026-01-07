@@ -22,11 +22,16 @@ const LawyerNavbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const mobileUserMenuRef = useRef(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+      const isOutsideDesktop = userMenuRef.current && !userMenuRef.current.contains(event.target);
+      const isOutsideMobile = mobileUserMenuRef.current && !mobileUserMenuRef.current.contains(event.target);
+
+      // Only close if clicking outside both refs
+      if (isOutsideDesktop && isOutsideMobile) {
         setUserMenuOpen(false);
       }
     };
@@ -137,7 +142,11 @@ const LawyerNavbar = ({ onMenuClick }) => {
                   </Link>
 
                   <button
-                    onClick={handleLogout}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLogout();
+                    }}
                     className="w-full flex items-center space-x-2 space-x-reverse px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                   >
                     <LogOut className="h-4 w-4" />
@@ -172,12 +181,63 @@ const LawyerNavbar = ({ onMenuClick }) => {
             </div>
 
             {/* User Avatar Mobile */}
-            <button
-              onClick={() => navigate('/lawyer/profile')}
-              className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-500 rounded-full flex items-center justify-center"
-            >
-              <User className="h-4 w-4 text-white" />
-            </button>
+            <div className="relative" ref={mobileUserMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-500 rounded-full flex items-center justify-center"
+              >
+                <User className="h-4 w-4 text-white" />
+              </button>
+
+              {/* Mobile User Dropdown */}
+              {userMenuOpen && (
+                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {lawyer?.first_name} {lawyer?.last_name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={lawyer?.email}>
+                      {lawyer?.email}
+                    </p>
+                  </div>
+
+                  {/* Role Switcher in Mobile Menu */}
+                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <RoleSwitcher />
+                  </div>
+
+                  <Link
+                    to="/lawyer/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center space-x-2 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </Link>
+
+                  <Link
+                    to="/lawyer/settings"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center space-x-2 space-x-reverse px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>الإعدادات</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center space-x-2 space-x-reverse px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>تسجيل الخروج</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

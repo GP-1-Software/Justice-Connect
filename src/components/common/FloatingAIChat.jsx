@@ -448,10 +448,10 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
 
     return (
         <>
-            {/* Floating Button */}
+            {/* Floating Button - Hidden on Mobile */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`fixed bottom-6 right-6 z-[999] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 ${isOpen
+                className={`hidden md:flex fixed bottom-6 right-6 z-[999] w-14 h-14 rounded-full shadow-2xl items-center justify-center transition-all duration-300 ${isOpen
                     ? 'bg-red-500 hover:bg-red-600 rotate-0'
                     : 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 animate-pulse hover:animate-none'
                     }`}
@@ -464,10 +464,10 @@ export default function FloatingAIChat({ userProfile, userType = 'client' }) {
                 )}
             </button>
 
-            {/* Chat Popup */}
+            {/* Chat Popup - Hidden on Mobile */}
             {isOpen && (
                 <div
-                    className={`fixed z-[998] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-all duration-300 ${isExpanded
+                    className={`hidden md:flex fixed z-[998] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex-col overflow-hidden transition-all duration-300 ${isExpanded
                         ? 'bottom-4 right-4 left-4 top-20 sm:left-auto sm:w-[600px] sm:h-[80vh]'
                         : 'bottom-24 right-6 w-[360px] sm:w-[400px] h-[500px]'
                         }`}

@@ -73,12 +73,18 @@ const Appointments = () => {
 
   useEffect(() => {
     const fetchAppointments = async () => {
+      console.log('=== DEBUG: Appointments Page ===');
+      console.log('userProfile:', userProfile);
+      console.log('userProfile.user_id:', userProfile?.user_id);
+
       if (!userProfile?.user_id) {
+        console.log('No user_id found, skipping fetch');
         setLoading(false);
         return;
       }
 
       try {
+        console.log('Fetching appointments for user_id:', userProfile.user_id);
         const data = await getClientAppointments(userProfile.user_id);
         setAppointments(data || []);
 
@@ -452,8 +458,8 @@ const Appointments = () => {
               <button
                 onClick={() => handleTabChange('upcoming')}
                 className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'upcoming'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 📅 المواعيد النشطة
@@ -461,8 +467,8 @@ const Appointments = () => {
               <button
                 onClick={() => handleTabChange('past')}
                 className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'past'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 📋 السجل الكامل
@@ -483,8 +489,8 @@ const Appointments = () => {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center justify-center space-x-2 space-x-reverse px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg sm:rounded-xl transition-all relative ${showFilters
-                    ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
-                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500'
+                  : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
               >
                 <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -536,8 +542,8 @@ const Appointments = () => {
               value={appointmentFilter}
               onChange={(e) => setAppointmentFilter(e.target.value)}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all ${appointmentFilter !== 'all'
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 font-semibold'
-                  : 'border-gray-300 dark:border-gray-600'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 font-semibold'
+                : 'border-gray-300 dark:border-gray-600'
                 }`}
             >
               <option value="all">جميع المواعيد</option>
@@ -551,8 +557,8 @@ const Appointments = () => {
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${selectedStatus !== 'all'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
-                      : 'border-gray-300 dark:border-gray-600'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
+                    : 'border-gray-300 dark:border-gray-600'
                     }`}
                 >
                   <option value="all">جميع الحالات</option>
@@ -573,8 +579,8 @@ const Appointments = () => {
                   value={selectedMethod}
                   onChange={(e) => setSelectedMethod(e.target.value)}
                   className={`px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-all ${selectedMethod !== 'all'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
-                      : 'border-gray-300 dark:border-gray-600'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
+                    : 'border-gray-300 dark:border-gray-600'
                     }`}
                 >
                   <option value="all">جميع الأنواع</option>

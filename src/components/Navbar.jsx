@@ -14,6 +14,7 @@ const Navbar = () => {
   const [userData, setUserData] = useState(null);
   const [showAdminProfileModal, setShowAdminProfileModal] = useState(false);
   const userMenuRef = useRef(null);
+  const mobileUserMenuRef = useRef(null);
 
   // Check if user is logged in (you can replace this with actual auth logic)
   useEffect(() => {
@@ -27,7 +28,11 @@ const Navbar = () => {
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+      const isOutsideDesktop = userMenuRef.current && !userMenuRef.current.contains(event.target);
+      const isOutsideMobile = mobileUserMenuRef.current && !mobileUserMenuRef.current.contains(event.target);
+
+      // Only close if clicking outside both refs
+      if (isOutsideDesktop && isOutsideMobile) {
         setUserMenuOpen(false);
       }
     };
@@ -75,10 +80,19 @@ const Navbar = () => {
         {/* Dark Mode Toggle - Fixed Far Left Corner */}
         <button
           onClick={toggleDarkMode}
-          className="fixed left-4 top-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition z-[60] bg-white dark:bg-gray-800 shadow-md"
+          className="fixed left-4 top-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition z-[60] bg-white dark:bg-gray-800 shadow-md md:inline-block hidden"
           aria-label="Toggle dark mode"
         >
           {darkMode ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
+        </button>
+
+        {/* Mobile Dark Mode Toggle - Inside Navbar for Better Spacing */}
+        <button
+          onClick={toggleDarkMode}
+          className="md:hidden fixed left-3 top-3.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition z-[60] bg-white dark:bg-gray-800 shadow-md"
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 text-gray-700 dark:text-gray-300" />}
         </button>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -129,7 +143,9 @@ const Navbar = () => {
                       {/* Show Dashboard only for admins */}
                       {(userData?.role === 'admin' || userData?.role === 'super_admin') && (
                         <button
-                          onClick={() => {
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             navigate('/admin/dashboard');
                             setUserMenuOpen(false);
                           }}
@@ -145,7 +161,9 @@ const Navbar = () => {
                       {/* Court Clerk Dashboard Link */}
                       {userData?.user_type === 'court_clerk' && (
                         <button
-                          onClick={() => {
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             navigate('/court-clerk/dashboard');
                             setUserMenuOpen(false);
                           }}
@@ -160,7 +178,9 @@ const Navbar = () => {
                       {userData?.user_type !== 'court_clerk' && (
                         <>
                           <button
-                            onClick={() => {
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               // For admins, show modal instead of navigating
                               if (userData?.role === 'admin' || userData?.role === 'super_admin') {
                                 setShowAdminProfileModal(true);
@@ -194,7 +214,9 @@ const Navbar = () => {
                           {/* Show Settings only for non-clients and non-lawyers */}
                           {userData?.user_type !== 'client' && userData?.user_type !== 'lawyer' && (
                             <button
-                              onClick={() => {
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 navigate('/settings');
                                 setUserMenuOpen(false);
                               }}
@@ -210,7 +232,11 @@ const Navbar = () => {
                       <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
                       <button
-                        onClick={handleLogout}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLogout();
+                        }}
                         className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-red-600 dark:text-red-400"
                       >
                         <LogOut className="h-5 w-5" />
@@ -239,9 +265,161 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700">
+            {/* Mobile Menu Button and User Avatar */}
+            <div className="md:hidden flex items-center space-x-4 space-x-reverse">
+              {/* Mobile User Avatar with Dropdown */}
+              {isLoggedIn && (
+                <div className="relative" ref={mobileUserMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="w-9 h-9 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <User className="h-5 w-5 text-white" />
+                  </button>
+
+                  {/* Mobile User Dropdown */}
+                  {userMenuOpen && (
+                    <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">مرحباً،</p>
+                        <p className="font-bold text-gray-900 dark:text-white">
+                          {userData?.first_name} {userData?.last_name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{userData?.email}</p>
+                      </div>
+
+                      {/* Role Switcher in Mobile Menu */}
+                      <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <RoleSwitcher />
+                      </div>
+
+                      {/* Admin Dashboard */}
+                      {(userData?.role === 'admin' || userData?.role === 'super_admin') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/admin/dashboard');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-blue-600 dark:text-blue-400 font-semibold"
+                        >
+                          <LayoutDashboard className="h-5 w-5" />
+                          <span>لوحة التحكم</span>
+                        </button>
+                      )}
+
+                      {/* Court Clerk Dashboard */}
+                      {userData?.user_type === 'court_clerk' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/court-clerk/dashboard');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-blue-600 dark:text-blue-400 font-semibold"
+                        >
+                          <LayoutDashboard className="h-5 w-5" />
+                          <span>لوحة قلم المحكمة</span>
+                        </button>
+                      )}
+
+                      {/* Lawyer Dashboard */}
+                      {userData?.user_type === 'lawyer' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/lawyer/dashboard');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-blue-600 dark:text-blue-400 font-semibold"
+                        >
+                          <LayoutDashboard className="h-5 w-5" />
+                          <span>لوحة المحامي</span>
+                        </button>
+                      )}
+
+                      {/* Client Dashboard */}
+                      {userData?.user_type === 'client' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/client/dashboard');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-blue-600 dark:text-blue-400 font-semibold"
+                        >
+                          <LayoutDashboard className="h-5 w-5" />
+                          <span>لوحة التحكم</span>
+                        </button>
+                      )}
+
+                      {/* Profile - for admins show modal */}
+                      {userData?.user_type !== 'court_clerk' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (userData?.role === 'admin' || userData?.role === 'super_admin') {
+                              setShowAdminProfileModal(true);
+                              setUserMenuOpen(false);
+                            } else if (userData?.user_type === 'lawyer') {
+                              navigate('/lawyer/profile');
+                              setUserMenuOpen(false);
+                            } else if (userData?.user_type === 'client') {
+                              navigate('/client/profile');
+                              setUserMenuOpen(false);
+                            } else {
+                              navigate('/profile');
+                              setUserMenuOpen(false);
+                            }
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <User className="h-5 w-5" />
+                          <span>الملف الشخصي</span>
+                        </button>
+                      )}
+
+                      {/* Settings - for non-clients and non-lawyers */}
+                      {userData?.user_type !== 'client' && userData?.user_type !== 'lawyer' && userData?.user_type !== 'court_clerk' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/settings');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300"
+                        >
+                          <Settings className="h-5 w-5" />
+                          <span>الإعدادات</span>
+                        </button>
+                      )}
+
+                      <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLogout();
+                        }}
+                        className="w-full flex items-center space-x-3 space-x-reverse px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-red-600 dark:text-red-400"
+                      >
+                        <LogOut className="h-5 w-5" />
+                        <span>تسجيل الخروج</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700 dark:text-gray-300">
                 {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
             </div>
