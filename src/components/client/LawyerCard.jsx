@@ -41,6 +41,7 @@ const LawyerCard = ({ lawyer, viewMode = 'grid' }) => {
 
   // Get total cases from stats
   const getTotalCases = () => {
+    console.log('lawyer.lawyer_stats:', lawyer.lawyer_stats);
     if (!lawyer.lawyer_stats || lawyer.lawyer_stats.length === 0) {
       return 0;
     }
@@ -135,8 +136,13 @@ const LawyerCard = ({ lawyer, viewMode = 'grid' }) => {
             {lawyer.first_name} {lawyer.last_name}
           </h3>
           {lawyer.specialization && (
-            <p className="text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-medium line-clamp-1">
-              {formatSpecialization(lawyer.specialization)}
+            <p className="text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-medium line-clamp-2">
+              {(() => {
+                console.log('Raw specialization:', lawyer.specialization);
+                const formatted = formatSpecialization(lawyer.specialization);
+                console.log('Formatted specialization:', formatted);
+                return formatted;
+              })()}
             </p>
           )}
         </div>

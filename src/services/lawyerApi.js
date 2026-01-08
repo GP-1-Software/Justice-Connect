@@ -74,11 +74,67 @@ export const searchLawyers = async (filters = {}) => {
 
     if (error) throw error;
 
-    // Add empty lawyer_stats for compatibility
-    const lawyersWithStats = data.map(lawyer => ({
-      ...lawyer,
-      lawyer_stats: []
-    }));
+    // Fetch statistics for each lawyer from cases table
+    const lawyersWithStats = await Promise.all(
+      data.map(async (lawyer) => {
+        try {
+          // Get cases count
+          const { data: casesData, error: casesError } = await supabase
+            .from('cases')
+            .select('case_id, status')
+            .eq('assigned_lawyer_id', lawyer.lawyer_id);
+
+          if (casesError) {
+            console.error('Error fetching cases for lawyer:', lawyer.lawyer_id, casesError);
+          }
+
+          const totalCases = casesData?.length || 0;
+          const activeCases = casesData?.filter(c => c.status === 'active').length || 0;
+          const completedCases = casesData?.filter(c => c.status === 'completed').length || 0;
+
+          // Get upcoming appointments count
+          const today = new Date().toISOString().split('T')[0];
+          const { count: appointmentsCount, error: apptError } = await supabase
+            .from('appointments')
+            .select('*', { count: 'exact', head: true })
+            .eq('lawyer_id', lawyer.lawyer_id)
+            .eq('status', 'scheduled')
+            .gte('appointment_date', today);
+
+          if (apptError) {
+            console.error('Error fetching appointments for lawyer:', lawyer.lawyer_id, apptError);
+          }
+
+          console.log(`Stats for ${lawyer.first_name}:`, {
+            totalCases,
+            activeCases,
+            completedCases,
+            appointmentsCount
+          });
+
+          return {
+            ...lawyer,
+            lawyer_stats: [{
+              total_cases: totalCases,
+              active_cases: activeCases,
+              completed_cases: completedCases,
+              upcoming_appointments: appointmentsCount || 0
+            }]
+          };
+        } catch (err) {
+          console.error('Error fetching stats for lawyer:', lawyer.lawyer_id, err);
+          return {
+            ...lawyer,
+            lawyer_stats: [{
+              total_cases: 0,
+              active_cases: 0,
+              completed_cases: 0,
+              upcoming_appointments: 0
+            }]
+          };
+        }
+      })
+    );
 
     // Post-process for price filtering
     let filteredData = lawyersWithStats;
@@ -150,11 +206,51 @@ export const getLawyerById = async (lawyerId) => {
 
     if (error) throw error;
 
-    // Return lawyer with empty stats (lawyer_stats table not used)
-    return {
-      ...data,
-      lawyer_stats: []
-    };
+    // Fetch statistics for the lawyer from cases table
+    try {
+      // Get cases count
+      const { data: casesData, error: casesError } = await supabase
+        .from('cases')
+        .select('case_id, status')
+        .eq('assigned_lawyer_id', lawyerId);
+
+      if (casesError) {
+        console.error('Error fetching cases for lawyer:', lawyerId, casesError);
+      }
+
+      const totalCases = casesData?.length || 0;
+      const activeCases = casesData?.filter(c => c.status === 'active').length || 0;
+      const completedCases = casesData?.filter(c => c.status === 'completed').length || 0;
+
+      // Get upcoming appointments count
+      const today = new Date().toISOString().split('T')[0];
+      const { count: appointmentsCount, error: apptError } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('lawyer_id', lawyerId)
+        .eq('status', 'scheduled')
+        .gte('appointment_date', today);
+
+      if (apptError) {
+        console.error('Error fetching appointments for lawyer:', lawyerId, apptError);
+      }
+
+      return {
+        ...data,
+        lawyer_stats: [{
+          total_cases: totalCases,
+          active_cases: activeCases,
+          completed_cases: completedCases,
+          appointments_count: appointmentsCount || 0
+        }]
+      };
+    } catch (statsError) {
+      console.error('Error fetching lawyer stats:', statsError);
+      return {
+        ...data,
+        lawyer_stats: []
+      };
+    }
   } catch (error) {
     console.error('Error fetching lawyer:', error);
     throw error;

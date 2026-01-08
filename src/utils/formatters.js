@@ -9,49 +9,70 @@
 export const formatSpecialization = (specialization, separator = ' • ') => {
   if (!specialization) return '';
 
-  // Helper to clean a single item
-  const cleanItem = (val) => {
-    if (val == null) return '';
-    if (typeof val !== 'string') return String(val);
-    // Pattern: {"القانون الجنائي"}
-    const m = val.match(/^\{\"(.+?)\"\}$/);
-    if (m) return m[1];
-    // Pattern: "النص" (extra enclosing quotes)
-    const q = val.match(/^\"(.+?)\"$/);
-    if (q) return q[1];
-    return val;
-  };
-
   try {
-    // If it's a JSON encoded array/object string try parse
-    if (typeof specialization === 'string' && (specialization.trim().startsWith('[') || specialization.trim().startsWith('{'))) {
-      try {
-        const parsed = JSON.parse(specialization);
-        if (Array.isArray(parsed)) {
-          return parsed.map(cleanItem).filter(Boolean).join(separator);
-        }
-        if (typeof parsed === 'object' && parsed !== null) {
-          return Object.values(parsed).map(cleanItem).filter(Boolean).join(separator);
-        }
-        return cleanItem(parsed);
-      } catch {
-        // Fallthrough to normal handling
-      }
+    // If it's already an array, clean and join
+    if (Array.isArray(specialization)) {
+      return specialization
+        .map(item => {
+          if (!item) return '';
+          // Clean each item from JSON artifacts
+          let cleaned = String(item).trim();
+          // Remove {"text"} format
+          cleaned = cleaned.replace(/^\{?"?(.+?)"?\}?$/, '$1');
+          // Remove extra quotes
+          cleaned = cleaned.replace(/^["']|["']$/g, '');
+          return cleaned;
+        })
+        .filter(Boolean)
+        .join(separator);
     }
 
-    // Already an array
-    if (Array.isArray(specialization)) {
-      return specialization.map(cleanItem).filter(Boolean).join(separator);
+    // If it's a string that looks like PostgreSQL array: {val1,val2}
+    if (typeof specialization === 'string') {
+      // PostgreSQL array format: {"قانون جنائي","قانون مدني"}
+      if (specialization.startsWith('{') && specialization.endsWith('}')) {
+        // Remove outer braces
+        const content = specialization.slice(1, -1);
+        // Split by comma and clean each item
+        const items = content.split(',').map(item => {
+          let cleaned = item.trim();
+          // Remove all quotes and braces
+          cleaned = cleaned.replace(/["{}']/g, '');
+          return cleaned;
+        }).filter(Boolean);
+        return items.join(separator);
+      }
+      
+      // Try to parse as JSON array
+      if (specialization.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(specialization);
+          if (Array.isArray(parsed)) {
+            return parsed
+              .map(item => String(item).replace(/["{}']/g, '').trim())
+              .filter(Boolean)
+              .join(separator);
+          }
+        } catch {
+          // Fallthrough
+        }
+      }
+      
+      // Single string value - clean it
+      return specialization.replace(/["{}']/g, '').trim();
     }
 
     // Plain object
-    if (typeof specialization === 'object') {
-      return Object.values(specialization).map(cleanItem).filter(Boolean).join(separator);
+    if (typeof specialization === 'object' && specialization !== null) {
+      return Object.values(specialization)
+        .map(item => String(item).replace(/["{}']/g, '').trim())
+        .filter(Boolean)
+        .join(separator);
     }
 
-    // Single string value
-    return cleanItem(specialization);
-  } catch {
+    return String(specialization);
+  } catch (err) {
+    console.error('Error formatting specialization:', err);
     return String(specialization);
   }
 };
