@@ -368,9 +368,45 @@ export const getSpecializations = async () => {
 
     if (error) throw error;
 
-    // Get unique specializations
-    const specializations = [...new Set(data.map(item => item.specialization))];
-    return specializations.filter(s => s); // Remove null/undefined
+    // Parse and flatten all specializations
+    const allSpecializations = [];
+    
+    data.forEach(item => {
+      if (!item.specialization) return;
+      
+      let specs = item.specialization;
+      
+      // Handle PostgreSQL array format: {"item1","item2"}
+      if (typeof specs === 'string') {
+        // Remove PostgreSQL array braces and quotes
+        specs = specs.replace(/^{|}$/g, '').replace(/"/g, '');
+        specs = specs.split(',').map(s => s.trim());
+      }
+      
+      // If it's already an array
+      if (Array.isArray(specs)) {
+        specs.forEach(spec => {
+          // Clean any remaining JSON artifacts
+          const cleaned = String(spec).replace(/["{}']/g, '').trim();
+          if (cleaned) {
+            allSpecializations.push(cleaned);
+          }
+        });
+      } else {
+        // Single specialization
+        const cleaned = String(specs).replace(/["{}']/g, '').trim();
+        if (cleaned) {
+          allSpecializations.push(cleaned);
+        }
+      }
+    });
+
+    // Get unique specializations and sort alphabetically
+    const uniqueSpecializations = [...new Set(allSpecializations)].sort((a, b) => 
+      a.localeCompare(b, 'ar')
+    );
+    
+    return uniqueSpecializations;
   } catch (error) {
     console.error('Error fetching specializations:', error);
     throw error;
