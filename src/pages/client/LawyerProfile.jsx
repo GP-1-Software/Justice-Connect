@@ -524,14 +524,36 @@ const LawyerProfile = () => {
                     {t('lawyerProfile.availableSlots')}:
                   </p>
                   <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                    {availableSlots.map((slot, index) => (
-                      <div
-                        key={index}
-                        className="p-2 text-center border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded text-sm"
-                      >
-                        {slot.display}
-                      </div>
-                    ))}
+                    {availableSlots.map((slot, index) => {
+                      // Check if the slot is in the past
+                      const now = new Date();
+                      const isToday = selectedDate === now.toISOString().split('T')[0];
+                      const currentHour = now.getHours();
+                      const currentMinute = now.getMinutes();
+                      
+                      // Parse slot time (format: "HH:MM")
+                      const [slotHour, slotMinute] = slot.time.split(':').map(Number);
+                      const slotTotalMinutes = slotHour * 60 + slotMinute;
+                      const currentTotalMinutes = currentHour * 60 + currentMinute;
+                      
+                      const isPast = isToday && slotTotalMinutes <= currentTotalMinutes;
+                      
+                      return (
+                        <div
+                          key={index}
+                          className={`p-2 text-center border rounded text-sm ${
+                            isPast
+                              ? 'border-red-300 dark:border-red-900 bg-gray-100 dark:bg-gray-800 text-gray-400 line-through'
+                              : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                          }`}
+                        >
+                          <div className={isPast ? 'line-through' : ''}>
+                            {slot.display}
+                          </div>
+                          {isPast && <div className="text-xs mt-1 font-semibold text-red-600 dark:text-red-400">(انقضى)</div>}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (

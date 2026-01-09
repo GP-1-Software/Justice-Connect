@@ -188,6 +188,15 @@ const BookAppointment = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        >
+          <ArrowRight className="w-5 h-5" />
+          <span>رجوع</span>
+        </button>
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -203,9 +212,17 @@ const BookAppointment = () => {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sticky top-8">
               <div className="text-center mb-6">
-                <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <User className="h-12 w-12 text-white" />
-                </div>
+                {lawyer.profile_image_url ? (
+                  <img
+                    src={lawyer.profile_image_url}
+                    alt={`${lawyer.first_name} ${lawyer.last_name}`}
+                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-blue-500"
+                  />
+                ) : (
+                  <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <User className="h-12 w-12 text-white" />
+                  </div>
+                )}
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   {lawyer.first_name} {lawyer.last_name}
                 </h3>
@@ -346,19 +363,40 @@ const BookAppointment = () => {
                       {selectedDate ? (
                         availableSlots.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                            {availableSlots.map((slot, index) => (
-                              <button
-                                key={index}
-                                onClick={() => setSelectedTime(slot.time)}
-                                className={`p-3 text-sm rounded-lg border transition ${
-                                  selectedTime === slot.time
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500'
-                                }`}
-                              >
-                                {slot.display || slot.time}
-                              </button>
-                            ))}
+                            {availableSlots.map((slot, index) => {
+                              // Check if time has passed (only for today)
+                              const isToday = selectedDate === new Date().toISOString().split('T')[0];
+                              const now = new Date();
+                              const currentHour = now.getHours();
+                              const currentMinute = now.getMinutes();
+                              
+                              // Parse slot time (format: "HH:MM")
+                              const [slotHour, slotMinute] = slot.time.split(':').map(Number);
+                              const slotTotalMinutes = slotHour * 60 + slotMinute;
+                              const currentTotalMinutes = currentHour * 60 + currentMinute;
+                              
+                              const isPast = isToday && slotTotalMinutes <= currentTotalMinutes;
+                              
+                              return (
+                                <button
+                                  key={index}
+                                  onClick={() => !isPast && setSelectedTime(slot.time)}
+                                  disabled={isPast}
+                                  className={`p-3 text-sm rounded-lg border transition ${
+                                    isPast
+                                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-red-300 dark:border-red-900 cursor-not-allowed'
+                                      : selectedTime === slot.time
+                                      ? 'bg-blue-600 text-white border-blue-600'
+                                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500'
+                                  }`}
+                                >
+                                  <div className={isPast ? 'line-through' : ''}>
+                                    {slot.display || slot.time}
+                                  </div>
+                                  {isPast && <div className="text-xs mt-1 font-semibold text-red-600 dark:text-red-400">(انقضى)</div>}
+                                </button>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div className="text-center py-4">
