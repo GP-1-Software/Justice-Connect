@@ -54,14 +54,9 @@ const ClientSidebar = ({ isOpen, onClose }) => {
       path: 'cases'
     },
     {
-      title: 'الفواتير',
+      title: 'الفواتير والرسوم',
       icon: FileText,
       path: 'invoices'
-    },
-    {
-      title: 'رسوم المحكمة',
-      icon: Receipt,
-      path: 'court-fees'
     },
     {
       title: 'البحث عن محامين / حجز مواعيد',

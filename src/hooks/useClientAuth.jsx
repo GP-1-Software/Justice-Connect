@@ -233,7 +233,12 @@ export const ClientAuthProvider = ({ children }) => {
       if (error) throw error;
 
       // Update local state
-      setUserProfile({ ...userProfile, ...updates });
+      const updatedProfile = { ...userProfile, ...updates };
+      setUserProfile(updatedProfile);
+
+      // Update localStorage to persist changes
+      localStorage.setItem('user', JSON.stringify(updatedProfile));
+
       return { success: true, message: 'تم تحديث الملف الشخصي بنجاح' };
     } catch (error) {
       console.error('Update profile error:', error);

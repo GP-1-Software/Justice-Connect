@@ -69,6 +69,7 @@ const FileCaseLawyer = () => {
   const [selectedCourt, setSelectedCourt] = useState('');
   const [courtHint, setCourtHint] = useState('');
   const [feeHint, setFeeHint] = useState('');
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
@@ -489,39 +490,63 @@ const FileCaseLawyer = () => {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  قيمة الدعوى بالشيكل (اختياري)
-                </label>
-                <input
-                  type="number"
-                  name="claimValue"
-                  value={formData.claimValue}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
-                  placeholder="مثلاً: 75000"
-                  min="0"
-                />
-                {feeHint && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{feeHint}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  طبيعة العلاقة بين الأطراف
-                </label>
-                <input
-                  type="text"
-                  name="relationship"
-                  value={formData.relationship}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
-                  placeholder="مثلاً: مالك / مستأجر"
-                />
-              </div>
+            {/* زر المعلومات الإضافية */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+              >
+                <svg 
+                  className={`w-5 h-5 transition-transform ${showAdditionalInfo ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="font-medium">
+                  {showAdditionalInfo ? 'إخفاء المعلومات الإضافية' : 'إظهار المعلومات الإضافية (اختياري)'}
+                </span>
+              </button>
             </div>
+
+            {/* المعلومات الإضافية */}
+            {showAdditionalInfo && (
+              <div className="grid md:grid-cols-2 gap-4 mb-4 animate-fadeIn">
+                <div>
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    قيمة الدعوى بالشيكل (اختياري)
+                  </label>
+                  <input
+                    type="number"
+                    name="claimValue"
+                    value={formData.claimValue}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                    placeholder="مثلاً: 75000"
+                    min="0"
+                  />
+                  {feeHint && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{feeHint}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    طبيعة العلاقة بين الأطراف
+                  </label>
+                  <input
+                    type="text"
+                    name="relationship"
+                    value={formData.relationship}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                    placeholder="مثلاً: مالك / مستأجر"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="mb-4">
               <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">

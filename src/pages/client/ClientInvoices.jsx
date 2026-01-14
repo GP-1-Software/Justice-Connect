@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useInvoices, useInvoiceStats } from '../../hooks/useInvoices';
 import InvoiceCard from '../../components/invoices/InvoiceCard';
 import { useClientAuth } from '../../hooks/useClientAuth';
+import ClientCourtFees from './ClientCourtFees';
 import {
   Search,
   DollarSign,
@@ -10,7 +11,8 @@ import {
   AlertCircle,
   CheckCircle,
   FileText,
-  CreditCard
+  CreditCard,
+  Receipt
 } from 'lucide-react';
 import { formatCurrency, isInvoiceOverdue } from '../../services/invoiceService';
 
@@ -34,6 +36,7 @@ const ClientInvoices = () => {
   });
 
   const [activeTab, setActiveTab] = useState('all');
+  const [mainView, setMainView] = useState('invoices'); // 'invoices' or 'court-fees'
 
   // Fetch invoices with real-time updates (only if clientId exists)
   const { invoices, loading, error, refetch } = useInvoices(clientId, 'client', filters);
@@ -155,12 +158,46 @@ const ClientInvoices = () => {
         {/* Header */}
         <div className="mb-4 sm:mb-8">
           <div className="mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">الفواتير</h1>
-            <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">عرض ودفع جميع الفواتير الخاصة بك</p>
+            <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">الفواتير والرسوم</h1>
+            <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">عرض ودفع جميع الفواتير ورسوم المحكمة الخاصة بك</p>
           </div>
 
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
+          {/* Main View Toggle */}
+          <div className="flex gap-2 mb-4 sm:mb-6">
+            <button
+              onClick={() => setMainView('invoices')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg font-medium transition-all ${
+                mainView === 'invoices'
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-sm sm:text-base">الفواتير</span>
+            </button>
+            <button
+              onClick={() => setMainView('court-fees')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg font-medium transition-all ${
+                mainView === 'court-fees'
+                  ? 'bg-orange-600 dark:bg-orange-700 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Receipt className="w-5 h-5" />
+              <span className="text-sm sm:text-base">رسوم المحكمة</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Conditional Rendering based on mainView */}
+        {mainView === 'court-fees' ? (
+          <div className="mt-4">
+            <ClientCourtFees />
+          </div>
+        ) : (
+          <>
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
             {statsCards.map((stat, index) => (
               <div
                 key={index}
@@ -177,7 +214,6 @@ const ClientInvoices = () => {
               </div>
             ))}
           </div>
-        </div>
 
         {/* Filters and Search */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-6 mb-4 sm:mb-6">
@@ -287,6 +323,8 @@ const ClientInvoices = () => {
               />
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

@@ -7,6 +7,7 @@ import CaseCard from '../../components/client/cases/CaseCard';
 import CaseQuickActions from '../../components/client/cases/CaseQuickActions';
 import { Loader2, AlertCircle, FolderOpen, AlertTriangle, Scale, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const MyCases = () => {
   const { userProfile } = useClientAuth();
@@ -310,7 +311,14 @@ const MyCases = () => {
                 </p>
                 {!searchQuery && filters.status === 'all' && filters.caseType === 'all' && filters.priority === 'all' && (
                   <button
-                    onClick={() => window.location.href = '/client/cases/new'}
+                    onClick={() => {
+                      toast.success('يرجى اختيار محامي والحجز من خلاله لإنشاء قضية جديدة', {
+                        duration: 4000,
+                        position: 'top-center',
+                        icon: '⚖️',
+                      });
+                      navigate('/client/search-lawyers');
+                    }}
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-all transform hover:scale-105 font-medium"
                   >
                     إنشاء قضية جديدة

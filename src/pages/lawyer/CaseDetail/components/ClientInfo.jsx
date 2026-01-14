@@ -9,7 +9,6 @@ const ClientInfo = ({ caseData, lawyerId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (caseData) {
@@ -182,21 +181,6 @@ const ClientInfo = ({ caseData, lawyerId }) => {
     );
   }
 
-  // If editing mode, show AddClientInfo
-  if (isEditing) {
-    return (
-      <AddClientInfo
-        clientIdNumber={clientDetails?.id_number || caseData?.client_id_number}
-        caseNumber={caseData?.case_number}
-        lawyerId={lawyerId}
-        onClientAdded={() => {
-          setIsEditing(false);
-          setRefreshKey(prev => prev + 1);
-        }}
-      />
-    );
-  }
-
   const caseTypeLabels = {
     'civil': 'مدنية',
     'criminal': 'جنائية',
@@ -282,18 +266,9 @@ const ClientInfo = ({ caseData, lawyerId }) => {
 
         {/* معلومات العميل */}
         <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 lg:p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">معلومات العميل</h3>
-            </div>
-            {/* زر تعديل */}
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-all transform hover:scale-105 text-xs sm:text-sm font-medium shadow-md"
-            >
-              تعديل
-            </button>
+          <div className="flex items-center gap-2 mb-5">
+            <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">معلومات العميل</h3>
           </div>
 
           {/* Client Avatar and Name */}
