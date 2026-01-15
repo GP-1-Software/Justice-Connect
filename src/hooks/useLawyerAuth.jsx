@@ -41,19 +41,59 @@ export const LawyerAuthProvider = ({ children }) => {
 
   const checkLocalStorageAuth = () => {
     try {
-      const storedUser = localStorage.getItem('user');
+      // ✅ تحقق من mobile mode
+      const isMobileApp = new URLSearchParams(window.location.search).get('mobile') === 'true';
+      
+      if (isMobileApp) {
+        console.log('📱 [Lawyer Mobile Mode] Waiting for injected data...');
+        
+        let attempts = 0;
+        const maxAttempts = 20; // 2 ثانية
+        
+        const waitForData = setInterval(() => {
+          attempts++;
+          const storedUser = localStorage.getItem('user');
+          
+          console.log(`🔍 [Lawyer Mobile] Attempt ${attempts}:`, storedUser ? 'Found!' : 'null');
+          
+          if (storedUser) {
+            clearInterval(waitForData);
+            try {
+              const userData = JSON.parse(storedUser);
+              console.log('✅ [Lawyer Mobile] User data loaded:', userData);
+              
+              if (userData.user_type === 'lawyer') {
+                setLawyer(userData);
+                setUser({ id: userData.lawyer_id, email: userData.email });
+              }
+              setLoading(false);
+            } catch (error) {
+              console.error('❌ [Lawyer Mobile] Error parsing user data:', error);
+              setLoading(false);
+            }
+          } else if (attempts >= maxAttempts) {
+            clearInterval(waitForData);
+            console.warn('⚠️ [Lawyer Mobile] Timeout');
+            setLoading(false);
+          }
+        }, 100);
+      } else {
+        // Web Browser mode - normal auth check
+        console.log('🌐 [Lawyer Browser Mode] Checking localStorage...');
+        const storedUser = localStorage.getItem('user');
 
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
 
-        if (userData.user_type === 'lawyer') {
-          setLawyer(userData);
-          setUser({ id: userData.lawyer_id, email: userData.email });
+          if (userData.user_type === 'lawyer') {
+            setLawyer(userData);
+            setUser({ id: userData.lawyer_id, email: userData.email });
+          }
         }
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error checking localStorage auth:', error);
-    } finally {
       setLoading(false);
     }
   };

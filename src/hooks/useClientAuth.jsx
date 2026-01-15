@@ -41,24 +41,66 @@ export const ClientAuthProvider = ({ children }) => {
 
   const checkLocalStorageAuth = () => {
     try {
-      const storedUser = localStorage.getItem('user');
-      console.log('Checking localStorage:', storedUser);
-
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        console.log('Parsed user data:', userData);
-
-        if (userData.user_type === 'client') {
-          console.log('Setting client auth state');
-          setUserProfile(userData);
-          setUser({ id: userData.user_id, email: userData.email });
-        }
+      // ✅ تحقق من mobile mode
+      const isMobileApp = new URLSearchParams(window.location.search).get('mobile') === 'true';
+      
+      if (isMobileApp) {
+        console.log('📱 [Mobile Mode] Waiting for injected data...');
+        
+        // انتظر injection البيانات من Mobile App
+        let attempts = 0;
+        const maxAttempts = 20; // 2 ثانية (20 × 100ms)
+        
+        const waitForData = setInterval(() => {
+          attempts++;
+          const storedUser = localStorage.getItem('user');
+          
+          console.log(`🔍 [Mobile Mode] Attempt ${attempts}: Checking localStorage...`, storedUser ? 'Found!' : 'null');
+          
+          if (storedUser) {
+            clearInterval(waitForData);
+            try {
+              const userData = JSON.parse(storedUser);
+              console.log('✅ [Mobile Mode] User data loaded:', userData);
+              
+              if (userData.user_type === 'client') {
+                console.log('✅ [Mobile Mode] Setting client auth state');
+                setUserProfile(userData);
+                setUser({ id: userData.user_id, email: userData.email });
+              }
+              setLoading(false);
+            } catch (error) {
+              console.error('❌ [Mobile Mode] Error parsing user data:', error);
+              setLoading(false);
+            }
+          } else if (attempts >= maxAttempts) {
+            clearInterval(waitForData);
+            console.warn('⚠️ [Mobile Mode] Timeout waiting for user data');
+            setLoading(false);
+          }
+        }, 100);
       } else {
-        console.log('No user found in localStorage');
+        // Web Browser mode - normal auth check
+        console.log('🌐 [Browser Mode] Checking localStorage...');
+        const storedUser = localStorage.getItem('user');
+        console.log('Checking localStorage:', storedUser);
+
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          console.log('Parsed user data:', userData);
+
+          if (userData.user_type === 'client') {
+            console.log('Setting client auth state');
+            setUserProfile(userData);
+            setUser({ id: userData.user_id, email: userData.email });
+          }
+        } else {
+          console.log('❌ [Browser Mode] No user found in localStorage');
+        }
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error checking localStorage auth:', error);
-    } finally {
       setLoading(false);
     }
   };
