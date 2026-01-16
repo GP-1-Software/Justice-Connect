@@ -21,7 +21,7 @@ const MyCases = () => {
   const [stats, setStats] = useState({
     active: 0,
     pending: 0,
-    closed: 0,
+    completed: 0,
     total: 0
   });
   const [filters, setFilters] = useState({
@@ -124,9 +124,14 @@ const MyCases = () => {
   // Calculate statistics
   const calculateStats = (casesData) => {
     const stats = {
-      active: casesData.filter(c => c.status === 'active').length,
+      active: casesData.filter(c => c.status === 'active' || c.status === 'in_progress').length,
       pending: casesData.filter(c => c.status === 'pending').length,
-      closed: casesData.filter(c => c.status === 'closed').length,
+      completed: casesData.filter(c =>
+        c.status === 'closed' ||
+        c.status === 'completed' ||
+        c.case_stage === 'fully_executed' ||
+        c.case_stage === 'judgment_final'
+      ).length,
       total: casesData.length
     };
     setStats(stats);
@@ -251,8 +256,8 @@ const MyCases = () => {
             <button
               onClick={() => setActiveTab('my-cases')}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'my-cases'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <Scale className="w-4 h-4" />
@@ -267,8 +272,8 @@ const MyCases = () => {
             <button
               onClick={() => setActiveTab('against-me')}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'against-me'
-                  ? 'bg-orange-600 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'bg-orange-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <AlertTriangle className="w-4 h-4" />

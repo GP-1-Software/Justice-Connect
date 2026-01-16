@@ -19,6 +19,7 @@ import ClientInvoices from '../pages/client/ClientInvoices';
 import PayInvoice from '../pages/client/PayInvoice';
 import InvoiceDetails from '../pages/client/InvoiceDetails';
 import ClientCourtFees from '../pages/client/ClientCourtFees';
+import Documents from '../pages/client/Documents';
 
 import JusticeAIChat from "../pages/client/JusticeAI/index.jsx";
 import SupportTickets from '../pages/SupportTickets';
@@ -94,6 +95,7 @@ const ClientRoutes = () => {
         <Route path="cases" element={<MyCases />} />
         <Route path="cases/:caseId" element={<CaseDetails />} />
         <Route path="cases-against-me/:caseId" element={<CaseAgainstMeDetails />} />
+        <Route path="documents" element={<Documents />} />
 
         {/* Invoices */}
         <Route path="invoices" element={<ClientInvoices />} />

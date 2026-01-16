@@ -58,21 +58,36 @@
 #### Chapter 4: Results and Discussion
 
 ##### User Interfaces - Client Module
-- **Figure 4.1:** Client Registration Page - Registration form with personal information, ID upload, role selection, and account verification status
-- **Figure 4.2:** Client Dashboard - Overview cards showing active cases count, upcoming appointments, pending invoices, and quick action buttons
-- **Figure 4.3:** Search Lawyers Interface - Advanced filtering system by specialization (Civil, Criminal, Commercial, Family, Labor, Administrative), city location, years of experience, rating, and consultation fee range. Features paginated results in responsive grid/list view with lawyer profile cards displaying key information and ratings.
-- **Figure 4.4:** Lawyer Profile View - Detailed lawyer information including professional bio, specialization areas, years of experience, bar association number, client ratings and reviews, office location, consultation fee, and direct booking button
-- **Figure 4.5:** Book Appointment Flow - Interactive calendar date picker with available time slots display, meeting method selection (video conference/phone call/in-person), optional case linking, fee calculation, and integrated payment confirmation
-- **Figure 4.6:** Client Appointments List - Comprehensive appointments view with status badges (Pending, Confirmed, Completed, Cancelled), filter options, appointment details, join video meeting buttons, and cancellation functionality with reason input
-- **Figure 4.7:** My Cases - Plaintiff View - All cases filed by client as plaintiff with status filters, case statistics dashboard, search by case number functionality, and timeline access
-- **Figure 4.8:** My Cases - Defendant View - Cases filed against client with defendant information, case status tracking, and defense documentation
-- **Figure 4.9:** Case Details Page - Comprehensive case view featuring chronological timeline of events, uploaded documents and evidence, parties information (plaintiff/defendant), court assignment details, assigned lawyer information, and communication history
-- **Figure 4.10:** Create Case Request Form - Multi-step case creation wizard including lawyer selection from verified list, case type and priority selection, detailed case description editor, defendant information input, supporting document uploads (PDF/images), and submission tracking
-- **Figure 4.11:** Client Invoices Page - Invoice list with clear status indicators (pending/paid/overdue), itemized amounts, due dates, payment action buttons, and downloadable receipt generation
-- **Figure 4.12:** Payment Interface - Secure payment form displaying invoice breakdown, multiple payment method options (credit card/bank transfer), transaction processing, and confirmation receipt
-- **Figure 4.13:** Court Fees Management - Court-issued fees list with payment status tracking (pending/paid/overdue), fee breakdown by case, online payment integration, and official receipt downloads
-- **Figure 4.14:** Client Settings Page - Profile information management, secure password change, customizable notification preferences (email/SMS/push notifications), and account deletion request with confirmation
-- **Figure 4.15:** Client Justice AI Chat - AI-powered legal assistant interface with conversation history, legal question answering in Arabic/English, source citations to Palestinian laws, PDF document upload for analysis, and recommended legal resources
+
+- **Figure 4.1:** Client Registration Page - Registration form collecting first name, last name, email, phone number, city, and national ID number. Includes ID card image upload (front/back), password creation with confirmation, and terms acceptance. Account status set to "approved" automatically upon submission.
+
+- **Figure 4.2:** Client Dashboard - Welcome header displaying client name and current date. Shows four statistics cards: active cases count, upcoming appointments count, unread messages, and pending invoices. Features quick action buttons for common tasks (search lawyers, create case, view appointments). Bottom section displays Palestinian legal news feed.
+
+- **Figure 4.3:** Search Lawyers Interface - Advanced search page with filters for specialization (Civil, Criminal, Commercial, Family, Labor, Administrative), city, years of experience, rating, and consultation fee range. Displays results in grid/list view toggle. Features pagination controls and search by lawyer name. Each lawyer card shows profile photo, name, specializations, rating, and "View Profile" button.
+
+- **Figure 4.4:** Lawyer Profile View - Detailed profile displaying lawyer's professional biography, specialization areas, years of experience, bar association number, office location (city and address), consultation fee, and working hours. Shows aggregate rating and client reviews. Prominent "Book Appointment" button for scheduling consultations.
+
+- **Figure 4.5:** Book Appointment Flow - Calendar interface showing lawyer's available and blocked dates. After selecting a date, displays available time slots. User selects meeting method (Video/Phone/In-person), optionally links to existing case, and views fee calculation. Payment integration for consultation fee confirmation. Upon success, redirects to appointments list with confirmation message.
+
+- **Figure 4.6:** Client Appointments List - Displays all appointments with status badges (Pending, Confirmed, Completed, Cancelled). Each appointment card shows lawyer name, date, time, meeting method, status, and case information if linked. Filter tabs for viewing appointments by status. "Join Meeting" button for video appointments (appears 15 minutes before scheduled time). Cancel appointment option with reason input for pending/confirmed appointments.
+
+- **Figure 4.7:** My Cases - Plaintiff View - Shows cases where client is plaintiff. Top section displays statistics: total cases, active cases, completed cases. Case cards show case number, title, type, status (Filed, Under Review, In Court, Closed), defendant name, assigned lawyer, filing date, and next hearing date. Filter options by case type and status. Search by case number functionality.
+
+- **Figure 4.8:** My Cases - Defendant View - Shows court filings where client is defendant. Displays filing information: filing number, case type, plaintiff name, lawyer representing plaintiff, filing status (Pending, Approved, Rejected, Requires Update), submission date, and court assignment. Status badges color-coded by filing stage. Access to view complete filing details and attached documents.
+
+- **Figure 4.9:** Case Details Page - Comprehensive view with 11 integrated components: Case Header (case number, status, court info), Client Information (editable plaintiff/defendant details), Court Filing Tracker (submission status timeline), Evidence Uploader (document categorization and preview), Meeting Manager (Jitsi integration), Private Notes (lawyer-only), Task Manager (due dates and priorities), Case Timeline (chronological events), Filing Update Response (respond to clerk requests), Update Composer (send notifications), and Add Client Info (link parties). Side panels for quick navigation between sections.
+
+- **Figure 4.10:** Create Case Request Form - Multi-step wizard: Step 1 - Select lawyer from dropdown list. Step 2 - Choose case type (Civil, Criminal, etc.) and priority (Urgent, High, Normal, Low). Step 3 - Case description textarea (required). Step 4 - Defendant information (name, contact). Step 5 - Document uploads (PDF/images, max 10MB each). Progress indicator shows completion. Save draft functionality. Upon submission, generates tracking request_id and notifies selected lawyer.
+
+- **Figure 4.11:** Client Invoices Page - Lists all invoices from lawyers with color-coded status (green: Paid, yellow: Pending, red: Overdue). Each invoice displays: invoice number, lawyer name, issue date, due date, total amount, status badge, and line items breakdown. "Pay Now" button for unpaid invoices. "Download Receipt" for paid invoices (generates PDF). Filter by status and search by invoice number.
+
+- **Figure 4.12:** Payment Interface - Displays invoice summary with lawyer contact, itemized service breakdown, tax calculations, and total amount. Payment method selection: Credit Card (card number, expiry, CVV fields) or Bank Transfer (account details provided). Security indicators (SSL badge). "Complete Payment" button processes transaction. Success page shows receipt number and download option. Failed transactions display error with retry suggestions.
+
+- **Figure 4.13:** Court Fees Management - Shows court-issued fees associated with client cases. Each fee entry displays: case number, case title, fee type (Filing/Motion/Appeal), amount, status (Pending/Paid/Overdue), issue date, and deadline. Overdue fees highlighted in red with warning badges. "Pay Fee" button launches payment integration. Official receipt download after payment completion. Fee calculation breakdown shown per court fee schedule.
+
+- **Figure 4.14:** Client Settings Page - Three tabs: Security (change password with current password verification, minimum 6 characters, strength indicator), Notifications (toggles for email/SMS/push notifications, appointment reminders, case updates, marketing emails), Account Management (account deletion request with reason textarea and admin approval workflow). Profile updates handled in separate Profile page.
+
+- **Figure 4.15:** Client Justice AI Chat - Chat interface with conversation list sidebar (organized by date). Message input supports Arabic/English. AI processes queries using RAG flow: classifies question type (Specific/Procedural/General/Analysis), performs web search on Palestinian legal sources (maqam.najah.edu, mjr.ogb.gov.ps, etc.), scrapes content, generates response with GPT-4o. Responses include source citations with clickable links. PDF upload support for document analysis. Conversation history persisted per user.
 
 ##### User Interfaces - Lawyer Module
 - **Figure 4.16:** Lawyer Registration with Verification .................... 137
