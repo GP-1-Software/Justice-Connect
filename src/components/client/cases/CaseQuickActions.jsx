@@ -1,5 +1,6 @@
 import { Plus, FileText, MessageSquare, Calendar, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const CaseQuickActions = () => {
   const navigate = useNavigate();
@@ -10,7 +11,14 @@ const CaseQuickActions = () => {
       description: 'إنشاء طلب قضية جديدة',
       icon: Plus,
       color: 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700',
-      onClick: () => navigate('/client/create-case')
+      onClick: () => {
+        toast.success('يرجى اختيار محامي والحجز من خلاله لإنشاء قضية جديدة', {
+          duration: 4000,
+          position: 'top-center',
+          icon: '⚖️',
+        });
+        navigate('/client/search-lawyers');
+      }
     },
     {
       title: 'المستندات',

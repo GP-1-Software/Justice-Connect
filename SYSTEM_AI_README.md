@@ -1,305 +1,149 @@
-# SystemAI - نظام الشات التحليلي للأدمن
+# System AI - نظام الذكاء الاصطناعي للنظام
 
-## 📖 الفكرة
-SystemAI هو نظام شات منفصل مخصص للـ **Admins** و **Super Admins** فقط، يتيح لهم الاستعلام عن قاعدة البيانات وتحليل البيانات باستخدام **اللغة الطبيعية** (Natural Language Queries).
+## Overview
 
-### كيف يعمل النظام؟ (RAG Flow)
+System AI is an intelligent administrative analytics assistant for the Justice Connect platform. It uses **RAG (Retrieval-Augmented Generation)** with dynamic SQL query generation to analyze system data using natural language in Arabic or English.
+
+---
+
+## How It Works - Complete RAG Flow
 
 ```
-1️⃣ الأدمن يكتب سؤال بالعربي
-     ⬇️
-2️⃣ يُرسل السؤال + Schema للـ Gemini
-     ⬇️
-3️⃣ OpenAI يولد SQL SELECT query آمن
-     ⬇️
-4️⃣ تنفيذ الـ SQL على Supabase
-     ⬇️
-5️⃣ إرسال النتائج للـ Gemini للتحليل
-     ⬇️
-6️⃣ عرض التحليل بالعربي مع insights
+┌─────────────────────────────────────────────────────────────────┐
+│  ADMIN ASKS: "كم عدد المستخدمين المسجلين هذا الشهر؟"              │
+│  (How many users registered this month?)                         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 1: SAVE USER MESSAGE                                       │
+│  ───────────────────────────                                     │
+│  Save the admin's question to database                           │
+│  Table: system_ai_messages                                       │
+│  Sender: 'user'                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 2: GENERATE SQL QUERY (OpenAI GPT-4.1-mini)                │
+│  ─────────────────────────────────────────────────               │
+│  • System prompt contains database schema + rules                │
+│  • AI understands bilingual keywords:                            │
+│    - "كم عدد" → COUNT(*)                                         │
+│    - "المستخدمين" → users table                                  │
+│    - "هذا الشهر" → DATE_TRUNC('month', ...) = NOW()              │
+│                                                                  │
+│  Generated SQL:                                                  │
+│  SELECT COUNT(*) as total_users                                  │
+│  FROM users                                                      │
+│  WHERE DATE_TRUNC('month', created_at) =                         │
+│        DATE_TRUNC('month', NOW())                                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 3: CLEAN SQL QUERY                                         │
+│  ────────────────────────                                        │
+│  • Remove markdown code blocks (```sql ... ```)                  │
+│  • Remove trailing semicolons                                    │
+│  • Trim whitespace                                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 4: EXECUTE SQL (Supabase RPC)                              │
+│  ───────────────────────────────────                             │
+│  Call: supabase.rpc('exec_sql', { sql_query: cleanedSQL })       │
+│                                                                  │
+│  Results: [{ total_users: 45 }]                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 5: GENERATE ANALYSIS (OpenAI GPT-4.1-mini)                 │
+│  ────────────────────────────────────────────────                │
+│  Input to AI:                                                    │
+│  • The SQL query that was executed                               │
+│  • The JSON results from database                                │
+│  • Any errors if occurred                                        │
+│                                                                  │
+│  Output (Arabic):                                                │
+│  "📊 تحليل البيانات:                                              │
+│   تم تسجيل 45 مستخدم جديد خلال هذا الشهر..."                      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 6: SAVE AI RESPONSE                                        │
+│  ─────────────────────────                                       │
+│  Save to database:                                               │
+│  • AI analysis message                                           │
+│  • SQL query used                                                │
+│  • Raw query results                                             │
+│  Table: system_ai_messages                                       │
+│  Sender: 'ai'                                                    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 7: UPDATE CONVERSATION                                     │
+│  ───────────────────────────                                     │
+│  Update last_message_at timestamp on conversation                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STEP 8: RETURN RESPONSE                                         │
+│  ────────────────────────                                        │
+│  {                                                               │
+│    success: true,                                                │
+│    userMessage: { sender: 'user', message: '...' },              │
+│    aiMessage: { sender: 'ai', message: '📊...', sql_query },     │
+│    sqlQuery: 'SELECT COUNT(*) FROM users...',                    │
+│    queryResults: [{ total_users: 45 }]                           │
+│  }                                                               │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🗂️ البنية
+## Architecture Diagram
 
-### الجداول في قاعدة البيانات
-
-#### 1️⃣ `system_ai_conversations`
-يحتوي على المحادثات الخاصة بكل أدمن.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary Key |
-| `admin_id` | INTEGER | Foreign Key → `admins.admin_id` |
-| `title` | TEXT | عنوان المحادثة |
-| `created_at` | TIMESTAMPTZ | تاريخ الإنشاء |
-| `last_message_at` | TIMESTAMPTZ | تاريخ آخر رسالة |
-
-**ملاحظة:** لا يوجد `user_id` ولا `role` - فقط `admin_id` لأن النظام مخصص للأدمن فقط.
-
----
-
-#### 2️⃣ `system_ai_messages`
-يحتوي على الرسائل داخل كل محادثة.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary Key |
-| `conversation_id` | UUID | Foreign Key → `system_ai_conversations.id` |
-| `sender` | TEXT | `'user'` أو `'ai'` |
-| `message` | TEXT | محتوى الرسالة |
-| `sql_query` | TEXT | الـ SQL المُنفذ (للرسائل من الـ AI) |
-| `raw_result` | JSONB | النتائج الخام من الـ query |
-| `created_at` | TIMESTAMPTZ | تاريخ الإرسال |
-
----
-
-### الـ SQL Function
-
-#### `exec_sql(sql_query TEXT)`
-دالة في Supabase تنفذ SQL queries ديناميكياً بشكل آمن.
-
-**الحماية:**
-- يسمح فقط بـ `SELECT` queries
-- يمنع: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, إلخ.
-- يعيد النتائج على شكل `JSONB`
-
-**ملف التنفيذ:**
 ```
-server/supabase/migrations/exec_sql_function.sql
-```
-
-**يجب تنفيذ هذا الملف في Supabase Dashboard:**
-1. افتح Supabase Dashboard
-2. اذهب إلى SQL Editor
-3. انسخ محتوى `exec_sql_function.sql` ونفذه
-
----
-
-## 🛠️ الـ API Endpoints
-
-### Base URL
-```
-http://localhost:5000/api/system-ai
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    Admin     │ ──▶ │   Backend    │ ──▶ │   OpenAI     │
+│  (Frontend)  │     │  /api/system │     │ GPT-4.1-mini │
+└──────────────┘     └──────────────┘     └──────────────┘
+                            │                    │
+                            │                    │
+                            ▼                    ▼
+                     ┌──────────────┐     ┌──────────────┐
+                     │   Supabase   │     │ SQL Generator│
+                     │  exec_sql()  │ ◀── │ + Analyzer   │
+                     └──────────────┘     └──────────────┘
 ```
 
 ---
 
-### 1️⃣ الحصول على محادثات الأدمن
-**GET** `/conversations/:adminId`
+## Key Points
 
-**Response:**
-```json
-{
-  "success": true,
-  "conversations": [
-    {
-      "id": "uuid",
-      "admin_id": 1,
-      "title": "تحليل القضايا",
-      "created_at": "2025-11-15T10:00:00Z",
-      "last_message_at": "2025-11-15T10:30:00Z"
-    }
-  ]
-}
-```
+| Step | Action | Technology |
+|------|--------|------------|
+| 1 | Save user message | Supabase |
+| 2 | Generate SQL from question | OpenAI GPT-4.1-mini |
+| 3 | Clean SQL syntax | JavaScript |
+| 4 | Execute SQL query | Supabase RPC (exec_sql) |
+| 5 | Generate Arabic analysis | OpenAI GPT-4.1-mini |
+| 6 | Save AI response + SQL | Supabase |
+| 7 | Update conversation | Supabase |
+| 8 | Return to frontend | Express.js |
 
 ---
 
-### 2️⃣ إنشاء محادثة جديدة
-**POST** `/conversations`
+## Notes
 
-**Body:**
-```json
-{
-  "adminId": 1,
-  "title": "تحليل المحامين"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "conversation": {
-    "id": "uuid",
-    "admin_id": 1,
-    "title": "تحليل المحامين",
-    "created_at": "2025-11-15T11:00:00Z"
-  }
-}
-```
-
----
-
-### 3️⃣ الحصول على رسائل محادثة
-**GET** `/conversations/:conversationId/messages`
-
-**Response:**
-```json
-{
-  "success": true,
-  "messages": [
-    {
-      "id": "uuid",
-      "conversation_id": "uuid",
-      "sender": "user",
-      "message": "كم عدد المحامين المسجلين؟",
-      "created_at": "2025-11-15T11:05:00Z"
-    },
-    {
-      "id": "uuid",
-      "conversation_id": "uuid",
-      "sender": "ai",
-      "message": "عدد المحامين المسجلين هو 150 محامي...",
-      "sql_query": "SELECT COUNT(*) FROM lawyers;",
-      "raw_result": [{"count": 150}],
-      "created_at": "2025-11-15T11:05:10Z"
-    }
-  ]
-}
-```
-
----
-
-### 4️⃣ إرسال رسالة (RAG Flow) ⭐
-**POST** `/conversations/:conversationId/messages`
-
-**Body:**
-```json
-{
-  "message": "كم عدد القضايا النشطة؟"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "userMessage": {
-    "id": "uuid",
-    "sender": "user",
-    "message": "كم عدد القضايا النشطة؟"
-  },
-  "aiMessage": {
-    "id": "uuid",
-    "sender": "ai",
-    "message": "عدد القضايا النشطة حالياً هو 45 قضية...",
-    "sql_query": "SELECT COUNT(*) FROM cases WHERE status = 'active';",
-    "raw_result": [{"count": 45}]
-  },
-  "sqlQuery": "SELECT COUNT(*) FROM cases WHERE status = 'active';",
-  "queryResults": [{"count": 45}]
-}
-```
-
----
-
-### 5️⃣ حذف محادثة
-**DELETE** `/conversations/:conversationId`
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Conversation deleted successfully"
-}
-```
-
----
-
-## ⚙️ الإعداد
-
-### 1️⃣ Environment Variables
-أضف المتغيرات التالية في ملف `.env`:
-
-```env
-# Supabase Configuration
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Gemini API Key
-GEMINI_API_KEY=
-```
-
-### 2️⃣ تنفيذ الـ SQL Migrations
-في Supabase Dashboard:
-
-1. **إنشاء الجداول:**
-   ```sql
-   -- نفذ محتوى: server/supabase/migrations/system_ai_setup.sql
-   ```
-
-2. **إنشاء الـ Function:**
-   ```sql
-   -- نفذ محتوى: server/supabase/migrations/exec_sql_function.sql
-   ```
-
-### 3️⃣ تشغيل الـ Backend
-```bash
-cd backend
-npm run dev
-```
-
-Server سيعمل على: `http://localhost:5000`
-
----
-
-## 🔐 الأمان
-
-### ✅ ما يسمح به النظام:
-- فقط `SELECT` queries
-- الأدمن فقط يمكنه الوصول
-- كل أدمن يرى محادثاته فقط
-
-### ❌ ما يمنعه النظام:
-- `INSERT`, `UPDATE`, `DELETE`
-- `DROP`, `ALTER`, `CREATE`
-- أي queries مدمرة أو خطيرة
-
----
-
-## 📊 أمثلة على الأسئلة
-
-```
-✅ "كم عدد المحامين المسجلين؟"
-✅ "ما هي القضايا التي تم تحديثها اليوم؟"
-✅ "اعرض أفضل 5 محامين حسب عدد القضايا"
-✅ "كم عدد المواعيد المعلقة؟"
-✅ "ما هو متوسط سعر الاستشارات؟"
-```
-
----
-
-## 🎯 الميزات
-
-✅ كل أدمن له محادثات منفصلة تماماً  
-✅ حفظ كامل للـ history  
-✅ تنفيذ آمن للـ SQL queries  
-✅ تحليل ذكي باللغة العربية  
-✅ دعم الإحصائيات والرسوم البيانية  
-✅ لا يوجد `user_id` أو `role` - فقط `admin_id`
-
----
-
-## 📝 ملاحظات
-
-- النظام يستخدم `gpt-4o-mini` لتوليد الـ SQL والتحليل
-- جميع الـ SQL queries محفوظة في `system_ai_messages.sql_query`
-- النتائج الخام محفوظة في `system_ai_messages.raw_result`
-- كل محادثة مستقلة تماماً عن الأخرى
-
----
-
-## 🚀 Next Steps
-
-1. ✅ نفذ الـ SQL migrations في Supabase
-2. ✅ أضف الـ API keys في `.env`
-3. ✅ شغّل الـ backend
-4. ⏳ اربط الـ Frontend بالـ endpoints
-5. ⏳ أضف UI للشات في الـ Admin Dashboard
-
----
-
-**تم بنجاح! 🎉**
+- **Admin-only** access
+- **SELECT queries only** (no data modification)
+- **Bilingual** - supports Arabic and English questions
+- **Responses in Arabic**
+- SQL queries are logged for audit

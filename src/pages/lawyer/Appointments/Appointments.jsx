@@ -749,8 +749,8 @@ const Appointments = () => {
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 sm:gap-6">
                     {/* Client Info */}
                     <div className="flex-1">
-                      <div className="flex items-start space-x-3 sm:space-x-4 space-x-reverse mb-3 sm:mb-4">
-                        <div className="relative">
+                      <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                        <div className="flex-shrink-0">
                           {appointment.clients?.profile_image_url ? (
                             <img
                               src={appointment.clients.profile_image_url}
@@ -765,7 +765,7 @@ const Appointments = () => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-1 sm:mb-2">
+                          <div className="flex items-start justify-between gap-2 mb-1 sm:mb-2">
                             <div className="flex-1 min-w-0">
                               <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
                                 {clientName || 'عميل'}
@@ -777,7 +777,7 @@ const Appointments = () => {
                               )}
                             </div>
                             {timeSinceUpdate && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full whitespace-nowrap ml-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">
                                 🕒 {timeSinceUpdate}
                               </span>
                             )}

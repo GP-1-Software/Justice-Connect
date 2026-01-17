@@ -7,6 +7,7 @@ import CaseCard from '../../components/client/cases/CaseCard';
 import CaseQuickActions from '../../components/client/cases/CaseQuickActions';
 import { Loader2, AlertCircle, FolderOpen, AlertTriangle, Scale, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const MyCases = () => {
   const { userProfile } = useClientAuth();
@@ -20,7 +21,7 @@ const MyCases = () => {
   const [stats, setStats] = useState({
     active: 0,
     pending: 0,
-    closed: 0,
+    completed: 0,
     total: 0
   });
   const [filters, setFilters] = useState({
@@ -123,9 +124,14 @@ const MyCases = () => {
   // Calculate statistics
   const calculateStats = (casesData) => {
     const stats = {
-      active: casesData.filter(c => c.status === 'active').length,
+      active: casesData.filter(c => c.status === 'active' || c.status === 'in_progress').length,
       pending: casesData.filter(c => c.status === 'pending').length,
-      closed: casesData.filter(c => c.status === 'closed').length,
+      completed: casesData.filter(c =>
+        c.status === 'closed' ||
+        c.status === 'completed' ||
+        c.case_stage === 'fully_executed' ||
+        c.case_stage === 'judgment_final'
+      ).length,
       total: casesData.length
     };
     setStats(stats);
@@ -250,8 +256,8 @@ const MyCases = () => {
             <button
               onClick={() => setActiveTab('my-cases')}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'my-cases'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <Scale className="w-4 h-4" />
@@ -266,8 +272,8 @@ const MyCases = () => {
             <button
               onClick={() => setActiveTab('against-me')}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'against-me'
-                  ? 'bg-orange-600 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'bg-orange-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <AlertTriangle className="w-4 h-4" />
@@ -310,7 +316,14 @@ const MyCases = () => {
                 </p>
                 {!searchQuery && filters.status === 'all' && filters.caseType === 'all' && filters.priority === 'all' && (
                   <button
-                    onClick={() => window.location.href = '/client/cases/new'}
+                    onClick={() => {
+                      toast.success('يرجى اختيار محامي والحجز من خلاله لإنشاء قضية جديدة', {
+                        duration: 4000,
+                        position: 'top-center',
+                        icon: '⚖️',
+                      });
+                      navigate('/client/search-lawyers');
+                    }}
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-all transform hover:scale-105 font-medium"
                   >
                     إنشاء قضية جديدة

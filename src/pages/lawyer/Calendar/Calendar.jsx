@@ -22,11 +22,12 @@ const Calendar = () => {
       if (!lawyer) return;
       setLoading(true);
       try {
-        // Load appointments
+        // Load appointments (exclude cancelled ones)
         const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
           .select('*')
           .eq('lawyer_id', lawyer.lawyer_id)
+          .neq('status', 'cancelled')
           .order('appointment_date', { ascending: true })
           .order('appointment_time', { ascending: true });
 

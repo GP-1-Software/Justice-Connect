@@ -19,6 +19,7 @@ import ClientInvoices from '../pages/client/ClientInvoices';
 import PayInvoice from '../pages/client/PayInvoice';
 import InvoiceDetails from '../pages/client/InvoiceDetails';
 import ClientCourtFees from '../pages/client/ClientCourtFees';
+import Documents from '../pages/client/Documents';
 
 import JusticeAIChat from "../pages/client/JusticeAI/index.jsx";
 import SupportTickets from '../pages/SupportTickets';
@@ -52,6 +53,9 @@ const PlaceholderPage = ({ title }) => (
 
 const ClientRoutes = () => {
   const { userProfile, loading } = useClientAuth();
+  
+  // ✅ تحقق من mobile mode
+  const isMobileApp = new URLSearchParams(window.location.search).get('mobile') === 'true';
 
   // Show loading while checking authentication
   if (loading) {
@@ -62,8 +66,12 @@ const ClientRoutes = () => {
     );
   }
 
-  // Redirect to login if not authenticated or not a client
-  if (!userProfile || userProfile.user_type !== 'client') {
+  // Redirect to login if not authenticated or not a client (إلا في mobile mode)
+  if (!userProfile && !isMobileApp) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (userProfile && userProfile.user_type !== 'client' && !isMobileApp) {
     return <Navigate to="/login" replace />;
   }
 
@@ -87,6 +95,7 @@ const ClientRoutes = () => {
         <Route path="cases" element={<MyCases />} />
         <Route path="cases/:caseId" element={<CaseDetails />} />
         <Route path="cases-against-me/:caseId" element={<CaseAgainstMeDetails />} />
+        <Route path="documents" element={<Documents />} />
 
         {/* Invoices */}
         <Route path="invoices" element={<ClientInvoices />} />

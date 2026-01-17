@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { submitFiling, uploadFilingAttachments } from '../../services/courtClerkApi';
+import { supabase } from '../../supabaseClient';
 
 /**
  * File Case Lawyer - Electronic Filing Submission
@@ -69,6 +70,7 @@ const FileCaseLawyer = () => {
   const [selectedCourt, setSelectedCourt] = useState('');
   const [courtHint, setCourtHint] = useState('');
   const [feeHint, setFeeHint] = useState('');
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
@@ -207,7 +209,53 @@ const FileCaseLawyer = () => {
         legalRequests: description || prev.legalRequests
       }));
 
-      toast.success('تم ربط اللائحة بالقضية الموجودة');
+      // Only show linking toast if no clientId (otherwise we'll show combined toast after fetching)
+      if (!clientId) {
+        toast.success('تم ربط اللائحة بالقضية الموجودة', { id: 'linked-case' });
+      }
+    }
+
+    // Fetch client data and auto-fill plaintiff section if clientId is present
+    const fetchClientData = async () => {
+      if (!clientId) return;
+
+      try {
+        const { data: clientData, error } = await supabase
+          .from('users')
+          .select('first_name, last_name, id_number, email, phone, city')
+          .eq('user_id', clientId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching client data:', error);
+          // Show linking toast only if client fetch fails
+          if (caseId) {
+            toast.success('تم ربط اللائحة بالقضية الموجودة', { id: 'linked-case' });
+          }
+          return;
+        }
+
+        if (clientData) {
+          // Auto-fill plaintiff (المدعي) section with client data
+          setFormData(prev => ({
+            ...prev,
+            plaintiffName: `${clientData.first_name || ''} ${clientData.last_name || ''}`.trim() || prev.plaintiffName,
+            plaintiffId: clientData.id_number || prev.plaintiffId,
+            plaintiffEmail: clientData.email || prev.plaintiffEmail,
+            plaintiffPhone: clientData.phone || prev.plaintiffPhone,
+            plaintiffAddress: clientData.city || prev.plaintiffAddress
+          }));
+
+          // Show combined toast with unique ID to prevent duplicates
+          toast.success('تم ربط اللائحة وتعبئة بيانات الموكل تلقائياً', { id: 'linked-case-client' });
+        }
+      } catch (err) {
+        console.error('Error in fetchClientData:', err);
+      }
+    };
+
+    if (clientId) {
+      fetchClientData();
     }
   }, [searchParams]);
 
@@ -489,39 +537,63 @@ const FileCaseLawyer = () => {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  قيمة الدعوى بالشيكل (اختياري)
-                </label>
-                <input
-                  type="number"
-                  name="claimValue"
-                  value={formData.claimValue}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
-                  placeholder="مثلاً: 75000"
-                  min="0"
-                />
-                {feeHint && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{feeHint}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  طبيعة العلاقة بين الأطراف
-                </label>
-                <input
-                  type="text"
-                  name="relationship"
-                  value={formData.relationship}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
-                  placeholder="مثلاً: مالك / مستأجر"
-                />
-              </div>
+            {/* زر المعلومات الإضافية */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+              >
+                <svg
+                  className={`w-5 h-5 transition-transform ${showAdditionalInfo ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="font-medium">
+                  {showAdditionalInfo ? 'إخفاء المعلومات الإضافية' : 'إظهار المعلومات الإضافية (اختياري)'}
+                </span>
+              </button>
             </div>
+
+            {/* المعلومات الإضافية */}
+            {showAdditionalInfo && (
+              <div className="grid md:grid-cols-2 gap-4 mb-4 animate-fadeIn">
+                <div>
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    قيمة الدعوى بالشيكل (اختياري)
+                  </label>
+                  <input
+                    type="number"
+                    name="claimValue"
+                    value={formData.claimValue}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                    placeholder="مثلاً: 75000"
+                    min="0"
+                  />
+                  {feeHint && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{feeHint}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    طبيعة العلاقة بين الأطراف
+                  </label>
+                  <input
+                    type="text"
+                    name="relationship"
+                    value={formData.relationship}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                    placeholder="مثلاً: مالك / مستأجر"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="mb-4">
               <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-2">

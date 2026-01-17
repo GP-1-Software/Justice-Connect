@@ -19,8 +19,8 @@ const CaseStats = ({ stats }) => {
       borderColor: 'border-yellow-500'
     },
     {
-      title: 'القضايا المغلقة',
-      value: stats?.closed || 0,
+      title: 'القضايا المنجزة',
+      value: stats?.completed || 0,
       icon: CheckCircle2,
       bgColor: 'bg-green-100 dark:bg-green-900/20',
       textColor: 'text-green-600 dark:text-green-400',

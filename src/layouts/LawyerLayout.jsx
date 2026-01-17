@@ -11,6 +11,11 @@ const LawyerLayout = () => {
   const { loading, lawyer } = useLawyerAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  
+  // ✅ Mobile App Detection - Check query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const isMobileApp = searchParams.get('mobile') === 'true';
+  const hideNav = searchParams.get('hideNav') === 'true';
 
   // Check if current page is messages
   const isMessagesPage = location.pathname.includes('/messages');
@@ -39,30 +44,32 @@ const LawyerLayout = () => {
 
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
-      {/* Navigation Bar */}
-      <LawyerNavbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      {/* Navigation Bar - إخفاء في mobile */}
+      {!hideNav && <LawyerNavbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />}
 
-      <div className="flex h-full pt-16 min-h-0">
-        {/* Sidebar */}
-        <LawyerSidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+      <div className={`flex h-full ${!hideNav ? 'pt-16' : 'pt-0'} min-h-0`}>
+        {/* Sidebar - إخفاء في mobile */}
+        {!hideNav && (
+          <LawyerSidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content */}
-        <main className="flex-1 min-h-0 h-full transition-all duration-300 w-full overflow-x-hidden overflow-y-auto lg:mr-80">
+        <main className={`flex-1 min-h-0 h-full transition-all duration-300 w-full overflow-x-hidden overflow-y-auto ${!hideNav ? 'lg:mr-80' : ''}`}>
           {isMessagesPage ? (
             <Outlet />
           ) : (
-            <div className="p-4 sm:p-6 lg:p-8">
+            <div className={isMobileApp ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}>
               <Outlet />
             </div>
           )}
         </main>
       </div>
 
-      {/* Floating AI Chat Widget - Hide on mobile when on justice-ai page */}
-      {!(isJusticeAIPage && isMobile) && (
+      {/* Floating AI Chat Widget - Hide in mobile app */}
+      {!isMobileApp && !(isJusticeAIPage && isMobile) && (
         <FloatingAIChat userProfile={lawyer} userType="lawyer" />
       )}
     </div>

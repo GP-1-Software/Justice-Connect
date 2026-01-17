@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ✅ Mobile App Styles - إخفاء العناصر في Mobile App */
+body[data-mobile-app="true"] nav,
+body[data-mobile-app="true"] header,
+body[data-mobile-app="true"] .sidebar,
+body[data-mobile-app="true"] .navbar {
+  display: none !important;
+}
+
+body[data-mobile-app="true"] {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow-x: hidden !important;
+}
+
 /* Typing indicator animation - MUST be before other styles */
 @keyframes typingDot {
 

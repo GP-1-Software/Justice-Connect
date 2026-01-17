@@ -28,6 +28,27 @@ import BanListener from './components/BanListener';
 import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
+  // ✅ Mobile App Detection - Set data attribute on body
+  React.useEffect(() => {
+    const isMobileApp = new URLSearchParams(window.location.search).get('mobile') === 'true';
+    if (isMobileApp) {
+      document.body.setAttribute('data-mobile-app', 'true');
+    }
+    
+    // Listen for URL changes in SPA
+    const handleLocationChange = () => {
+      const isMobile = new URLSearchParams(window.location.search).get('mobile') === 'true';
+      if (isMobile) {
+        document.body.setAttribute('data-mobile-app', 'true');
+      } else {
+        document.body.removeAttribute('data-mobile-app');
+      }
+    };
+    
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+  
   return (
     <ThemeProvider>
       {/* Provide both auth contexts so nested routes can consume without error */}
