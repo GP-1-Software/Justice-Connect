@@ -49,7 +49,7 @@ const CaseRegistration = () => {
             else setLoading(true);
 
             const response = await fetch(
-                'http://localhost:5000/api/court-clerk/filings?status=ready_for_registration',
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/filings?status=ready_for_registration',
                 { headers: getAuthHeaders() }
             );
 
@@ -71,7 +71,7 @@ const CaseRegistration = () => {
     const fetchRegisteredCases = async () => {
         try {
             const response = await fetch(
-                'http://localhost:5000/api/court-clerk/filings?status=registered',
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/filings?status=registered',
                 { headers: getAuthHeaders() }
             );
 
@@ -168,7 +168,7 @@ const CaseRegistration = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/filings/${selectedFiling.filing_id}/register`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/filings/${selectedFiling.filing_id}/register`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

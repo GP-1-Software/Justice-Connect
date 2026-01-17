@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Newspaper, ExternalLink, Calendar, Tag, RefreshCw } from 'lucide-react';
 import axios from 'axios';
+import { Calendar, ExternalLink, Newspaper, RefreshCw, Tag } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const PalestinianNews = ({ limit = 6, showAll = false }) => {
   const [news, setNews] = useState([]);
@@ -24,7 +24,7 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
     try {
       setLoading(true);
       setError(null);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com';
       const response = await axios.get(`${API_URL}/api/news?limit=${limit}`);
       
       if (response.data.success) {

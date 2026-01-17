@@ -68,7 +68,7 @@ const CasesManagement = () => {
             else setLoading(true);
 
             // Always fetch all cases (no filter in API) - filter in frontend
-            const response = await fetch('http://localhost:5000/api/court-clerk/cases', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases', {
                 headers: getAuthHeaders()
             });
 
@@ -91,7 +91,7 @@ const CasesManagement = () => {
         setStageChanging(caseId);
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/cases/${caseId}/stage`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${caseId}/stage`,
                 {
                     method: 'PUT',
                     headers: getAuthHeaders(),

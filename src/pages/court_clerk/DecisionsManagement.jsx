@@ -74,7 +74,7 @@ const DecisionsManagement = () => {
             if (showRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/cases', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -93,7 +93,7 @@ const DecisionsManagement = () => {
         try {
             const allDecisionsArray = [];
             for (const caseItem of cases) {
-                const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseItem.case_id}/decisions`, {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${caseItem.case_id}/decisions`, {
                     headers: getAuthHeaders()
                 });
                 if (response.ok) {
@@ -111,7 +111,7 @@ const DecisionsManagement = () => {
 
     const fetchDecisions = async (caseId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseId}/decisions`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${caseId}/decisions`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -222,7 +222,7 @@ const DecisionsManagement = () => {
         e.preventDefault();
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/cases/${selectedCase.case_id}/decisions`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${selectedCase.case_id}/decisions`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

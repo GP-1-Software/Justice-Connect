@@ -1,6 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
-import { supabase } from '../supabaseClient';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 // Create Auth Context
 const LawyerAuthContext = createContext();
@@ -171,35 +171,32 @@ export const LawyerAuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      if (!lawyer) return { success: false, message: 'المستخدم غير مسجل الدخول' };
-
-      // Verify current password by querying the database
-      const { data: lawyerData, error: verifyError } = await supabase
-        .from('lawyers')
-        .select('password_hash')
-        .eq('email', lawyer.email)
-        .eq('lawyer_id', lawyer.lawyer_id)
-        .single();
-
-      if (verifyError) throw verifyError;
-
-      // Check if current password matches
-      if (lawyerData.password_hash !== currentPassword) {
-        return { success: false, message: 'كلمة المرور الحالية غير صحيحة' };
+      if (!lawyer || !lawyer.lawyer_id) {
+        return { success: false, message: 'المستخدم غير مسجل الدخول' };
       }
 
-      // Update password in database
-      const { error: updateError } = await supabase
-        .from('lawyers')
-        .update({ password_hash: newPassword })
-        .eq('lawyer_id', lawyer.lawyer_id);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/auth/change-password-lawyer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lawyer_id: lawyer.lawyer_id,
+          current_password: currentPassword,
+          new_password: newPassword
+        })
+      });
 
-      if (updateError) throw updateError;
+      const data = await response.json();
 
-      return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
+      if (!response.ok) {
+        return { success: false, message: data.message || 'فشل تغيير كلمة المرور' };
+      }
+
+      return data;
     } catch (error) {
       console.error('Change password error:', error);
-      return { success: false, message: 'حدث خطأ أثناء تغيير كلمة المرور' };
+      return { success: false, message: 'فشل الاتصال بالخادم' };
     }
   };
 

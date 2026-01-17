@@ -29,7 +29,7 @@ const QuickActions = () => {
     setError('');
     try {
       const url = customUrl || newsUrl;
-      const apiUrl = url ? `http://localhost:5000/api/news?url=${encodeURIComponent(url)}` : 'http://localhost:5000/api/news';
+      const apiUrl = url ? `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/news?url=${encodeURIComponent(url)}` : `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/news';
       
       const response = await fetch(apiUrl);
       const data = await response.json();

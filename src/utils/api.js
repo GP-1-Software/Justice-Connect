@@ -12,7 +12,7 @@ export const getApiBaseUrl = () => {
   // Priority: localStorage > environment variable > default
   return (
     localStorage.getItem('API_BASE_URL') ||
-    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
     'https://justice-connect-mobile.onrender.com'
   );
 };

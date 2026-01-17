@@ -46,7 +46,7 @@ const FeesManagement = () => {
             if (showRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/fees', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/fees', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -63,7 +63,7 @@ const FeesManagement = () => {
 
     const fetchCases = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/court-clerk/cases', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -88,7 +88,7 @@ const FeesManagement = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/court-clerk/fees/issue', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/fees/issue', {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
@@ -117,7 +117,7 @@ const FeesManagement = () => {
     const handleConfirmPayment = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/fees/${selectedFee.fee_id}/confirm`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/fees/${selectedFee.fee_id}/confirm`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

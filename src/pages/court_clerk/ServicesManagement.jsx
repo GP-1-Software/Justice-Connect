@@ -1,13 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-    Users, Plus, CheckCircle, XCircle, Clock, Search, Filter,
-    Calendar, FileText, Bell, TrendingUp, AlertCircle, ChevronLeft,
-    RefreshCw, X, Building, Phone, MapPin
+    AlertCircle,
+    Bell,
+    CheckCircle,
+    ChevronLeft,
+    Clock,
+    FileText,
+    Filter,
+    Plus,
+    RefreshCw,
+    Search,
+    TrendingUp,
+    Users,
+    X,
+    XCircle
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { getAuthHeaders } from '../../utils/authHelpers';
+import { useNavigate } from 'react-router-dom';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
+import { getAuthHeaders } from '../../utils/authHelpers';
 
 const ServicesManagement = () => {
     const navigate = useNavigate();
@@ -54,7 +65,7 @@ const ServicesManagement = () => {
             if (showRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/cases', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -73,7 +84,7 @@ const ServicesManagement = () => {
         try {
             const allServicesArray = [];
             for (const caseItem of cases) {
-                const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseItem.case_id}/services`, {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${caseItem.case_id}/services`, {
                     headers: getAuthHeaders()
                 });
                 if (response.ok) {
@@ -91,7 +102,7 @@ const ServicesManagement = () => {
 
     const fetchServices = async (caseId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseId}/services`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${caseId}/services`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -200,7 +211,7 @@ const ServicesManagement = () => {
         e.preventDefault();
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/cases/${selectedCase.case_id}/services`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${selectedCase.case_id}/services`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

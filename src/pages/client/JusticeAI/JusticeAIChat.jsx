@@ -263,7 +263,7 @@
 //         setLoading(true);
 
 //         try {
-//             const res = await fetch("http://localhost:5000/api/justice-chat", {
+//             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/justice-chat", {
 //                 method: "POST",
 //                 headers: {
 //                     "Content-Type": "application/json",
@@ -334,12 +334,12 @@
 //                 const formData = new FormData();
 //                 formData.append("file", file);
 //                 formData.append("question", question);
-//                 const res = await fetch("http://localhost:5000/api/document-analysis/analyze", { method: "POST", body: formData });
+//                 const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/document-analysis/analyze", { method: "POST", body: formData });
 //                 const data = await res.json();
 //                 if (data.error) throw new Error(data.error);
 //                 reply = data.answer || "⚠️ لم أستطع تحليل المستند.";
 //             } else {
-//                 const res = await fetch("http://localhost:5000/api/justice-chat", {
+//                 const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/justice-chat", {
 //                     method: "POST",
 //                     headers: { "Content-Type": "application/json" },
 //                     body: JSON.stringify({ message: question }),

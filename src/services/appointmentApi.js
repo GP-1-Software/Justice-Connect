@@ -134,7 +134,7 @@ export const createAppointment = async (appointmentData) => {
 
       // Notification for client
       notifications.push(
-        fetch('http://localhost:5000/api/notifications/create', {
+        fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -153,7 +153,7 @@ export const createAppointment = async (appointmentData) => {
 
       // Notification for lawyer
       notifications.push(
-        fetch('http://localhost:5000/api/notifications/create', {
+        fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -213,7 +213,7 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
       if (status === 'confirmed') {
         // Notify both parties about confirmation
         notifications.push(
-          fetch('http://localhost:5000/api/notifications/create', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -231,7 +231,7 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
         );
 
         notifications.push(
-          fetch('http://localhost:5000/api/notifications/create', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -255,7 +255,7 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
 
           // Schedule 5-minute reminder for both
           notifications.push(
-            fetch('http://localhost:5000/api/notifications/schedule', {
+            fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/schedule`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -274,7 +274,7 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
           );
 
           notifications.push(
-            fetch('http://localhost:5000/api/notifications/schedule', {
+            fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/schedule`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -295,7 +295,7 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
       } else if (status === 'cancelled') {
         // Notify both parties about cancellation
         notifications.push(
-          fetch('http://localhost:5000/api/notifications/create', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -313,7 +313,7 @@ export const updateAppointmentStatus = async (appointmentId, status, userRole = 
         );
 
         notifications.push(
-          fetch('http://localhost:5000/api/notifications/create', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

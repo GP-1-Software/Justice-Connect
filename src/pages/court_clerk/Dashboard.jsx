@@ -2,23 +2,23 @@
 // Court Clerk Dashboard - لوحة تحكم قلم المحكمة
 // ============================================
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-    FileText,
-    Clock,
-    CheckCircle,
     AlertCircle,
     Calendar,
-    Users,
-    Scale,
-    FolderOpen,
-    Receipt,
-    Gavel,
+    CheckCircle,
     ChevronLeft,
-    RefreshCw
+    Clock,
+    FileText,
+    FolderOpen,
+    Gavel,
+    Receipt,
+    RefreshCw,
+    Scale,
+    Users
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
 import { getAuthHeaders } from '../../utils/authHelpers';
 
@@ -51,7 +51,7 @@ const CourtClerkDashboard = () => {
     const fetchDashboardStats = async (showRefresh = false) => {
         try {
             if (showRefresh) setRefreshing(true);
-            const response = await fetch('http://localhost:5000/api/court-clerk/dashboard', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/dashboard`, {
                 headers: getAuthHeaders()
             });
 

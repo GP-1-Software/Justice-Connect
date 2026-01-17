@@ -310,7 +310,7 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
     const loadCaseAppeal = async () => {
         try {
             setLoadingAppeal(true);
-            const response = await fetch(`http://localhost:5000/api/court-clerk/public/appeals/case/${caseId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/public/appeals/case/${caseId}`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Scale, CreditCard, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, ArrowRight, CreditCard, Eye, EyeOff, Lock, Scale } from 'lucide-react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { validatePalestinianID } from '../utils/idValidation';
-import { supabase } from '../supabaseClient';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { supabase } from '../supabaseClient';
+import { validatePalestinianID } from '../utils/idValidation';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ const Login = () => {
 
     // Send login email notification with the SELECTED role (not user.role from DB)
     const emailRole = role; // Use the role user selected, not actualRole
-    fetch('http://localhost:5000/api/auth/send-login-email', {
+    fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/auth/send-login-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: userData, role: emailRole })
@@ -132,7 +132,7 @@ const Login = () => {
     try {
       const cleanIdNumber = formData.idNumber.replace(/[\s-]/g, '');
 
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

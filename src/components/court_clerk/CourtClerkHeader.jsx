@@ -3,27 +3,26 @@
 // Header موحد لجميع صفحات قلم المحكمة
 // ============================================
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Bell,
-    Moon,
-    Sun,
-    Menu,
-    X,
+    Building2,
+    Calendar,
+    ChevronDown,
+    FileText,
+    FolderOpen,
+    Gavel,
     Home,
     Inbox,
-    FileText,
-    Calendar,
-    Scale,
-    Users,
-    Settings,
     LogOut,
-    ChevronDown,
-    Gavel,
-    FolderOpen,
-    Building2
+    Menu,
+    Moon,
+    Scale,
+    Settings,
+    Sun,
+    X
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { getAuthHeaders } from '../../utils/authHelpers';
 import RoleSwitcher from '../RoleSwitcher';
@@ -76,7 +75,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
     useEffect(() => {
         const fetchAssignedCourt = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/court-clerk/my-courts', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/my-courts`, {
                     headers: getAuthHeaders()
                 });
                 if (response.ok) {

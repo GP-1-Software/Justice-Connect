@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
-import Navbar from '../components/Navbar';
-import { Users, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, CreditCard, User, Briefcase, AlertCircle, Shield, Crown, ArrowUp, Trash2, BarChart3, MessageSquare, FileText, Calendar, UserPlus, Scale, Building2, Plus, Edit, X, Search } from 'lucide-react';
-import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
-import { getAllTicketsForAdmin, updateTicketStatus, addReplyToTicket } from '../services/supportApi';
-import { notifyDeletionRequestApproved, notifyDeletionRequestRejected } from '../services/notificationService';
+import { AlertCircle, ArrowUp, BarChart3, Briefcase, Building2, Calendar, CheckCircle, Clock, CreditCard, Crown, Edit, FileText, Mail, MapPin, MessageSquare, Phone, Plus, Scale, Search, Shield, Trash2, User, UserPlus, Users, X, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { Link, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import { getPendingDeletionRequests, updateDeletionRequestStatus } from '../services/deletionRequestApi';
+import { notifyDeletionRequestApproved, notifyDeletionRequestRejected } from '../services/notificationService';
+import { addReplyToTicket, getAllTicketsForAdmin } from '../services/supportApi';
+import { supabase } from '../supabaseClient';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/assign-role', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/auth/assign-role`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

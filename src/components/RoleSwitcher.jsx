@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { Check, ChevronDown, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Check, ChevronDown } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const RoleSwitcher = () => {
@@ -67,7 +67,7 @@ const RoleSwitcher = () => {
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
             // Send login email notification with the new role
-            fetch('http://localhost:5000/api/auth/send-login-email', {
+            fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/auth/send-login-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user: updatedUser, role: newRole })

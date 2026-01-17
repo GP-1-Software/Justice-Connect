@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { AlertCircle, Bell, Shield, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useLawyerAuth } from '../../hooks/useLawyerAuth';
-import { AlertCircle, Shield, Bell, Trash2 } from 'lucide-react';
 import { createDeletionRequest, getUserDeletionRequest } from '../../services/deletionRequestApi';
 
 const Settings = () => {
-  const { lawyer, changePassword } = useLawyerAuth();
+  const { lawyer } = useLawyerAuth();
   const [activeTab, setActiveTab] = useState('security');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -53,6 +53,12 @@ const Settings = () => {
     setMessage('');
     setError('');
 
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setError('يرجى ملء جميع الحقول');
+      setLoading(false);
+      return;
+    }
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setError('كلمات المرور الجديدة غير متطابقة');
       setLoading(false);
@@ -65,13 +71,31 @@ const Settings = () => {
       return;
     }
 
-    const result = await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
+    try {
+      // Call API directly instead of using hook
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/auth/change-password-lawyer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lawyer_id: lawyer.lawyer_id,
+          current_password: passwordForm.currentPassword,
+          new_password: passwordForm.newPassword
+        })
+      });
 
-    if (result.success) {
-      setMessage('تم تغيير كلمة المرور بنجاح');
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } else {
-      setError(result.message || 'فشل تغيير كلمة المرور');
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage('تم تغيير كلمة المرور بنجاح');
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        setError(result.message || 'فشل تغيير كلمة المرور');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      setError('حدث خطأ أثناء تغيير كلمة المرور');
     }
 
     setLoading(false);

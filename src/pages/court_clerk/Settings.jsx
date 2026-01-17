@@ -2,24 +2,23 @@
 // Court Clerk Settings - إعدادات كاتب المحكمة
 // ============================================
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-    User,
-    Lock,
     Bell,
-    Moon,
-    Sun,
-    Mail,
-    Phone,
-    MapPin,
-    Save,
+    Check,
     Eye,
     EyeOff,
-    Check,
-    X
+    Lock,
+    Mail,
+    MapPin,
+    Moon,
+    Phone,
+    Save,
+    Sun,
+    User
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import CourtClerkHeader from '../../components/court_clerk/CourtClerkHeader';
 
 const CourtClerkSettings = () => {
@@ -103,7 +102,7 @@ const CourtClerkSettings = () => {
             // Encode to base64 with UTF-8 support
             const base64User = btoa(unescape(encodeURIComponent(user || '')));
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/profile', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -54,7 +54,7 @@ const CourtClerkCaseDetails = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseId}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/cases/${caseId}`, {
                     headers: getAuthHeaders()
                 });
                 if (!response.ok) {

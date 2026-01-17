@@ -5,7 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const API_BASE_URL = "http://localhost:5000/api/messages";
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/messages`;
 
 // Typing indicators management
 const typingTimeouts = {};

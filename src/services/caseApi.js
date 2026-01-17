@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { notifyFileUploaded, notifyCaseUpdated } from './notificationService';
+import { notifyCaseUpdated, notifyFileUploaded } from './notificationService';
 
 /**
  * Create a new case
@@ -55,7 +55,7 @@ export const createCase = async (caseData) => {
       // Notification for client
       if (caseData.client_id) {
         notifications.push(
-          fetch('http://localhost:5000/api/notifications/create', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -76,7 +76,7 @@ export const createCase = async (caseData) => {
       // Notification for lawyer
       if (caseData.assigned_lawyer_id) {
         notifications.push(
-          fetch('http://localhost:5000/api/notifications/create', {
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/notifications/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

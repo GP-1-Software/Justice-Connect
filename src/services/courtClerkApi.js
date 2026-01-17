@@ -6,7 +6,7 @@
 import { supabase } from '../supabaseClient';
 import { getAuthHeaders } from '../utils/authHelpers';
 
-const API_BASE_URL = 'http://localhost:5000/api/court-clerk';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk`;
 
 // ============================================
 // COURTS API - المحاكم

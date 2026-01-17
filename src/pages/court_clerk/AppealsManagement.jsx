@@ -80,7 +80,7 @@ const AppealsManagement = () => {
             if (showRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/appeals', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -98,7 +98,7 @@ const AppealsManagement = () => {
 
     const fetchAppealDetails = async (appealId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/court-clerk/appeals/${appealId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals/${appealId}`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -163,7 +163,7 @@ const AppealsManagement = () => {
             if (reviewAction === 'request_update') body.update_required_notes = updateRequiredNotes;
 
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/appeals/${selectedAppeal.appeal_id}/review`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals/${selectedAppeal.appeal_id}/review`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -193,7 +193,7 @@ const AppealsManagement = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/appeals/${selectedAppeal.appeal_id}/transfer`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals/${selectedAppeal.appeal_id}/transfer`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -220,7 +220,7 @@ const AppealsManagement = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/appeals/${selectedAppeal.appeal_id}/schedule-hearing`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals/${selectedAppeal.appeal_id}/schedule-hearing`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -247,7 +247,7 @@ const AppealsManagement = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/appeals/${selectedAppeal.appeal_id}/decision`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals/${selectedAppeal.appeal_id}/decision`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -270,7 +270,7 @@ const AppealsManagement = () => {
         try {
             setClosingCase(true);
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/appeals/${selectedAppeal.appeal_id}/close`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://justice-connect-mobile.onrender.com'}/api/court-clerk/appeals/${selectedAppeal.appeal_id}/close`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders()
