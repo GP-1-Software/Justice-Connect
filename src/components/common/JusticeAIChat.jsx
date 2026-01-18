@@ -303,7 +303,7 @@ export default function JusticeAIChat({ userType = 'client' }) {
         setLoading(true);
 
         try {
-            const res = await fetch("http://localhost:5000/api/justice-chat", {
+            const res = await fetch("https://justice-connect-mobile.onrender.com/api/justice-chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -406,12 +406,12 @@ export default function JusticeAIChat({ userType = 'client' }) {
                 const formData = new FormData();
                 formData.append("file", file);
                 formData.append("question", question);
-                const res = await fetch("http://localhost:5000/api/document-analysis/analyze", { method: "POST", body: formData });
+                const res = await fetch("https://justice-connect-mobile.onrender.com/api/document-analysis/analyze", { method: "POST", body: formData });
                 const data = await res.json();
                 if (data.error) throw new Error(data.error);
                 reply = data.answer || "⚠️ لم أستطع تحليل المستند.";
             } else {
-                const res = await fetch("http://localhost:5000/api/justice-chat", {
+                const res = await fetch("https://justice-connect-mobile.onrender.com/api/justice-chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: question }),

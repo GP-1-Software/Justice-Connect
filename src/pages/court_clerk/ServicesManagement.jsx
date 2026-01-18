@@ -54,7 +54,7 @@ const ServicesManagement = () => {
             if (showRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/cases', {
+            const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/cases', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -73,7 +73,7 @@ const ServicesManagement = () => {
         try {
             const allServicesArray = [];
             for (const caseItem of cases) {
-                const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseItem.case_id}/services`, {
+                const response = await fetch(`https://justice-connect-mobile.onrender.com/api/court-clerk/cases/${caseItem.case_id}/services`, {
                     headers: getAuthHeaders()
                 });
                 if (response.ok) {
@@ -91,7 +91,7 @@ const ServicesManagement = () => {
 
     const fetchServices = async (caseId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseId}/services`, {
+            const response = await fetch(`https://justice-connect-mobile.onrender.com/api/court-clerk/cases/${caseId}/services`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -200,7 +200,7 @@ const ServicesManagement = () => {
         e.preventDefault();
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/cases/${selectedCase.case_id}/services`,
+                `https://justice-connect-mobile.onrender.com/api/court-clerk/cases/${selectedCase.case_id}/services`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

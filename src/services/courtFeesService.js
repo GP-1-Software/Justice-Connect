@@ -3,7 +3,7 @@
 
 import { supabase } from '../supabaseClient';
 
-const API_BASE = 'http://localhost:5000/api/court-clerk/public';
+const API_BASE = 'https://justice-connect-mobile.onrender.com/api/court-clerk/public';
 
 /**
  * Get all court fees for a client

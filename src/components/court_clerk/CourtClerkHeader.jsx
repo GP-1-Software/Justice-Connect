@@ -76,7 +76,7 @@ const CourtClerkHeader = ({ title, subtitle }) => {
     useEffect(() => {
         const fetchAssignedCourt = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/court-clerk/my-courts', {
+                const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/my-courts', {
                     headers: getAuthHeaders()
                 });
                 if (response.ok) {

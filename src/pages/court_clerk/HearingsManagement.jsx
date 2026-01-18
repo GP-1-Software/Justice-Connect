@@ -57,7 +57,7 @@ const HearingsManagement = () => {
             if (showRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/cases', {
+            const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/cases', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -76,7 +76,7 @@ const HearingsManagement = () => {
         try {
             const allHearingsArray = [];
             for (const caseItem of cases) {
-                const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseItem.case_id}/hearings`, {
+                const response = await fetch(`https://justice-connect-mobile.onrender.com/api/court-clerk/cases/${caseItem.case_id}/hearings`, {
                     headers: getAuthHeaders()
                 });
                 if (response.ok) {
@@ -94,7 +94,7 @@ const HearingsManagement = () => {
 
     const fetchPostponeRequests = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/court-clerk/postpone-requests', {
+            const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/postpone-requests', {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -108,7 +108,7 @@ const HearingsManagement = () => {
 
     const fetchHearings = async (caseId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/court-clerk/cases/${caseId}/hearings`, {
+            const response = await fetch(`https://justice-connect-mobile.onrender.com/api/court-clerk/cases/${caseId}/hearings`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -224,7 +224,7 @@ const HearingsManagement = () => {
         e.preventDefault();
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/cases/${selectedCase.case_id}/hearings`,
+                `https://justice-connect-mobile.onrender.com/api/court-clerk/cases/${selectedCase.case_id}/hearings`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

@@ -61,7 +61,7 @@ const FilingReview = () => {
     const fetchFilingDetails = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/filings/${filing_id}`,
+                `https://justice-connect-mobile.onrender.com/api/court-clerk/filings/${filing_id}`,
                 { headers: getAuthHeaders() }
             );
 
@@ -99,7 +99,7 @@ const FilingReview = () => {
             }
 
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/filings/${filing_id}/review`,
+                `https://justice-connect-mobile.onrender.com/api/court-clerk/filings/${filing_id}/review`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),

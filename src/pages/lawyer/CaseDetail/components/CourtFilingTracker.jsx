@@ -546,7 +546,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                     // Show confirmation before marking as fully executed
                     if (window.confirm('هل أنت متأكد من أن الحكم تم تنفيذه بشكل نهائي؟\n\nسيتم تحويل حالة القضية إلى "منفذة بالكامل" وإرسال إشعارات للعميل.')) {
                         try {
-                            const response = await fetch(`http://localhost:5000/api/court-clerk/public/cases/${caseId}/mark-fully-executed`, {
+                            const response = await fetch(`https://justice-connect-mobile.onrender.com/api/court-clerk/public/cases/${caseId}/mark-fully-executed`, {
                                 method: 'POST',
                                 headers: getAuthHeaders()
                             });
@@ -631,7 +631,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             }
 
             // Submit appeal to backend
-            const response = await fetch('http://localhost:5000/api/court-clerk/public/appeals/submit', {
+            const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/public/appeals/submit', {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
@@ -665,7 +665,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
     const loadCaseAppeal = async () => {
         try {
             setLoadingAppeal(true);
-            const response = await fetch(`http://localhost:5000/api/court-clerk/public/appeals/case/${caseId}`, {
+            const response = await fetch(`https://justice-connect-mobile.onrender.com/api/court-clerk/public/appeals/case/${caseId}`, {
                 headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -723,7 +723,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
             }
 
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/public/appeals/${caseAppeal.appeal_id}/submit-update`,
+                `https://justice-connect-mobile.onrender.com/api/court-clerk/public/appeals/${caseAppeal.appeal_id}/submit-update`,
                 {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -847,7 +847,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
 
             // Send notification to court clerk via backend
             try {
-                const response = await fetch('http://localhost:5000/api/court-clerk/notifications/document-uploaded', {
+                const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/notifications/document-uploaded', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -908,7 +908,7 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
 
             // Send notification to court clerk
             try {
-                await fetch('http://localhost:5000/api/court-clerk/notifications/postpone-request', {
+                await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/notifications/postpone-request', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

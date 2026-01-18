@@ -62,7 +62,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/assign-role', {
+      const response = await fetch('https://justice-connect-mobile.onrender.com/api/auth/assign-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -24,7 +24,7 @@ const PalestinianNews = ({ limit = 6, showAll = false }) => {
     try {
       setLoading(true);
       setError(null);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://justice-connect-mobile.onrender.com';
       const response = await axios.get(`${API_URL}/api/news?limit=${limit}`);
       
       if (response.data.success) {

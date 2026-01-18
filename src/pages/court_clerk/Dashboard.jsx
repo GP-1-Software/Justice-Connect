@@ -51,7 +51,7 @@ const CourtClerkDashboard = () => {
     const fetchDashboardStats = async (showRefresh = false) => {
         try {
             if (showRefresh) setRefreshing(true);
-            const response = await fetch('http://localhost:5000/api/court-clerk/dashboard', {
+            const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/dashboard', {
                 headers: getAuthHeaders()
             });
 

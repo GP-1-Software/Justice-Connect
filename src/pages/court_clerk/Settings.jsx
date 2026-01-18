@@ -103,7 +103,7 @@ const CourtClerkSettings = () => {
             // Encode to base64 with UTF-8 support
             const base64User = btoa(unescape(encodeURIComponent(user || '')));
 
-            const response = await fetch('http://localhost:5000/api/court-clerk/profile', {
+            const response = await fetch('https://justice-connect-mobile.onrender.com/api/court-clerk/profile', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

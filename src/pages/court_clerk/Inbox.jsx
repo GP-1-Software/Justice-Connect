@@ -67,7 +67,7 @@ const CourtClerkInbox = () => {
             }
 
             const response = await fetch(
-                `http://localhost:5000/api/court-clerk/filings?${params}`,
+                `https://justice-connect-mobile.onrender.com/api/court-clerk/filings?${params}`,
                 {
                     headers: getAuthHeaders()
                 }

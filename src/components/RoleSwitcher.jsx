@@ -67,7 +67,7 @@ const RoleSwitcher = () => {
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
             // Send login email notification with the new role
-            fetch('http://localhost:5000/api/auth/send-login-email', {
+            fetch('https://justice-connect-mobile.onrender.com/api/auth/send-login-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user: updatedUser, role: newRole })
