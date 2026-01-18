@@ -246,7 +246,7 @@ const Footer = () => {
                     </p>
                     <p className="flex items-center justify-center gap-2">
                       <Mail className="h-4 w-4 text-cyan-400" />
-                      <a href="mailto:ali.odeh.pss@example.com" className="hover:text-white transition">first.developer@example.com</a>
+                      <a href="mailto:ali.odeh.pss@example.com" className="hover:text-white transition">ali.odeh.pss@gmail.com</a>
                     </p>
                   </div>
                 </div>
