@@ -228,7 +228,7 @@ const Footer = () => {
           </div>
 
           
-          {/* About Us Section - من نحن */}
+          {/* About Us Section */}
           <div className="border-t border-white/10 pt-8 mb-8">
             <h3 className="text-xl font-bold mb-6 text-center">من نحن</h3>
             <div className="bg-white/5 rounded-2xl p-6 backdrop-blur-sm">
