@@ -227,6 +227,48 @@ const Footer = () => {
             </div>
           </div>
 
+          
+          {/* About Us Section - من نحن */}
+          <div className="border-t border-white/10 pt-8 mb-8">
+            <h3 className="text-xl font-bold mb-6 text-center">من نحن</h3>
+            <div className="bg-white/5 rounded-2xl p-6 backdrop-blur-sm">
+              <p className="text-blue-200 text-center leading-relaxed mb-6">
+                نحن طلاب من <span className="text-cyan-400 font-semibold">جامعة النجاح الوطنية</span> قمنا بتطوير هذا الموقع كمشروع تخرج أول في هندسة البرمجيات (Software Engineering).
+              </p>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Developer 1 */}
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <h4 className="text-lg font-bold text-cyan-400 mb-3">Ali Odeh - علي عودة</h4>
+                  <div className="space-y-2 text-blue-200 text-sm">
+                    <p className="flex items-center justify-center gap-2">
+                      <Phone className="h-4 w-4 text-cyan-400" />
+                      <span dir="ltr">+972 59-289-1676</span>
+                    </p>
+                    <p className="flex items-center justify-center gap-2">
+                      <Mail className="h-4 w-4 text-cyan-400" />
+                      <a href="mailto:ali.odeh.pss@example.com" className="hover:text-white transition">first.developer@example.com</a>
+                    </p>
+                  </div>
+                </div>
+                {/* Developer 2 */}
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <h4 className="text-lg font-bold text-cyan-400 mb-3">Adam - ادم عباهره</h4>
+                  <div className="space-y-2 text-blue-200 text-sm">
+                    <p className="flex items-center justify-center gap-2">
+                      <Phone className="h-4 w-4 text-cyan-400" />
+                      <span dir="ltr">+970-XXX-XXX-XXX</span>
+                    </p>
+                    <p className="flex items-center justify-center gap-2">
+                      <Mail className="h-4 w-4 text-cyan-400" />
+                      <a href="mailto:second.developer@example.com" className="hover:text-white transition">second.developer@example.com</a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
           {/* Bottom Bar */}
           <div className="border-t border-white/10 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
@@ -237,7 +279,6 @@ const Footer = () => {
                 <button onClick={() => setShowPrivacyModal(true)} className="text-blue-200 hover:text-white transition">سياسة الخصوصية</button>
                 <button onClick={() => setShowTermsModal(true)} className="text-blue-200 hover:text-white transition">الشروط والأحكام</button>
                 <button onClick={() => navigate('/support')} className="text-blue-200 hover:text-white transition">الدعم الفني</button>
-                <button onClick={() => navigate('/support')} className="text-blue-200 hover:text-white transition">من نحن</button>
               </div>
             </div>
           </div>
