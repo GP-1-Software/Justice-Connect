@@ -231,12 +231,13 @@ const Footer = () => {
           <div className="border-t border-white/10 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <p className="text-blue-200 text-sm">
-                © 2025 المنصة القانونية. جميع الحقوق محفوظة.
+                © 2026 المنصة القانونية. جميع الحقوق محفوظة.
               </p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
                 <button onClick={() => setShowPrivacyModal(true)} className="text-blue-200 hover:text-white transition">سياسة الخصوصية</button>
                 <button onClick={() => setShowTermsModal(true)} className="text-blue-200 hover:text-white transition">الشروط والأحكام</button>
                 <button onClick={() => navigate('/support')} className="text-blue-200 hover:text-white transition">الدعم الفني</button>
+                <button onClick={() => navigate('/support')} className="text-blue-200 hover:text-white transition">من نحن</button>
               </div>
             </div>
           </div>
