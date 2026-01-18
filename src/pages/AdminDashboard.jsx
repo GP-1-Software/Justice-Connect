@@ -435,17 +435,56 @@ const AdminDashboard = () => {
     try {
       let table = 'users';
       let idColumn = 'user_id';
+      let role = 'client';
       if (mainTab === 'lawyers') {
         table = 'lawyers';
         idColumn = 'lawyer_id';
+        role = 'lawyer';
       }
 
+      // First, get the user's id_number
+      const { data: userData, error: fetchError } = await supabase
+        .from(table)
+        .select('id_number')
+        .eq(idColumn, userId)
+        .single();
+
+      if (fetchError || !userData) {
+        console.error('Error fetching user data:', fetchError);
+        alert('حدث خطأ أثناء جلب بيانات المستخدم');
+        return;
+      }
+
+      // Update account status to approved
       const { error } = await supabase
         .from(table)
         .update({ account_status: 'approved' })
         .eq(idColumn, userId);
 
       if (error) throw error;
+
+      // Add user to user_roles table (required for login)
+      // First check if role already exists
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('id_number', userData.id_number)
+        .eq('role', role)
+        .single();
+
+      if (!existingRole) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            id_number: userData.id_number,
+            role: role
+          });
+
+        if (roleError) {
+          console.error('Error adding to user_roles:', roleError);
+          // Don't fail the whole operation, just log the error
+        }
+      }
 
       alert('تم قبول المستخدم بنجاح!');
       fetchData();
@@ -496,32 +535,41 @@ const AdminDashboard = () => {
     try {
       setProcessing(true);
 
-      // Determine table and ID column based on tab
-      let table, idColumn, userId;
-      if (mainTab === 'users') {
-        table = 'users';
-        idColumn = 'user_id';
-        userId = userToBan.user_id;
-      } else if (mainTab === 'lawyers') {
-        table = 'lawyers';
-        idColumn = 'lawyer_id';
-        userId = userToBan.lawyer_id;
-      } else if (mainTab === 'admins' || mainTab === 'super_admins') {
-        table = 'admins';
-        idColumn = 'admin_id';
-        userId = userToBan.admin_id;
-      }
+      const idNumber = userToBan.id_number;
+      const banData = {
+        account_status: 'banned',
+        ban_reason: banReason || null,
+        banned_at: new Date().toISOString()
+      };
 
-      const { error } = await supabase
-        .from(table)
-        .update({
-          account_status: 'banned',
-          ban_reason: banReason || null,
-          banned_at: new Date().toISOString()
-        })
-        .eq(idColumn, userId);
+      // Update ALL tables where this id_number exists to ensure complete ban
+      const updatePromises = [];
 
-      if (error) throw error;
+      // Update users table
+      updatePromises.push(
+        supabase
+          .from('users')
+          .update(banData)
+          .eq('id_number', idNumber)
+      );
+
+      // Update lawyers table
+      updatePromises.push(
+        supabase
+          .from('lawyers')
+          .update(banData)
+          .eq('id_number', idNumber)
+      );
+
+      // Update admins table
+      updatePromises.push(
+        supabase
+          .from('admins')
+          .update(banData)
+          .eq('id_number', idNumber)
+      );
+
+      await Promise.all(updatePromises);
 
       toast.success('تم حظر المستخدم بنجاح');
       setShowBanModal(false);
@@ -545,32 +593,41 @@ const AdminDashboard = () => {
     try {
       setProcessing(true);
 
-      // Determine table and ID column based on tab
-      let table, idColumn, userId;
-      if (mainTab === 'users') {
-        table = 'users';
-        idColumn = 'user_id';
-        userId = user.user_id;
-      } else if (mainTab === 'lawyers') {
-        table = 'lawyers';
-        idColumn = 'lawyer_id';
-        userId = user.lawyer_id;
-      } else if (mainTab === 'admins' || mainTab === 'super_admins') {
-        table = 'admins';
-        idColumn = 'admin_id';
-        userId = user.admin_id;
-      }
+      const idNumber = user.id_number;
+      const unbanData = {
+        account_status: 'approved',
+        ban_reason: null,
+        banned_at: null
+      };
 
-      const { error } = await supabase
-        .from(table)
-        .update({
-          account_status: 'approved',
-          ban_reason: null,
-          banned_at: null
-        })
-        .eq(idColumn, userId);
+      // Update ALL tables where this id_number exists to ensure complete unban
+      const updatePromises = [];
 
-      if (error) throw error;
+      // Update users table
+      updatePromises.push(
+        supabase
+          .from('users')
+          .update(unbanData)
+          .eq('id_number', idNumber)
+      );
+
+      // Update lawyers table
+      updatePromises.push(
+        supabase
+          .from('lawyers')
+          .update(unbanData)
+          .eq('id_number', idNumber)
+      );
+
+      // Update admins table
+      updatePromises.push(
+        supabase
+          .from('admins')
+          .update(unbanData)
+          .eq('id_number', idNumber)
+      );
+
+      await Promise.all(updatePromises);
 
       toast.success('تم إلغاء حظر المستخدم بنجاح');
       fetchData();
