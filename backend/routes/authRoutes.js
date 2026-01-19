@@ -1,6 +1,6 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
-import { sendLoginNotification } from '../services/emailService.js';
+import { sendLoginNotification, sendSignupNotificationToAdmins } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -172,6 +172,31 @@ router.post("/send-login-email", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+// Send Signup Notification to Admins (called after successful signup)
+router.post("/send-signup-notification", async (req, res) => {
+    try {
+        const { user, userType } = req.body;
+
+        if (!user) {
+            return res.status(400).json({ error: "Missing user data" });
+        }
+
+        // Send signup notification to admins (admin_id 1 and 4)
+        sendSignupNotificationToAdmins(user, userType || 'client').catch(err => {
+            console.error('Failed to send signup notification to admins:', err);
+        });
+
+        res.json({ success: true, message: "Signup notification triggered" });
+
+    } catch (error) {
+        console.error("Send signup notification error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 
 // Assign Role Endpoint (Admin only)
 router.post("/assign-role", async (req, res) => {
