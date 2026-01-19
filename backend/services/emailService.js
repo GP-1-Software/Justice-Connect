@@ -11,11 +11,11 @@ const supabase = createClient(
 
 // Feature Flag: Set to 1 to enable email sending, 0 to disable
 //const EMAIL_ENABLED = parseInt(process.env.EMAIL_ENABLED || '0');
-const EMAIL_ENABLED = 1;
+const EMAIL_ENABLED = 0;
 
 // Feature Flag: Set to 1 to enable signup notification to admins, 0 to disable
 //const SIGNUP_NOTIFICATION_ENABLED = parseInt(process.env.SIGNUP_NOTIFICATION_ENABLED || '0');
-const SIGNUP_NOTIFICATION_ENABLED =1;
+const SIGNUP_NOTIFICATION_ENABLED =0;
 
 
 // List of fake email domain patterns to skip
