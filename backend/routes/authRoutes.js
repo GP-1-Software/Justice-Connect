@@ -75,7 +75,8 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "المستخدم غير موجود" });
         }
 
-        // 2. First, fetch user data (without password check) to verify account status
+        // 2. Verify password
+        // Check against the first available role's table
         let user = null;
         let validRole = null;
 
@@ -88,6 +89,7 @@ router.post("/login", async (req, res) => {
                 .from(table)
                 .select("*")
                 .eq("id_number", cleanIdNumber)
+                .eq("password_hash", password)
                 .single();
 
             if (data && !error) {
@@ -98,25 +100,10 @@ router.post("/login", async (req, res) => {
         }
 
         if (!user) {
-            return res.status(401).json({ error: "رقم الهوية أو كلمة المرور غير صحيحة" });
+            return res.status(401).json({ error: "Invalid password" });
         }
 
-        // 3. Check account status BEFORE verifying password
-        if (user.account_status === 'pending') {
-            return res.status(403).json({
-                error: "حسابك قيد المراجعة من قبل الإدارة. سيتم إشعارك عند الموافقة على حسابك. شكراً لصبرك!",
-                pending: true
-            });
-        }
-
-        if (user.account_status === 'rejected') {
-            return res.status(403).json({
-                error: "تم رفض طلب تسجيلك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
-                rejected: true,
-                rejection_reason: user.rejection_reason || null
-            });
-        }
-
+        // 3. Check account status
         if (user.account_status === 'banned') {
             return res.status(403).json({
                 error: "تم تعليق حسابك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
@@ -125,9 +112,21 @@ router.post("/login", async (req, res) => {
             });
         }
 
-        // 4. NOW verify password (only for approved accounts)
-        if (user.password_hash !== password) {
-            return res.status(401).json({ error: "رقم الهوية أو كلمة المرور غير صحيحة" });
+        // 3.1 Check if user is pending approval
+        if (user.account_status === 'pending') {
+            return res.status(403).json({
+                error: "حسابك قيد المراجعة من قبل الإدارة. سيتم إشعارك عند الموافقة على حسابك. شكراً لصبرك!",
+                pending: true
+            });
+        }
+
+        // 3.2 Check if user is rejected
+        if (user.account_status === 'rejected') {
+            return res.status(403).json({
+                error: "تم رفض طلب تسجيلك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
+                rejected: true,
+                rejection_reason: user.rejection_reason || null
+            });
         }
 
         // 4. Return success with available roles
