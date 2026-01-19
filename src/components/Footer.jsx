@@ -233,7 +233,7 @@ const Footer = () => {
             <h3 className="text-xl font-bold mb-6 text-center">من نحن</h3>
             <div className="bg-white/5 rounded-2xl p-6 backdrop-blur-sm">
               <p className="text-blue-200 text-center leading-relaxed mb-6">
-                نحن طلاب من <span className="text-cyan-400 font-semibold">جامعة النجاح الوطنية</span> قمنا بتطوير هذا الموقع كمشروع تخرج أول (Software) في هندسة الحاسوب تخصص (Computer Engineering)
+                نحن طلاب من <span className="text-cyan-400 font-semibold">جامعة النجاح الوطنية</span> قمنا بتطوير هذا الموقع كمشروع تخرج أول (Software) في تخصص هندسة الحاسوب (Computer Engineering)
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Developer 1 */}
