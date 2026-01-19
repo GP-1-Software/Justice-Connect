@@ -21,7 +21,7 @@ router.post("/login", async (req, res) => {
         const cleanIdNumber = id_number.replace(/[\s-]/g, '');
 
         // 1. Check user_roles to see what roles exist
-        const { data: roles, error: rolesError } = await supabase
+        let { data: roles, error: rolesError } = await supabase
             .from("user_roles")
             .select("role")
             .eq("id_number", cleanIdNumber);
@@ -31,11 +31,48 @@ router.post("/login", async (req, res) => {
             return res.status(500).json({ error: "Database error" });
         }
 
+        // Fallback: If not found in user_roles, check individual tables directly
         if (!roles || roles.length === 0) {
-            // Fallback: Check individual tables if migration hasn't run or for legacy support
-            // But for now, let's assume migration ran. 
-            // If not found in user_roles, maybe return 401.
-            return res.status(401).json({ error: "User not found" });
+            // Check users table (clients)
+            const { data: clientData } = await supabase
+                .from("users")
+                .select("*")
+                .eq("id_number", cleanIdNumber)
+                .single();
+
+            if (clientData) {
+                roles = [{ role: 'client' }];
+            }
+
+            // Check lawyers table
+            if (!roles || roles.length === 0) {
+                const { data: lawyerData } = await supabase
+                    .from("lawyers")
+                    .select("*")
+                    .eq("id_number", cleanIdNumber)
+                    .single();
+
+                if (lawyerData) {
+                    roles = [{ role: 'lawyer' }];
+                }
+            }
+
+            // Check admins table
+            if (!roles || roles.length === 0) {
+                const { data: adminData } = await supabase
+                    .from("admins")
+                    .select("*")
+                    .eq("id_number", cleanIdNumber)
+                    .single();
+
+                if (adminData) {
+                    roles = [{ role: adminData.role || 'admin' }];
+                }
+            }
+        }
+
+        if (!roles || roles.length === 0) {
+            return res.status(401).json({ error: "المستخدم غير موجود" });
         }
 
         // 2. Verify password
@@ -66,12 +103,29 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Invalid password" });
         }
 
-        // 3. Check if user is banned
+        // 3. Check account status
         if (user.account_status === 'banned') {
             return res.status(403).json({
                 error: "تم تعليق حسابك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
                 banned: true,
                 ban_reason: user.ban_reason || null
+            });
+        }
+
+        // 3.1 Check if user is pending approval
+        if (user.account_status === 'pending') {
+            return res.status(403).json({
+                error: "حسابك قيد المراجعة من قبل الإدارة. سيتم إشعارك عند الموافقة على حسابك. شكراً لصبرك!",
+                pending: true
+            });
+        }
+
+        // 3.2 Check if user is rejected
+        if (user.account_status === 'rejected') {
+            return res.status(403).json({
+                error: "تم رفض طلب تسجيلك. للاستفسار يرجى التواصل مع الدعم الفني:\nالبريد الإلكتروني: ali.odeh.pss@gmail.com \nالهاتف: 0592891676-972+",
+                rejected: true,
+                rejection_reason: user.rejection_reason || null
             });
         }
 
