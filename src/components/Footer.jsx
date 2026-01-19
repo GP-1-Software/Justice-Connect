@@ -256,11 +256,11 @@ const Footer = () => {
                   <div className="space-y-2 text-blue-200 text-sm">
                     <p className="flex items-center justify-center gap-2">
                       <Phone className="h-4 w-4 text-cyan-400" />
-                      <span dir="ltr">+970-XXX-XXX-XXX</span>
+                      <span dir="ltr">+972 59-873-2114</span>
                     </p>
                     <p className="flex items-center justify-center gap-2">
                       <Mail className="h-4 w-4 text-cyan-400" />
-                      <a href="mailto:second.developer@example.com" className="hover:text-white transition">second.developer@example.com</a>
+                      <a href="mailto:aadamadamm343@gmail.com" className="hover:text-white transition">aadamadamm343@gmail.com</a>
                     </p>
                   </div>
                 </div>
