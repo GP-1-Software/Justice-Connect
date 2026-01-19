@@ -273,6 +273,26 @@ const Signup = () => {
       }
 
       console.log('User created successfully:', data);
+
+ // Send signup notification to admins (non-blocking)
+      fetch('https://justice-connect-mobile.onrender.com/api/auth/send-signup-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            city: formData.city,
+            id_number: formData.idNumber.replace(/[\s-]/g, '')
+          },
+          userType: 'client'
+        })
+      }).catch(err => console.error('Failed to send signup notification:', err));
+
+
+      
       alert('تم إنشاء الحساب بنجاح!\nسيتم مراجعة حسابك قريباً.');
       navigate('/login');
       
