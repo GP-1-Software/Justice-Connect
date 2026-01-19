@@ -100,7 +100,7 @@ router.post("/login", async (req, res) => {
         }
 
         if (!user) {
-            return res.status(401).json({ error: "Invalid password" });
+            return res.status(401).json({ error: "رقم الهوية أو كلمة المرور غير صحيحة" });
         }
 
         // 3. Check account status
