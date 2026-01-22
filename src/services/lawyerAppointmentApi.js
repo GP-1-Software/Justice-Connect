@@ -147,6 +147,26 @@ export const updateLawyerAppointmentStatus = async (appointmentId, status, lawye
           lawyerName,
           appointmentId
         );
+         // Mobile notification
+        try {
+          await fetch('https://justice-connect-mobile.onrender.com/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.clients.user_id,
+              userType: 'client',
+              type: 'APPOINTMENT_CONFIRMED',
+              title: 'تم تأكيد الموعد',
+              message: `تم تأكيد موعدك مع ${lawyerName} في ${data.appointment_date}`,
+              priority: 'high',
+              relatedId: appointmentId,
+              relatedType: 'appointment',
+              actionUrl: `/client/appointments/${appointmentId}`
+            })
+          });
+        } catch (mobileNotifError) {
+          console.error('Error sending mobile notification:', mobileNotifError);
+        }
       } catch (notifError) {
         console.error('Error sending confirmation notification:', notifError);
         // Don't throw - appointment is still confirmed
@@ -161,6 +181,28 @@ export const updateLawyerAppointmentStatus = async (appointmentId, status, lawye
           rejectionReason,
           appointmentId
         );
+
+        // Mobile notification
+        try {
+          await fetch('https://justice-connect-mobile.onrender.com/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.clients.user_id,
+              userType: 'client',
+              type: 'APPOINTMENT_CANCELLED',
+              title: 'تم رفض الموعد',
+              message: rejectionReason ? `تم رفض موعدك مع ${lawyerName}. السبب: ${rejectionReason}` : `تم رفض موعدك مع ${lawyerName}`,
+              priority: 'high',
+              relatedId: appointmentId,
+              relatedType: 'appointment',
+              actionUrl: `/client/appointments/${appointmentId}`
+            })
+          });
+        } catch (mobileNotifError) {
+          console.error('Error sending mobile notification:', mobileNotifError);
+        }
+
       } catch (notifError) {
         console.error('Error sending rejection notification:', notifError);
         // Don't throw - appointment is still cancelled

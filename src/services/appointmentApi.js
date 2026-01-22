@@ -128,11 +128,11 @@ export const createAppointment = async (appointmentData) => {
       throw error;
     }
 
-    // Send notifications to both parties
+    // Send notifications to both parties (web and mobile)
     try {
       const notifications = [];
 
-      // Notification for client
+      // Notification for client (mobile only)
       notifications.push(
         fetch('https://justice-connect-mobile.onrender.com/api/notifications/create', {
           method: 'POST',
@@ -151,7 +151,8 @@ export const createAppointment = async (appointmentData) => {
         })
       );
 
-      // Notification for lawyer
+      // Notification for lawyer (both web and mobile)
+      // Web notification
       notifications.push(
         fetch('https://justice-connect-mobile.onrender.com/api/notifications/create', {
           method: 'POST',
