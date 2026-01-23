@@ -443,20 +443,16 @@ const FilingReview = () => {
                                 </h2>
                                 <div className="space-y-3">
                                     <p className="font-medium text-gray-900 dark:text-white">
-                                        {filing.lawyer?.first_name} {filing.lawyer?.last_name}
+                                        Ameed Salameh
                                     </p>
-                                    {filing.lawyer?.email && (
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                            <Mail size={14} />
-                                            {filing.lawyer.email}
-                                        </p>
-                                    )}
-                                    {filing.lawyer?.phone && (
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                            <Phone size={14} />
-                                            {filing.lawyer.phone}
-                                        </p>
-                                    )}
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                        <FileText size={14} />
+                                        الهوية: 989898989
+                                    </p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                        <Mail size={14} />
+                                        alool.mohammed2003@gmail.com
+                                    </p>
                                 </div>
                             </div>
 
