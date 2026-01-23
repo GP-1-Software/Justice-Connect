@@ -174,6 +174,20 @@ export const processPayment = async (invoiceId, paymentMethod, paymentDetails = 
 
     if (paymentError) throw paymentError;
 
+    // Update invoice status to 'paid'
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({
+        status: 'paid',
+        paid_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('invoice_id', invoiceId);
+
+    if (updateError) {
+      console.error('Error updating invoice status:', updateError);
+    }
+
     return { data: payment, error: null };
   } catch (error) {
     console.error('Error processing payment:', error);
