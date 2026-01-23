@@ -1305,6 +1305,9 @@ const CourtFilingTracker = ({ caseId, caseData }) => {
                             const isActive = currentStageKey === key;
                             const isPast = stage.order < currentOrder;
 
+                            // Hide awaiting_response stage
+                            if (key === 'awaiting_response') return null;
+
                             return (
                                 <div key={key} className="flex flex-col items-center relative">
                                     {index > 0 && (

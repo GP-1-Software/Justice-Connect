@@ -695,6 +695,9 @@ const ClientCourtFilingTracker = ({ caseId, caseData }) => {
                             // Skip update_required for client - show as under_review
                             if (key === 'update_required') return null;
                             
+                            // Hide awaiting_response stage
+                            if (key === 'awaiting_response') return null;
+                            
                             return (
                                 <div key={key} className="flex flex-col items-center relative">
                                     {index > 0 && key !== 'ready_for_registration' && (
