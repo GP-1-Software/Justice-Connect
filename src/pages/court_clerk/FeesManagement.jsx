@@ -69,10 +69,8 @@ const FeesManagement = () => {
             });
             if (response.ok) {
                 const data = await response.json();
-                const eligibleCases = (data.data || []).filter(
-                    c => c.case_stage === 'ready_for_registration' || c.case_stage === 'under_review'
-                );
-                setCases(eligibleCases);
+                // Show all cases (FILING-xxx and CASE-xxx)
+                setCases(data.data || []);
             }
         } catch (error) {
             console.error('Error fetching cases:', error);
