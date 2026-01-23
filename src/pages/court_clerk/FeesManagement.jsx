@@ -24,6 +24,7 @@ const FeesManagement = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [caseSearchTerm, setCaseSearchTerm] = useState('');
 
     const [formData, setFormData] = useState({
         registration_fee: 0,
@@ -150,6 +151,7 @@ const FeesManagement = () => {
             other_fees_description: ''
         });
         setSelectedCase(null);
+        setCaseSearchTerm('');
     };
 
     const calculateTotal = () => {
@@ -196,6 +198,16 @@ const FeesManagement = () => {
             return true;
         });
     }, [fees, activeTab, searchTerm]);
+
+    // Filtered cases for issue modal
+    const filteredCases = useMemo(() => {
+        if (!caseSearchTerm) return cases;
+        const search = caseSearchTerm.toLowerCase();
+        return cases.filter(c =>
+            c.case_number?.toLowerCase().includes(search) ||
+            c.title?.toLowerCase().includes(search)
+        );
+    }, [cases, caseSearchTerm]);
 
     // Stats
     const stats = useMemo(() => {
@@ -407,11 +419,25 @@ const FeesManagement = () => {
                             </div>
 
                             <form onSubmit={handleIssueFee} className="p-4 space-y-4">
-                                {/* Select Case */}
-                                <div>
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                {/* Search and Select Case */}
+                                <div className="space-y-3">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                                         اختر القضية *
                                     </label>
+                                    
+                                    {/* Search Input */}
+                                    <div className="relative">
+                                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="ابحث برقم القضية..."
+                                            value={caseSearchTerm}
+                                            onChange={(e) => setCaseSearchTerm(e.target.value)}
+                                            className="w-full pr-10 pl-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    {/* Select Dropdown */}
                                     <select
                                         value={selectedCase?.case_id || ''}
                                         onChange={(e) => {
@@ -422,13 +448,16 @@ const FeesManagement = () => {
                                         className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 text-sm"
                                     >
                                         <option value="">-- اختر قضية --</option>
-                                        {cases.map(c => (
+                                        {filteredCases.map(c => (
                                             <option key={c.case_id} value={c.case_id}>
                                                 {c.case_number} - {c.title?.substring(0, 30)}...
                                             </option>
                                         ))}
                                     </select>
-                                    {cases.length === 0 && (
+                                    {filteredCases.length === 0 && caseSearchTerm && (
+                                        <p className="text-xs text-red-600 mt-1">لا توجد نتائج للبحث</p>
+                                    )}
+                                    {cases.length === 0 && !caseSearchTerm && (
                                         <p className="text-xs text-yellow-600 mt-1">لا توجد قضايا جاهزة</p>
                                     )}
                                 </div>
