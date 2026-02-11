@@ -334,10 +334,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📞 Support
 
-For support, please:
-1. Check the [documentation](#-documentation)
-2. Submit a support ticket through the platform
-3. Contact the development team
+For support, contact: **ali.odeh.pss@gmail.com**
 
 ---
 
