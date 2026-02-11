@@ -334,13 +334,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📞 Support
 
-For support, contact: **ali.odeh.pss@gmail.com**
+For support, contact: 
+- **ali.odeh.pss@gmail.com**
+- **aadamadamm343@gmail.com**
 
 ---
 
 <div align="center">
-
-**Built with ❤️ for the Palestinian Legal System**
 
 [⬆ Back to Top](#justice-connect)
 
